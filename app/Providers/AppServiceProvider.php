@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
+use Filament\Support\Components\Badge;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -27,7 +28,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
 
 
 

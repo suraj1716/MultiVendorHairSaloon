@@ -13,8 +13,6 @@ import {
   useState,
 } from "react";
 
-
-
 export default function AuthenticatedLayout({
   header,
   children,
@@ -50,8 +48,8 @@ export default function AuthenticatedLayout({
   }, [props.success]);
 
   return (
-    <div className=" min-h-screen bg-gray-100 z-200">
-      <Navbar/>
+    <div className="relative min-h-screen bg-gray-100 z-[200]">
+      <Navbar />
       {props.error && (
         <div className="container px-8 mt-8 mx-auto">
           <div className="alert alert-error">{props.error}</div>
@@ -69,7 +67,7 @@ export default function AuthenticatedLayout({
       )}
 
       <main>{children}</main>
-         <Footer/>
+      <Footer />
     </div>
   );
 }

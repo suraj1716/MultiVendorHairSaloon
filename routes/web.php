@@ -4,6 +4,7 @@ use App\Enums\RolesEnum;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\GoogleController;
 
 
 
@@ -41,7 +43,7 @@ Route::get('/category/{category}', [CategoryController::class, 'show'])->name('c
 Route::get('/search-suggestions', function (Request $request) {
     $keyword = $request->query('keyword');
 
-   $products = Product::query()
+    $products = Product::query()
         ->forWebsite()
         ->with([
             'category',
@@ -55,7 +57,7 @@ Route::get('/search-suggestions', function (Request $request) {
         ->limit(10)
         ->get();
 
-    return ProductResource::collection($products);
+    return ProductListResource::collection($products);
 });
 
 
@@ -102,11 +104,19 @@ Route::middleware('auth')->group(function () {
 
 
     Route::middleware(['verified'])->group(function () {
+
+        Route::controller(CartController::class)->group(function () {
+            Route::get('/cart', 'index')->name('cart.index');
+            Route::post('/cart/add/{product}', 'store')->name('cart.store');
+            Route::put('/cart/{product}', 'update')->name('cart.update');
+            Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
+        });
         Route::post('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+
+
         Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
         Route::get('/stripe/failure', [StripeController::class, 'failure'])->name('stripe.failure');
         Route::post('/become-a-vendor', [VendorController::class, 'store'])->name('vendor.store');
-
         Route::post('/stripe/connect', [StripeController::class, 'connect'])
             ->name('stripe.connect')
             ->middleware(['role:' . RolesEnum::Vendor->value]);
@@ -130,8 +140,12 @@ Route::middleware('auth')->group(function () {
         ->name('available-slots');
 });
 
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
 
 
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google-callback', [GoogleController::class, 'handleGoogleCallback']);
 
 Route::middleware('auth')->group(function () {
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');

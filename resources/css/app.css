@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+
+/* Override Filament badge color with a solid blue background and white text */
+.filament-badge {
+    @apply bg-blue-600 text-white;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

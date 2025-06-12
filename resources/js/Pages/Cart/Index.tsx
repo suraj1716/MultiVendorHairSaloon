@@ -32,8 +32,6 @@ function Index({
     shippingAddresses.find((a) => a.is_default)?.id ?? null
   );
 
-
-
   const [bookingDate, setBookingDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
   const [loading, setLoading] = useState(false);
@@ -94,17 +92,15 @@ function Index({
     }
   };
 
+  console.log("bookingDate:", bookingDate);
+  console.log("timeSlot:", timeSlot);
+  console.log("selectedAddressId:", selectedAddressId);
 
-console.log('bookingDate:', bookingDate);
-  console.log('timeSlot:', timeSlot);
-  console.log('selectedAddressId:', selectedAddressId);
+  console.log("vendorId:", vendorId);
 
-  console.log('vendorId:', vendorId);
-
-  console.log('cartItems:', cartItems);
-  console.log('totalQuantity:', totalQuantity);
-  console.log('totalPrice:', totalPrice);
-
+  console.log("cartItems:", cartItems);
+  console.log("totalQuantity:", totalQuantity);
+  console.log("totalPrice:", totalPrice);
 
   return (
     <AuthenticatedLayout>
@@ -112,7 +108,8 @@ console.log('bookingDate:', bookingDate);
 
       <div className="container mx-auto p-8 flex flex-col lg:flex-row gap-4">
         {/* ---------- CART ITEMS ---------- */}
-        <div className="card flex-1 bg-white dark:bg-gray-800 order-2 lg:order-1">
+
+        <div className="card flex-1 bg-white dark:bg-gray-800 order-1 lg:order-2">
           <div className="card-body">
             <h2 className="text-lg font-bold">Shopping Cart</h2>
 
@@ -139,33 +136,37 @@ console.log('bookingDate:', bookingDate);
         </div>
 
         {/* ---------- SIDEBAR: ADDRESS + CHECKOUT + BOOKINGS ---------- */}
-        <div className="card flex-1 bg-white dark:bg-gray-800 lg:min-w-[260px] order-1 lg:order-2">
+
+        <div className="card flex-1 bg-white dark:bg-gray-800 lg:min-w-[260px] order-2 lg:order-2">
           <div className="card-body space-y-6">
             {/* --- Booking Widget --- */}
             {showBookingWidget && (
-              <div className="space-y-4 border p-4 rounded">
+              <div className="space-y-4 border p-4 rounded ">
                 <h3 className="font-bold text-lg">Book Appointment</h3>
                 {/* Pass a button as the dialog trigger */}
                 <button
                   className="inline-block mb-2 px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
-                  onClick={() => setDialogOpen(true)}
+                  onClick={() => {
+                    console.log("clickerd");
+                    setDialogOpen(true);
+                  }}
                 >
                   Book Appointment
                 </button>
                 <BookingWidget
-  bookingDate={bookingDate}
-  setBookingDate={setBookingDate}
-  timeSlot={timeSlot}
-  setTimeSlot={setTimeSlot}
-  open={dialogOpen}
-  onOpenChange={setDialogOpen}
-  vendorId={vendorId.length > 0 ? vendorId[0] : null}
-  onSubmit={(date, slot) => {
-    console.log("Booking Submitted:", date, slot);
-    setBookingDate(date);
-    setTimeSlot(slot);
-  }}
-/>
+                  bookingDate={bookingDate}
+                  setBookingDate={setBookingDate}
+                  timeSlot={timeSlot}
+                  setTimeSlot={setTimeSlot}
+                  open={dialogOpen}
+                  onOpenChange={setDialogOpen}
+                  vendorId={vendorId.length > 0 ? vendorId[0] : null}
+                  onSubmit={(date, slot) => {
+                    console.log("Booking Submitted:", date, slot);
+                    setBookingDate(date);
+                    setTimeSlot(slot);
+                  }}
+                />
 
                 {bookingDate && timeSlot && (
                   <div className="text-sm text-gray-700 dark:text-gray-300">

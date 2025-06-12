@@ -82,7 +82,7 @@ const deleteForm=useForm({
 
 
           <div className="flex-col justify-between items-center mt-4">
-            <div className="text-sm">Quantity: </div>
+            {/* <div className="text-sm">Quantity: </div>
             <div
               className={error ? 'tooltip tooltip-open tooltip-error' : ''}
               data-tip={error}
@@ -93,7 +93,7 @@ const deleteForm=useForm({
                 onBlur={handleQuantityChange}
                 className="input-sm w-16"
               />
-            </div>
+            </div> */}
             <button onClick={onDeleteClick} className="btn btn-sm btn-ghost">
               Delete
             </button>

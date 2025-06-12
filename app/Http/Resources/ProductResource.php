@@ -19,11 +19,11 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'highlight'=>$this->highlight,
             'description' => $this->description,
             'price' => $this->price,
             // 'image' => $this->getFirstMediaUrl('images'),
-       'image' => $this->getMedia('images')->first()?->getUrl('thumb') ?? '',
-
+            'image' => $this->getMedia('images')->first()?->getUrl('thumb') ?? '',
             'slug' => $this->slug,
             'quantity' => $this->quantity,
             // Add this line to the returned array

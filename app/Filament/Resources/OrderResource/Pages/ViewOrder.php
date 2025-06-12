@@ -30,12 +30,29 @@ class ViewOrder extends ViewRecord
         'items' => $order->orderItems,
     ];
 }
+public function mount($record): void
+{
+    parent::mount($record);
 
+    if (!$this->record->is_read) {
+        $this->record->update(['is_read' => true]);
+    }
+}
 public function view(): \Illuminate\View\View
 {
     return view('filament.orders.view-order', [
         'record' => $this->record,
     ]);
 }
+
+protected function mutateFormDataBeforeFill(array $data): array
+{
+    if (!$this->record->is_read) {
+        $this->record->update(['is_read' => true]);
+    }
+
+    return $data;
+}
+
 
 }

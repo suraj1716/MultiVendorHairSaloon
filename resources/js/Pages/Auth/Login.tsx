@@ -5,6 +5,7 @@ import InputError from '@/Components/Core/InputError';
 import PrimaryButton from '@/Components/Core/PrimaryButton';
 import { Head, Link, useForm } from '@inertiajs/react';
 import type { FormEventHandler } from 'react';
+import GoogleLoginButton from '@/Components/Core/GoogleLoginButton';
 
 export default function LoginModal({
     isOpen,
@@ -145,6 +146,7 @@ export default function LoginModal({
                     <PrimaryButton className="w-full" disabled={processing}>
                         Log in
                     </PrimaryButton>
+                    <GoogleLoginButton className='w-full'/>
                 </form>
             </div>
         </div>

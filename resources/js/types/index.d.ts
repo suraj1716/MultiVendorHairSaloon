@@ -22,7 +22,8 @@ export interface User {
   email: string;
   email_verified_at?: string;
   stripe_account_active: boolean;
-  vendor: Vendor
+  vendor: Vendor;
+  avatar:string
 }
 
 export type VariationTypeOption = {
@@ -50,6 +51,7 @@ export type CategoryGroup = {
 export type Product = {
   id: number;
   title: string;
+  highlight:string;
   slug: string;
   price: number;
   image: string;
@@ -60,7 +62,6 @@ export type Product = {
   updated_at: string;
   deleted_at?: string;
   quantity: number;
-
   category_id: number;
   category: {
     id: number;
@@ -201,11 +202,17 @@ export type PageProps<
   miniCartItems: CartItem[];
   departments: Department[];
   dpts: Department[];
-  // location: any;
-  // getLocation: () => void;
-  // openDropdown: boolean;
-  // setOpenDropdown: (val: boolean) => void;
+faqs: Faq[];
+  flash: {
+    success?: string;
+  };
 };
+
+export type Faq ={
+  id: number;
+  question: string;
+  answer: string;
+}
 export type VariationSummary = {
   type: string;
   option: string;
@@ -255,6 +262,7 @@ export type Category = {
   name: string;
   products_count: number;
     image?:string;
+    department: Department; // <---- important
 
 };
 

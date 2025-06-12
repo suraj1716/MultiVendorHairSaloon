@@ -45,7 +45,10 @@ const ProductRating: React.FC<ProductRatingProps> = ({
   size = "md",
   onRate,
 }) => {
-  const iconSize = size === "sm" ? "w-4 h-4" : "w-6 h-6";
+   const iconSize =
+    size === "sm"
+      ? "w-4 h-4 sm:w-6 sm:h-6"
+      : "w-6 h-6";
   const spacing = size === "sm" ? "space-x-1" : "space-x-2";
 
   return (

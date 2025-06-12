@@ -14,6 +14,7 @@ use Filament\Tables\Columns\SelectColumn;
 
 use Filament\Tables;
 use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
@@ -27,16 +28,39 @@ class OrderResource extends Resource
         return $table
 
             ->columns([
+
+IconColumn::make('is_read')
+    ->label('Read')
+    ->boolean()
+    ->trueIcon('heroicon-o-check-circle')
+    ->falseIcon('heroicon-s-exclamation-circle')
+    ->color(fn (bool $state): string => $state ? 'gray' : 'danger')
+    ->sortable(),
+
+                // Tables\Columns\TextColumn::make('is_read')
+                //     ->label('Read Status')
+                //     ->badge()
+                //     ->color(fn($state) => $state ? 'success' : 'danger')
+                //     ->icon(fn($state) => $state ? 'heroicon-m-check' : 'heroicon-m-x-mark')
+                //     ->label('Read Status')
+                //     ->formatStateUsing(fn($state) => $state ? 'Read' : 'Unread'),
+
+
                 Tables\Columns\TextColumn::make('id')
                     ->sortable()->searchable()
                     ->label('Order ID'),
+
+
+
+
 
                 Tables\Columns\TextColumn::make('vendorUser.vendor.user_id')
                     ->label('Vendor Id'),
 
                 Tables\Columns\TextColumn::make('vendorUser.vendor.store_name')
                     ->label('Vendor Store'),
-
+                Tables\Columns\TextColumn::make('vendorUser.vendor.vendor_type')
+                    ->label('Vendor type'),
                 Tables\Columns\TextColumn::make('total_price')
                     ->money('AUD')
                     ->label('Total'),
@@ -50,7 +74,7 @@ class OrderResource extends Resource
                     ->searchable(),
 
 
-            // {-- this table returns rows that have booking.booking_date== null, so hiding this columns--}
+                // {-- this table returns rows that have booking.booking_date== null, so hiding this columns--}
 
                 // Tables\Columns\TextColumn::make('booking.booking_date')
                 //     ->label('Booking Date')
@@ -143,12 +167,48 @@ class OrderResource extends Resource
     }
 
 
+   public static function getNavigationBadge(): ?string
+{
+    $user = Auth::user();
+
+    $query = static::getModel()::where('is_read', false)
+        ->where(function ($q) {
+            $q->whereDoesntHave('booking') // No booking = order
+              ->orWhereHas('booking', fn($q) => $q->whereNull('booking_date')); // booking with null date = order
+        })
+        ->whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'ecommerce'));
+
+    if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
+        // Admin: no extra restriction
+        // show all orders matching the criteria
+    } elseif ($user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+        // Vendor: only orders belonging to this vendor user
+        $query->where('vendor_user_id', $user->id);
+    } else {
+        // Other roles: no orders
+        $query->whereRaw('1 = 0');
+    }
+
+    return (string) $query->count();
+}
+
+
+
+    public static function getNavigationBadgeColor(): string
+    {
+        return 'danger';
+    }
 
     public static function getTableQuery(): Builder
     {
-        $userId = Auth::id();
-        return parent::getTableQuery()
-            ->with(['vendorUser', 'booking'])
-            ->where('vendor_user_id', $userId);
+        $query = parent::getTableQuery()
+            ->with(['vendorUser.vendor']) // ensure nested eager loading
+            ->whereHas('vendorUser.vendor', function ($query) {
+                $query->where('vendor_type', 'ecommerce');
+            });
+
+        dd($query->first()->vendorUser->vendor ?? 'null');
+
+        return $query;
     }
 }

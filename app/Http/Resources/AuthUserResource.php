@@ -9,7 +9,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class AuthUserResource extends JsonResource
 {
 
-    public static $wrap=false;
+    public static $wrap = false;
     /**
      * Transform the resource into an array.
      *
@@ -18,27 +18,28 @@ class AuthUserResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'=>$this->id,
-            'email'=>$this->email,
-            'email_verified_at'=>$this->email_verified_at,
-            'name'=>$this->name,
-            'permissions'=>$this->getAllPermissions()->map(function($permission){
+            'id' => $this->id,
+            'email' => $this->email,
+            'email_verified_at' => $this->email_verified_at,
+            'name' => $this->name,
+            'avatar' => $this->avatar, // from Google
+            'permissions' => $this->getAllPermissions()->map(function ($permission) {
                 return $permission->name;
             }),
-            'roles'=>$this->getRoleNames(),
-            'stripe_account_active'=>(bool)$this->stripe_account_active,
-            'vendor'=>!$this->vendor ? null : [
-                'status'=>$this->vendor->status,
-                'status_label'=>VendorStatusEnum::from($this->vendor->status)->label(),
-                'store_name'=>$this->vendor->store_name,
-                'store_address'=>$this->vendor->store_address,
-                'cover_image'=>$this->vendor->cover_image,
-                'store_address'=>$this->vendor->store_address,
-            'business_start_time'=>$this->vendor->business_start_time,
-            'business_end_time'=>$this->vendor->business_end_time,
-            'slot_interval_minutes'=>$this->vendor->slot_interval_minutes,
-           'recurring_closed_days' => $this->vendor->recurring_closed_days ?? [],
-       'closed_dates' => $this->vendor->closed_dates ?? [],
+            'roles' => $this->getRoleNames(),
+            'stripe_account_active' => (bool)$this->stripe_account_active,
+            'vendor' => !$this->vendor ? null : [
+                'status' => $this->vendor->status,
+                'status_label' => VendorStatusEnum::from($this->vendor->status)->label(),
+                'store_name' => $this->vendor->store_name,
+                'store_address' => $this->vendor->store_address,
+                'cover_image' => $this->vendor->cover_image,
+                'store_address' => $this->vendor->store_address,
+                'business_start_time' => $this->vendor->business_start_time,
+                'business_end_time' => $this->vendor->business_end_time,
+                'slot_interval_minutes' => $this->vendor->slot_interval_minutes,
+                'recurring_closed_days' => $this->vendor->recurring_closed_days ?? [],
+                'closed_dates' => $this->vendor->closed_dates ?? [],
 
 
             ],

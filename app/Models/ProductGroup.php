@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Support\Facades\Storage;
 class ProductGroup extends Model
 {
     protected $fillable = ['name', 'slug', 'image', 'active'];
@@ -17,6 +17,12 @@ public function groupedProducts()
 {
     return $this->belongsToMany(Product::class, 'product_group_product');
 }
-
+ public function getImageUrlAttribute()
+    {
+        if (!$this->image) {
+            return null; // or a placeholder URL
+        }
+        return asset('storage/' . $this->image);
+    }
 
 }

@@ -191,16 +191,17 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
+    console.log('avatar',user)
   return (
-    <div className="relative top-0 z-50 bg-white shadow">
+    <div className="relative z-[500] top-0  bg-white shadow">
       {/* Mobile menu */}
-      <Dialog open={open} onClose={setOpen} className="relative z-40 lg:hidden">
+      <Dialog open={open} onClose={setOpen} className="relative z-[600] lg:hidden">
         <DialogBackdrop
           transition
           className="fixed inset-0 bg-black/25 transition-opacity duration-300 ease-linear data-closed:opacity-0"
         />
 
-        <div className="fixed inset-0 z-40 flex">
+        <div className="fixed inset-0 z-[400] flex">
           <DialogPanel
             transition
             className="relative flex w-full max-w-xs transform flex-col overflow-y-auto bg-white pb-12 shadow-xl transition duration-300 ease-in-out data-closed:-translate-x-full"
@@ -225,7 +226,10 @@ export default function Navbar() {
                 {({ open }) => (
                   <>
                     <Disclosure.Button className="w-full text-left border-t border-gray-200 px-4 py-4 text-sm font-semibold text-gray-900 hover:bg-gray-50 flex justify-between items-center">
-                      <span>Account Settings</span>
+                      <span>
+    <img src={user.avatar} alt="User Avatar" className="inline-block w-6 h-6 rounded-full mr-2" />
+
+  </span>
                       <svg
                         className={`h-5 w-5 transform transition-transform duration-200 ${
                           open ? "rotate-180" : ""
@@ -442,11 +446,11 @@ export default function Navbar() {
               <div className="ml-auto flex items-center">
                 {/* Cart (visible on all screen sizes) */}
                 {/* Search */}
-                <div className="flex   px-4 sm:px-6 lg:px-0 lg:ml-6">
+                <div className="flex z-[70]   px-4 sm:px-6 lg:px-0 lg:ml-6">
                   <SearchBar keyword={keyword} />
                 </div>
 
-                <div className="ml-2 sm:ml-4 flow-root">
+                <div className=" ml-2 sm:ml-4 z-[60] flow-root">
                   <MiniCartDropdown />
                 </div>
 
@@ -459,13 +463,10 @@ export default function Navbar() {
                       aria-label="User menu"
                     >
                       <img
-                        src={
-                          user.name ||
-                          "https://images.unsplash.com/photo-1502685104226-ee32379fefbe?auto=format&fit=crop&w=256&q=80"
-                        }
-                        alt={`${user.name}'s avatar`}
-                        className="object-cover w-full h-full"
-                      />
+        src={user.avatar}
+        alt={user.name || "User"}
+        className="rounded-full w-10 h-10 object-cover"
+      />
                     </button>
                     <ul
                       tabIndex={0}

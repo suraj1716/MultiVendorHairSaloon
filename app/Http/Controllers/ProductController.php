@@ -23,53 +23,60 @@ class ProductController extends Controller
     public function home(Request $request)
     {
         $keyword = $request->query('keyword');
+
+        // Load category groups with departments
         $categoryGroups = CategoryGroup::with(['categories.department'])
             ->where('active', true)
             ->get()
             ->map(function ($group) {
-                // Access the accessor to ensure it's loaded, but do not assign
-                $group->image_url;
+                $group->image_url; // Touch accessor
                 return $group;
             });
 
+        // Load product groups with nested products and ratings
+        $productGroups = ProductGroup::where('active', 1)
+            ->with([
+                'groupedProducts' => function ($query) {
+                    $query->withAvg('reviews', 'rating')   // ✅ average rating per product
+                        ->withCount('reviews')           // ✅ review count per product
+                        ->with([
+                            'user.vendor',
+                            'department',
+                            'variationTypes.options.media',
+                            'variations',
+                            'media',
+                            'reviews.user'
+                        ]);
+                }
+            ])
+            ->get();
 
+        // Convert to resources
+        $productGroupsResource = ProductGroupResource::collection($productGroups);
+        $productGroupsArray = $productGroupsResource->toArray($request);
 
-       $productGroups = ProductGroup::where('active', 1)
-    ->with([
-        'groupedProducts.user.vendor',
-        'groupedProducts.department',
-        'groupedProducts.variationTypes.options.media',
-        'groupedProducts.variations',
-        'groupedProducts.media',
-        'groupedProducts.reviews',
-        'groupedProducts.reviews.user'
-    ])
-    ->get();
-
- $productGroupsResource = ProductGroupResource::collection($productGroups);
-
-    // Pass the $request to toArray()
-    $productGroupsArray = $productGroupsResource->toArray($request);
-
-
-
-        // Grab every department that actually has products
+        // Get departments that have products
         $departments = Department::whereHas('categories.products', fn($q) => $q->filterApproved())
             ->with(['categories' => fn($q) => $q->whereHas('products')])
             ->get();
 
+        // Product search
         $products = ProductSearchService::queryWithKeyword($keyword)->paginate(12);
 
 
+
+        // Render home page
         return Inertia::render('Home', [
-            'products'    => ProductListResource::collection($products),
-            'keyword'     => $keyword,
-            'departments' => $departments,
-            'department'  => null,
-            'categoryGroups' => $categoryGroups,
-            'productGroups'   => $productGroupsArray
+            'products'        => ProductListResource::collection($products),
+            'keyword'         => $keyword,
+            'departments'     => $departments,
+            'department'      => null,
+            'categoryGroups'  => $categoryGroups,
+            'productGroups'   => $productGroupsArray,
+
         ]);
     }
+
 
 
 
@@ -91,6 +98,21 @@ class ProductController extends Controller
             ->withAvg('reviews', 'rating')
             ->find($product->id);
 
+        $relatedInCategoryCount = Product::where('category_id', $product->category_id)
+            ->where('id', '!=', $product->id)
+             ->where('status', 'published')
+            ->count();
+
+        $relatedProducts = Product::with(['media', 'user', 'category'])
+            ->where('id', '!=', $product->id)
+            ->when(
+                $relatedInCategoryCount >= 3,
+                fn($query) => $query->where('category_id', $product->category_id),
+                fn($query) => $query->where('department_id', $product->department_id)
+            )
+            ->latest()
+            ->take(8)
+            ->get();
 
 
         // Calculate rating breakdown
@@ -119,6 +141,7 @@ class ProductController extends Controller
 
         return Inertia::render('Product/Show', [
             'product' => new ProductResource($product),
+            'relatedProducts' => ProductResource::collection($relatedProducts),
             'variationOptions' => request('option', []),
             'reviews' => $reviews,  // send reviews explicitly
             'ratingBreakdown' => $ratingBreakdown, // pass it to the frontend
@@ -208,9 +231,43 @@ class ProductController extends Controller
 
 
 
+
+
+        $productGroups = ProductGroup::where('active', 1)
+            ->with([
+                'groupedProducts' => function ($query) {
+                    $query->withAvg('reviews', 'rating')   // ✅ average rating per product
+                        ->withCount('reviews')           // ✅ review count per product
+                        ->with([
+                            'user.vendor',
+                            'department',
+                            'variationTypes.options.media',
+                            'variations',
+                            'media',
+                            'reviews.user'
+                        ]);
+                }
+            ])
+            ->get();
+
+        // Convert to resources
+        $productGroupsResource = ProductGroupResource::collection($productGroups);
+        $productGroupsArray = $productGroupsResource->toArray($request);
+
+
+        $categoryGroups = CategoryGroup::with(['categories.department'])
+            ->where('active', true)
+            ->get()
+            ->map(function ($group) {
+                $group->image_url; // Touch accessor
+                return $group;
+            });
+
         return Inertia::render('Department/Index', [
             'department' => new DepartmentResource($department),
             'products' => ProductListResource::collection($products),
+            'categoryGroups'  => $categoryGroups,
+            'productGroups'   => $productGroupsArray,
             'categories' => $categories,
             'departments' => $departments,
             'filters' => [

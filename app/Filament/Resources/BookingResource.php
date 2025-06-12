@@ -28,6 +28,15 @@ class BookingResource extends Resource
     {
         return $table
             ->columns([
+
+                 Tables\Columns\TextColumn::make('is_read')
+                    ->label('Read Status')
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'danger')
+                    ->icon(fn($state) => $state ? 'heroicon-m-check' : 'heroicon-m-x-mark')
+                    ->label('Read Status')
+                    ->formatStateUsing(fn($state) => $state ? 'Read' : 'Unread'),
+
                 TextColumn::make('id')
                     ->sortable()
                     ->searchable()
@@ -38,7 +47,8 @@ class BookingResource extends Resource
 
                 TextColumn::make('vendorUser.vendor.store_name')
                     ->label('Vendor Store'),
-
+ TextColumn::make('vendorUser.vendor.type')
+                    ->label('Vendor Type'),
                 TextColumn::make('total_price')
                     ->money('AUD')
                     ->label('Total'),
@@ -65,43 +75,44 @@ class BookingResource extends Resource
                 //     ->openUrlInNewTab()
                 //     ->extraAttributes(['style' => 'max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;']),
 
-         Tables\Columns\TextColumn::make('variation_images')
-                    ->label('Variation Images')
-                    ->getStateUsing(function (Order $record) {
-                        $allVariations = [];
+      Tables\Columns\TextColumn::make('variation_images')
+    ->label('Variation Images')
+    ->getStateUsing(function (Order $record) {
+        $allVariations = [];
 
-                        foreach ($record->orderItems as $item) {
-                            $variationStrings = [];
-                            $variationIds = $item->variation_type_option_ids;
+        foreach ($record->orderItems as $item) {
+            $variationStrings = [];
+            $variationIds = $item->variation_type_option_ids;
 
-                            if (is_array($variationIds) && count($variationIds)) {
-                                foreach ($variationIds as $optionId) {
-                                    $option = VariationTypeOption::with('variationType', 'media')->find($optionId);
-                                    if ($option) {
-                                        $image = $option->getMedia('images')->first();
-                                        $imageUrl = $image ? $image->getUrl('thumb') : null;
+            if (is_array($variationIds) && count($variationIds)) {
+                foreach ($variationIds as $optionId) {
+                    $option = VariationTypeOption::with('variationType', 'media')->find($optionId);
+                    if ($option) {
+                        $image = $option->getMedia('images')->first();
+                        $imageUrl = $image ? $image->getUrl('thumb') : null;
 
-                                        $variationName = $option->variationType->name ?? 'N/A';
-                                        $optionName = $option->name ?? 'N/A';
+                        $variationName = $option->variationType->name ?? 'N/A';
+                        $optionName = $option->name ?? 'N/A';
 
-                                        $imageTag = $imageUrl
-                                            ? "<img src='{$imageUrl}' alt='{$optionName}' style='width:30px; height:30px; object-fit:contain; margin-right:8px; border:1px solid #ccc; border-radius:4px;' />"
-                                            : '';
+                        $imageTag = $imageUrl
+                            ? "<img src='{$imageUrl}' alt='{$optionName}' style='width:30px; height:30px; object-fit:contain; margin-right:8px; border:1px solid #ccc; border-radius:4px;' />"
+                            : '';
 
-                                        // Wrap image and text in a flex container for side-by-side layout
-                                        $variationStrings[] = "<div style='display:flex; align-items:center; margin-bottom:4px;'>{$imageTag}<span>{$variationName}: {$optionName}</span></div>";
-                                    }
-                                }
-                            }
+                        $variationStrings[] = "<div style='display:flex; align-items:center; margin-bottom:4px;'>{$imageTag}<span>{$variationName}: {$optionName}</span></div>";
+                    }
+                }
+            }
 
-                            $allVariations[] = implode('', $variationStrings);
-                        }
+            $allVariations[] = implode('', $variationStrings);
+        }
 
-                        return implode('<hr style="margin:8px 0;">', $allVariations);
-                    })
-                    ->html()
-                    ->wrap()
-                    ->toggleable(),
+        return implode('<hr style="margin:8px 0;">', $allVariations);
+    })
+    ->html()
+    ->extraAttributes([
+        'style' => 'max-height:150px; overflow-y:auto; white-space:normal;'
+    ]),
+
 
                 SelectColumn::make('status')
                     ->label('Status')
@@ -135,20 +146,49 @@ class BookingResource extends Resource
         ];
     }
 
-     protected function getTableQuery(): Builder
-    {
-        $user = Auth::user();
-        // If Admin, return all orders
-        $query = parent::getTableQuery()->whereHas('booking', function ($query) {
+   protected function getTableQuery(): Builder
+{
+    $user = Auth::user();
+
+    $query = parent::getTableQuery()
+        ->whereHas('booking', function ($query) {
             $query->whereNotNull('booking_date');
+        })
+        ->whereHas('vendorUser.vendor', function ($q) {
+            $q->where('vendor_type', 'appointment');
         });
 
-        if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
-            // Admin sees all orders that have a booking with booking_date
-            return $query;
-        }
-
-        // Non-admin users: filter by vendor_user_id and booking with booking_date
-        return $query->where('vendor_user_id', $user->id);
+    if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
+        return $query;
     }
+
+    // For vendor or others, limit to their own vendor_user_id
+    return $query->where('vendor_user_id', $user->id);
+}
+public static function getNavigationBadge(): ?string
+{
+    $user = Auth::user();
+
+    $query = static::getModel()::where('is_read', false)
+        ->whereHas('booking', fn($q) => $q->whereNotNull('booking_date'))
+        ->whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'appointment'));
+
+    if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
+        // Admin sees all booking orders matching criteria
+    } elseif ($user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+        // Vendor sees only their own booking orders
+        $query->where('vendor_user_id', $user->id);
+    } else {
+        // Other roles see nothing
+        $query->whereRaw('1 = 0');
+    }
+
+    return (string) $query->count();
+}
+
+public static function getNavigationBadgeColor(): string
+{
+    return 'danger';
+}
+
 }

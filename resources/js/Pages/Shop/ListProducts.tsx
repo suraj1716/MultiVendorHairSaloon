@@ -21,25 +21,42 @@ export default function ListProducts({
   departments,
   filters,
 }: ProfileProps) {
-  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
-    filters.department_id
-  );
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    filters.category_id
-  );
-  const [maxPrice, setMaxPrice] = useState<number>(
-    filters.max_price ? parseInt(filters.max_price) : 1000
-  );
-  const [sortBy, setSortBy] = useState<string>(filters.sort_by || "default");
   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
+  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
+    null
+  );
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
 
-  const toggleDepartment = (id: string) => {
-    setExpandedDepartments((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
-    );
+  const onDepartmentClick = (id: string) => {
+    setSelectedDepartment(id);
+    setSelectedCategory("");
+    setExpandedDepartments([id]); // only this one expanded
   };
 
+  const toggleDepartment = (id: string) => {
+    setExpandedDepartments((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((deptId) => deptId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [maxPrice, setMaxPrice] = useState<number>(
+    filters.max_price ? parseInt(filters.max_price) : 5000
+  );
+  const [sortBy, setSortBy] = useState<string>(filters.sort_by || "default");
   const handleFilterChange = () => {
+    const selectedDepartmentSlug = departments.find(
+      (d) => d.id.toString() === selectedDepartment?.toString()
+    )?.slug;
+
+    if (!selectedDepartmentSlug) {
+      console.error("No slug found for selected department");
+      return;
+    }
     router.get(
       route("shop.search"),
       {
@@ -57,7 +74,6 @@ export default function ListProducts({
 
   const handleResetFilters = () => {
     setSelectedDepartment(null);
-    setSelectedCategory(null);
     setExpandedDepartments([]);
     setMaxPrice(DEFAULT_MAX_PRICE);
     setSortBy("default");
@@ -74,19 +90,23 @@ export default function ListProducts({
   };
   const DEFAULT_MAX_PRICE = 5000;
 
-   const ShowAllProducts = () => {
-      setSelectedDepartment(null);
-      setSelectedCategory(null);
-      setExpandedDepartments([]);
-      setMaxPrice(DEFAULT_MAX_PRICE);
-      setSortBy("default");
+  const ShowAllProducts = () => {
+    setSelectedDepartment(null);
+    setSelectedCategory("");
+    setExpandedDepartments([]);
+    setMaxPrice(DEFAULT_MAX_PRICE);
+    setSortBy("default");
 
-      // Fetch all products with no filters
-      router.get(route("shop.search"), {}, {
+    // Fetch all products with no filters
+    router.get(
+      route("shop.search"),
+      {},
+      {
         preserveState: true,
         preserveScroll: true,
-      });
-    };
+      }
+    );
+  };
 
   return (
     <AuthenticatedLayout>
@@ -98,8 +118,9 @@ export default function ListProducts({
 
       <div className="flex flex-col lg:flex-row gap-6 p-6">
         {/* Filters */}
-        <aside className="w-full lg:w-1/4 bg-white shadow rounded p-4">
-          <div className="flex items-center justify-between mb-4">
+        <aside className="hidden lg:block lg:w-1/4 bg-white shadow rounded p-4 h-auto sticky top-4 self-start">
+          <h2 className="text-lg font-semibold mb-5">Filters</h2>
+          {/* <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Filters</h2>
             <button
               className="ml-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
@@ -107,7 +128,7 @@ export default function ListProducts({
             >
               All Products
             </button>
-          </div>
+          </div> */}
 
           {/* Department Filter */}
           <div className="mb-6">
@@ -128,7 +149,7 @@ export default function ListProducts({
                         onClick={() => {
                           toggleDepartment(department.id.toString());
                           setSelectedDepartment(department.id.toString());
-                          setSelectedCategory(null); // reset category on new department select
+                          setSelectedCategory(""); // reset category on new department select
                         }}
                         className="font-semibold text-left w-full"
                       >
@@ -230,14 +251,151 @@ export default function ListProducts({
           </div>
         </aside>
 
+        {/* Mobile filter toggle button */}
+        <div className="lg:hidden p-4">
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded w-full"
+            onClick={() => setShowFilterModal(true)}
+          >
+            Open Filters
+          </button>
+        </div>
+        {showFilterModal && (
+          <div
+            className="px-5  z-[9999] fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center"
+            onClick={() => setShowFilterModal(false)} // click on backdrop
+          >
+            {/* Prevent click inside modal from closing */}
+            <div
+              className="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-xl"
+                onClick={() => setShowFilterModal(false)}
+              >
+                &times;
+              </button>
+
+              {/* Your Filters Go Here */}
+              <h2 className="text-lg font-semibold mb-4">Filters</h2>
+
+              {/* Categories */}
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-bold font-medium mb-5">
+                    Departments & Categories
+                  </h3>
+                  <ul className="text-sm space-y-1">
+                    {departments.map((department) => {
+                      const idStr = department.id.toString();
+                      const isExpanded = expandedDepartments.includes(idStr);
+                      return (
+                        <li key={idStr}>
+                          <button
+                            className="font-semibold w-full text-left"
+                            onClick={() => onDepartmentClick(idStr)}
+                          >
+                            {department.name}
+                          </button>
+
+                          {isExpanded && (
+                            <ul className="ml-4 mt-1">
+                              {department.categories.map((category) => {
+                                const catIdStr = category.id.toString();
+                                return (
+                                  <li key={catIdStr}>
+                                    <label className="inline-flex items-center space-x-2 cursor-pointer">
+                                      <input
+                                        key={catIdStr + selectedCategory}
+                                        type="radio"
+                                        name="category"
+                                        value={catIdStr}
+                                        checked={selectedCategory === catIdStr}
+                                        onChange={() =>
+                                          setSelectedCategory(catIdStr)
+                                        }
+                                        className="form-radio text-blue-600 "
+                                      />
+
+                                      <span>{category.name}</span>
+                                    </label>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+
+                {/* Price */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Price Range</h3>
+                  <input
+                    type="range"
+                    min={0}
+                    max={6000}
+                    value={maxPrice}
+                    onChange={(e) => setMaxPrice(Number(e.target.value))}
+                    className="w-full"
+                  />
+                  <p className="text-sm text-gray-600 mt-1">
+                    Up to ${maxPrice}
+                  </p>
+                </div>
+
+                {/* Sort */}
+                <div>
+                  <h3 className="text-sm font-medium mb-2">Sort By</h3>
+                  <select
+                    className="w-full border border-gray-300 rounded p-1 text-sm"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <option value="default">Default</option>
+                    <option value="price_asc">Price: Low to High</option>
+                    <option value="price_desc">Price: High to Low</option>
+                    <option value="newest">Newest</option>
+                  </select>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-2 mt-4">
+                  <button
+                    className="w-full bg-blue-600 text-white py-2 rounded"
+                    onClick={() => {
+                      handleFilterChange();
+                      setShowFilterModal(false);
+                    }}
+                  >
+                    Apply
+                  </button>
+                  <button
+                    className="w-full bg-gray-300 text-gray-800 py-2 rounded"
+                    onClick={() => {
+                      handleResetFilters();
+                      setShowFilterModal(false);
+                    }}
+                  >
+                    Reset
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Product List */}
-        <main className="w-full lg:w-full  mr-20">
+        <main className="w-full lg:w-full ">
           {products.data.length === 0 ? (
             <div className="text-center py-20 text-gray-500">
               No products found.
             </div>
           ) : (
-           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6">
+            <div className=" grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:mr-5">
               {products.data.map((product) => (
                 <ProductItem key={product.id} product={product} />
               ))}
@@ -273,3 +431,94 @@ export default function ListProducts({
     </AuthenticatedLayout>
   );
 }
+
+// import React, { useState } from "react";
+
+// type Department = {
+//   id: number;
+//   name: string;
+//   categories: { id: number; name: string }[];
+// };
+
+// export default function FilterExample() {
+//   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
+//   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+//   const departments: Department[] = [
+//     {
+//       id: 1,
+//       name: "Electronics",
+//       categories: [
+//         { id: 101, name: "Phones" },
+//         { id: 102, name: "Laptops" },
+//       ],
+//     },
+//     {
+//       id: 2,
+//       name: "Home & Garden",
+//       categories: [
+//         { id: 201, name: "Furniture" },
+//         { id: 202, name: "Tools" },
+//       ],
+//     },
+//   ];
+
+//   function toggleDepartment(id: string) {
+//     setExpandedDepartments((prev) =>
+//       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+//     );
+//   }
+
+//   return (
+//     <div>
+//       <h2>Departments & Categories</h2>
+//       <ul>
+//         {departments.map((department) => {
+//           const isExpanded = expandedDepartments.includes(department.id.toString());
+
+//           return (
+//             <li key={department.id} style={{ marginBottom: "1rem" }}>
+//               <div style={{ display: "flex", justifyContent: "space-between" }}>
+//                 <button
+//                   onClick={() => toggleDepartment(department.id.toString())}
+//                   style={{ fontWeight: "bold" }}
+//                 >
+//                   {department.name}
+//                 </button>
+//                 <button
+//                   onClick={() => toggleDepartment(department.id.toString())}
+//                   aria-label={isExpanded ? "Collapse" : "Expand"}
+//                 >
+//                   {isExpanded ? "-" : "+"}
+//                 </button>
+//               </div>
+
+//               {isExpanded && (
+//                 <ul style={{ marginLeft: "1rem" }}>
+//                   {department.categories.map((category) => (
+//                     <li key={category.id}>
+//                       <label style={{ cursor: "pointer" }}>
+//                         <input
+//                           type="radio"
+//                           name="category"
+//                           value={category.id.toString()}
+//                           checked={selectedCategory === category.id.toString()}
+//                           onChange={() => setSelectedCategory(category.id.toString())}
+//                           onClick={(e) => e.stopPropagation()}
+//                         />{" "}
+//                         {category.name}
+//                       </label>
+//                     </li>
+//                   ))}
+//                 </ul>
+//               )}
+//             </li>
+//           );
+//         })}
+//       </ul>
+//       <p>
+//         <strong>Selected Category:</strong> {selectedCategory}
+//       </p>
+//     </div>
+//   );
+// }

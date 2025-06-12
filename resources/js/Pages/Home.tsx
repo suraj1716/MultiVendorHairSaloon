@@ -13,9 +13,12 @@ import "swiper/css/navigation";
 import HeroBanner from "@/Components/App/Hero_Banner";
 import LandingPage from "./LandingPage";
 import Footer from "@/Components/App/Footer";
+import Contact from "@/Pages/Contact";
 // other imports...
 
 import { CategoryGroup, Category, Department, ProductGroup } from "@/types"; // Add these types
+import { usePage } from "@inertiajs/react";
+import ProductCarousel from "@/Components/App/ProductCarousel";
 
 export default function Home({
   products,
@@ -27,7 +30,9 @@ export default function Home({
   productGroups: ProductGroup[]; // camelCase too
 }>) {
   //  console.log(products.data);
-  console.log(categoryGroups); // Just to verify data
+  console.log(products); // Just to verify data
+  const { props, url } = usePage();
+
   useEffect(() => {
     AOS.init({
       duration: 800,
@@ -42,121 +47,85 @@ export default function Home({
     }, 100); // small delay ensures AOS is initialized
   }, []);
 
+  // Redirect to Category Group
+  useEffect(() => {
+    // Extract scrollTo param from URL query string
+    const params = new URLSearchParams(window.location.search);
+    const scrollTo = params.get("scrollTo");
+    if (scrollTo) {
+      const el = document.getElementById(`category-group-${scrollTo}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [url]);
+
+  // Redirect to Product Group
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const scrollTo = urlParams.get("scrollTo");
+    if (scrollTo) {
+      const el = document.getElementById(`product-group-${scrollTo}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, []);
+
   return (
     <div className="overflow-x-hidden">
       <AuthenticatedLayout>
         {/* Use Hero_Banner */}
 
-        <HeroBanner />
+        <div className="z-[400]">
+          <HeroBanner />
+        </div>
 
-        {/* {Array.isArray(productGroups) &&
-          productGroups.map((group) => {
+        {/* Custom Product Groups */}
+        <div className="w-full px-0 sm:px-4 mt-12 space-y-16">
+          {productGroups.map((group) => {
             const products = Array.isArray(group.products?.data)
               ? group.products.data
               : [];
 
             return (
-              <div key={group.id} className="mb-10">
-                <h2>{group.name}</h2>
-                {group.image && <img src={group.image} alt={group.name} />}
-                <div>
-                  {products.map((product) => (
-                    <ProductItem key={product.id} product={product} />
-                  ))}
-                </div>
-              </div>
+              <ProductCarousel
+                key={group.id}
+                title={group.name}
+                products={products}
+                wrapperClassName="scroll-mt-20"
+                sectionClassName="bg-white rounded-lg shadow px-4 py-6 sm:px-6"
+              />
             );
-          })} */}
+          })}
+        </div>
 
+        <Contact />
 
-
-
-<div className="px-6 mt-12 space-y-10">
-  {productGroups.map((group) => {
-    const products = Array.isArray(group.products?.data)
-      ? group.products.data
-      : [];
-
-    return (
-      <div key={group.id} className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-xl font-bold mb-2">{group.name}</h2>
-        {/* {group.image && (
-          <img
-            src={`/storage/${group.image}`}
-            alt={group.name}
-            className="h-32 object-cover mb-4 rounded"
-          />
-        )} */}
-
-        {/* {products.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">
-            No products found.
-          </div>
-        ) : ( */}
-          <div className="relative px-4">
-            <Swiper
-              modules={[Autoplay, Navigation]}
-              autoplay={{
-                delay: 2000,
-                disableOnInteraction: false,
-              }}
-              navigation
-              loop
-              spaceBetween={30}
-              breakpoints={{
-                320: { slidesPerView: 1.5 },
-                480: { slidesPerView: 3 },
-                640: { slidesPerView: 3 },
-                768: { slidesPerView: 3 },
-                1024: { slidesPerView: 3 },
-                1280: { slidesPerView: 5 },
-              }}
-              className="product-carousel"
-            >
-              {products.map((product) => (
-                <SwiperSlide key={product.id}>
-                  <div className="h-full mb-5">
-                    <ProductItem product={product} />
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        {/* )} */}
-
-      </div>
-    );
-  })}
-</div>
-
-
-
+        {/* Custom Category Group */}
         <div className="px-6 mt-12 space-y-10">
           {categoryGroups.map((group) => (
-            <div key={group.id} className="bg-white rounded-lg shadow p-4">
+            <div
+              id={`category-group-${group.id}`}
+              key={group.id}
+              className="bg-white rounded-lg shadow p-4 border border-gray-300"
+            >
               <h2 className="text-xl font-bold mb-2">{group.name}</h2>
-              {/* {group.image && (
-                <img
-                  src={`/storage/${group.image}`}
-                  alt={group.name}
-                  className="h-32 object-cover mb-4 rounded"
-                />
-              )} */}
 
-              <div className="flex flex-wrap gap-4">
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
                 {group.categories.map((category) => (
                   <a
                     key={category.id}
                     href={route("category.show", category.id)}
-                    className="block p-2 border rounded hover:bg-gray-100 w-48 text-center"
+                    className="block p-2 border border-gray-300 rounded hover:bg-gray-100 text-center"
                   >
-                {category.image && (
-        <img
-          src={`/storage/${category.image}`}
-          alt={category.name}
-          className="w-full h-32 object-contain rounded mb-2"
-        />
-      )}
+                    {category.image && (
+                      <img
+                        src={`/storage/${category.image}`}
+                        alt={category.name}
+                        className="w-full h-32 object-contain rounded mb-2"
+                      />
+                    )}
                     <div className="font-semibold">{category.name}</div>
                     <div className="text-sm text-gray-500">
                       {category.department?.name}
@@ -169,8 +138,7 @@ export default function Home({
         </div>
 
         <main className="w-full mb-10 mt-20">
-          {/* Header */}
-          <div className="flex items-center justify-between px-20 mb-4">
+          <div className="flex items-center justify-between px-4 md:px-20 mb-4">
             <h2 className="text-xl font-semibold text-gray-800">Products</h2>
             <a
               href="/products"
@@ -180,41 +148,21 @@ export default function Home({
             </a>
           </div>
 
-          {products.data.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
-              No products found.
-            </div>
-          ) : (
-            <div className="relative px-4">
-              <Swiper
-                modules={[Autoplay, Navigation]}
-                autoplay={{
-                  delay: 2000,
-                  disableOnInteraction: false,
-                }}
-                navigation
-                loop
-                spaceBetween={30}
-                breakpoints={{
-                  320: { slidesPerView: 1.5 },
-                  480: { slidesPerView: 1 },
-                  640: { slidesPerView: 1 },
-                  768: { slidesPerView: 3 },
-                  1024: { slidesPerView: 4 },
-                  1280: { slidesPerView: 5 },
-                }}
-                className="product-carousel"
-              >
-                {products.data.map((product) => (
-                  <SwiperSlide key={product.id}>
-                    <div className="h-full mb-5 ">
-                      <ProductItem product={product} />
-                    </div>
-                  </SwiperSlide>
-                ))}
-              </Swiper>
-            </div>
-          )}
+          {productGroups.map((group) => {
+            const products = Array.isArray(group.products?.data)
+              ? group.products.data
+              : [];
+
+            return (
+              <ProductCarousel
+                key={group.id}
+                title={group.name}
+                products={products}
+                wrapperClassName={`scroll-mt-20`}
+                sectionClassName="bg-white rounded-lg shadow px-4 py-6 sm:px-6"
+              />
+            );
+          })}
         </main>
 
         <section className="text-gray-600 body-font">

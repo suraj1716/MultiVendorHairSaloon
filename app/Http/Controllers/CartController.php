@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrderStatusEnum;
+use App\Enums\RolesEnum;
 use App\Enums\VendorType;
 use App\Models\Booking;
 use App\Models\CartItem;
@@ -10,6 +11,8 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ShippingAddress;
+use App\Models\User;
+use App\Notifications\NewOrderNotification;
 use App\services\CartService;
 use App\services\CartService as ServicesCartService;
 use Exception;
@@ -206,6 +209,9 @@ class CartController extends Controller
                         'attachment_name' => $cartItem['attachment_name'] ?? null,
                     ]);
 
+
+
+
                     $description = collect($cartItem['options'])->map(fn($item) => "{$item['type']['name']}::{$item['name']}")->implode(',');
 
                     $productData = [
@@ -225,8 +231,15 @@ class CartController extends Controller
                         'quantity' => $cartItem['quantity'],
                     ];
 
+
+
                     $lineItems[] = $lineItem;
                 }
+
+
+
+
+
             }
 
             $session = Session::create([
@@ -240,6 +253,7 @@ class CartController extends Controller
             foreach ($orders as $order) {
                 $order->stripe_session_id = $session->id;
                 $order->save();
+            // Auth::user()->notify(new NewOrderNotification($order));
             }
 
             DB::commit();

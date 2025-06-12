@@ -209,58 +209,61 @@ class CartService
         return array_reduce($this->getCartItems(), fn($carry, $item) => $carry + ($item['price'] * $item['quantity']), 0.0);
     }
 
-    protected function updateItemQuantityInDatabase(int $productId, int $quantity, array $optionIds): void
-    {
-        $userId = Auth::id();
+   protected function updateItemQuantityInDatabase(int $productId, int $quantity, array $optionIds): void
+{
+    $userId = Auth::id();
 
-        $optionIds = $this->normalizeOptionIds($optionIds);
-        // No need for second ksort here since normalize does it already
-        // $encodedOptionIds = json_encode($optionIds);
+    // Normalize option IDs once
+    $normOptionIds = $this->normalizeOptionIds($optionIds);
 
-        Log::debug('Update quantity called', [
-            'user_id' => $userId,
-            'product_id' => $productId,
-            'quantity' => $quantity,
-            'normalized_option_ids' => $optionIds,
-            'encoded_option_ids' => $optionIds,
-        ]);
+    // Create the key string for lookup
+    $itemKey = $productId . '_' . json_encode($normOptionIds);
 
-        $cartItems = $this->getCartItemsFromDatabase();
+    Log::debug('Update quantity called', [
+        'user_id' => $userId,
+        'product_id' => $productId,
+        'quantity' => $quantity,
+        'normalized_option_ids' => $normOptionIds,
+        'encoded_option_ids' => json_encode($normOptionIds),
+    ]);
 
-        // Build a map keyed by productId_encodedOptionIds
-        $cartItemsMap = [];
-        foreach ($cartItems as $item) {
-            // Normalize option_ids here in case they come raw from DB
-            $normOptionIds = $this->normalizeOptionIds($item['option_ids']);
-            $key = $item['product_id'] . '_' . json_encode($normOptionIds);
-            $cartItemsMap[$key] = $item;
-        }
+    $cartItems = $this->getCartItemsFromDatabase();
 
-        $itemKey = $productId . '_' .  $optionIds;
-
-        if (isset($cartItemsMap[$itemKey])) {
-            Log::debug('Item key found in cartItemsMap', ['itemKey' => $itemKey]);
-            $cartItemsMap[$itemKey]['quantity'] = $quantity;
-        } else {
-            Log::debug('Item key NOT found in cartItemsMap', ['itemKey' => $itemKey]);
-        }
-
-        // Now update DB item directly
-        $cartItem = CartItem::where('user_id', $userId)
-            ->where('product_id', $productId)
-            ->where('variation_type_option_ids', $$optionIds)
-            ->first();
-
-        if ($cartItem) {
-            Log::debug('CartItem found in DB', ['cartItem_id' => $cartItem->id]);
-            $cartItem->update([
-                'quantity' => $quantity,
-            ]);
-            Log::debug('CartItem quantity updated');
-        } else {
-            Log::debug('No CartItem found in DB');
-        }
+    // Build a map keyed by productId_encodedOptionIds
+    $cartItemsMap = [];
+    foreach ($cartItems as $item) {
+        $itemNormOptionIds = $this->normalizeOptionIds($item['option_ids']);
+        $key = $item['product_id'] . '_' . json_encode($itemNormOptionIds);
+        $cartItemsMap[$key] = $item;
     }
+
+    if (isset($cartItemsMap[$itemKey])) {
+        Log::debug('Item key found in cartItemsMap', ['itemKey' => $itemKey]);
+        $cartItemsMap[$itemKey]['quantity'] = $quantity;
+    } else {
+        Log::debug('Item key NOT found in cartItemsMap', ['itemKey' => $itemKey]);
+    }
+
+    // Now update DB item directly
+   $cartItem = CartItem::where('user_id', $userId)
+    ->where('product_id', $productId)
+    ->get()
+    ->first(function ($item) use ($normOptionIds) {
+        return json_decode((string)($item->variation_type_option_ids ?? ''), true) == $normOptionIds;
+    });
+
+
+    if ($cartItem) {
+        Log::debug('CartItem found in DB', ['cartItem_id' => $cartItem->id]);
+        $cartItem->update([
+            'quantity' => $quantity,
+        ]);
+        Log::debug('CartItem quantity updated');
+    } else {
+        Log::debug('No CartItem found in DB');
+    }
+}
+
 
 
     protected function updateItemQuantityInCookies(int $productId, int $quantity, array $optionIds): void
@@ -384,59 +387,58 @@ class CartService
 
 
 
- protected function removeItemFromDatabase(int $productId, array $optionIds): void
-{
-    $userId = Auth::id();
+    protected function removeItemFromDatabase(int $productId, array $optionIds): void
+    {
+        $userId = Auth::id();
 
-    $optionIds = array_map('strval', $optionIds);
-    ksort($optionIds);
-
-    $cartItems = CartItem::where('user_id', $userId)
-        ->where('product_id', $productId)
-        ->get();
-
-    foreach ($cartItems as $cartItem) {
-    $dbOptionIdsRaw = $cartItem->variation_type_option_ids;
-    $dbOptionIds = [];
-
-    if (is_string($dbOptionIdsRaw)) {
-        $decoded = json_decode($dbOptionIdsRaw, true);
-        if (is_array($decoded) && array_is_list($decoded)) {
-            // Skip array-style format like ["1","3"]
-            Log::warning('Skipping item with list-style variation_type_option_ids', [
-                'cart_item_id' => $cartItem->id,
-                'variation_type_option_ids' => $decoded,
-            ]);
-            continue;
-        }
-        $dbOptionIds = $decoded;
-    } elseif (is_array($dbOptionIdsRaw)) {
-        $dbOptionIds = $dbOptionIdsRaw;
-    }
-
-    if (is_array($dbOptionIds)) {
-        ksort($dbOptionIds);
+        $optionIds = array_map('strval', $optionIds);
         ksort($optionIds);
 
-        if ($dbOptionIds === $optionIds) {
-            Log::info('Deleting cart item', ['cart_item_id' => $cartItem->id]);
-            $cartItem->delete();
-        } else {
-            Log::info('Option IDs do not match', [
-                'cart_item_id' => $cartItem->id,
-                'dbOptionIds_sorted' => $dbOptionIds,
-                'optionIds_sorted' => $optionIds,
-            ]);
-        }
-    } else {
-        Log::warning('variation_type_option_ids is not array after json_decode', [
-            'cart_item_id' => $cartItem->id,
-            'variation_type_option_ids' => $dbOptionIdsRaw,
-        ]);
-    }
-}
+        $cartItems = CartItem::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->get();
 
-}
+        foreach ($cartItems as $cartItem) {
+            $dbOptionIdsRaw = $cartItem->variation_type_option_ids;
+            $dbOptionIds = [];
+
+            if (is_string($dbOptionIdsRaw)) {
+                $decoded = json_decode($dbOptionIdsRaw, true);
+                if (is_array($decoded) && array_is_list($decoded)) {
+                    // Skip array-style format like ["1","3"]
+                    Log::warning('Skipping item with list-style variation_type_option_ids', [
+                        'cart_item_id' => $cartItem->id,
+                        'variation_type_option_ids' => $decoded,
+                    ]);
+                    continue;
+                }
+                $dbOptionIds = $decoded;
+            } elseif (is_array($dbOptionIdsRaw)) {
+                $dbOptionIds = $dbOptionIdsRaw;
+            }
+
+            if (is_array($dbOptionIds)) {
+                ksort($dbOptionIds);
+                ksort($optionIds);
+
+                if ($dbOptionIds === $optionIds) {
+                    Log::info('Deleting cart item', ['cart_item_id' => $cartItem->id]);
+                    $cartItem->delete();
+                } else {
+                    Log::info('Option IDs do not match', [
+                        'cart_item_id' => $cartItem->id,
+                        'dbOptionIds_sorted' => $dbOptionIds,
+                        'optionIds_sorted' => $optionIds,
+                    ]);
+                }
+            } else {
+                Log::warning('variation_type_option_ids is not array after json_decode', [
+                    'cart_item_id' => $cartItem->id,
+                    'variation_type_option_ids' => $dbOptionIdsRaw,
+                ]);
+            }
+        }
+    }
 
 
 
@@ -535,10 +537,14 @@ class CartService
         $cartItems = $this->getCartItemsFromCookies();
 
         foreach ($cartItems as $cartItem) {
-            // Normalize option_ids order
+            // Normalize option_ids order to associative array like {"3":"5","4":"7","5":"9"}
             $optionIds = $cartItem['option_ids'] ?? [];
-            sort($optionIds);
-            $optionIdsJson = json_encode(array_values($optionIds));
+
+            // Use your normalizeOptionIds method or inline logic here:
+            $optionIds = $this->normalizeOptionIds($optionIds);
+
+            // JSON encode associative array
+            $optionIdsJson = json_encode($optionIds);
 
             $existingItem = CartItem::where('user_id', $userId)
                 ->where('product_id', $cartItem['product_id'])
@@ -575,6 +581,7 @@ class CartService
         // Remove the cookie after moving cart items
         Cookie::queue(Cookie::forget(self::COOKIE_NAME));
     }
+
 
 
     public function getCartItemsGrouped(): array

@@ -21,12 +21,19 @@ class CategoryController extends Controller
             ->where('category_id', $category->id)
             ->get();
 
-      $groups = CategoryGroup::with([
+       $groups = CategoryGroup::with([
     'categories' => function ($query) {
-        $query->select('id', 'name', 'image', 'department_id', 'parent_id', 'active') // include image
-              ->with('department');
+        $query->select(
+            'categories.id',       // prefix here
+            'categories.name',
+            'categories.image',
+            'categories.department_id',
+            'categories.parent_id',
+            'categories.active'
+        )->with('department');
     }
 ])->where('active', true)->get();
+
 
 
         // dd($products->map(function ($product) {

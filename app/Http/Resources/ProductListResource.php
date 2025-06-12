@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\ProductHighlightEnum;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,6 +17,8 @@ class ProductListResource extends JsonResource
 {
     return [
         'id' => $this->id,
+        'highlight'=>$this->highlight,
+
         'title' => $this->title,
         'price' => $this->getPriceForFirstOptions(),
         'image' => $this->getFirstImageUrl(),

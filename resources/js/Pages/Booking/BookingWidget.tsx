@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog";
 import { DayPicker, Matcher } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import dayjs from "dayjs";
-import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { DialogDescription, DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
 import AvailableSlots from "../AvailableSlots";
 
 type BookingWidgetProps = {
@@ -103,15 +103,18 @@ export default function BookingWidget({
   );
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2  ">
       <Dialog open={open} onOpenChange={onOpenChange}>
         {/* <DialogTrigger asChild>
           {children || (
     <button className="btn-primary">Book Appointment</button>
   )}
         </DialogTrigger> */}
-
-        <DialogContent className="w-full max-w-sm sm:max-w-md md:max-w-lg p-6 max-h-[100vh] overflow-y-auto">
+ <DialogOverlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998]" />
+       <DialogContent
+  className="fixed top-1/2 left-1/2 xs:p-7 -translate-x-1/2 -translate-y-1/2
+               z-[9999] bg-white rounded-lg shadow-lg p-6 max-w-lg max-h-[90vh] overflow-y-auto"
+>
           <DialogTitle className="text-lg font-bold mb-4">
             Select Booking Details
           </DialogTitle>

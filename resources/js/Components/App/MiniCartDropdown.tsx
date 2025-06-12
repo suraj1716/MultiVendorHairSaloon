@@ -34,10 +34,10 @@ function MiniCartDropdown() {
   }, [open]);
 
  return (
-  <>
+  <div className="">
     {/* Backdrop Blur when dropdown is open */}
     {open && (
-      <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity duration-300" />
+      <div className="fixed inset-0  bg-black/20 backdrop-blur-sm transition-opacity duration-300" />
     )}
 
     <div
@@ -97,7 +97,7 @@ function MiniCartDropdown() {
                       {item.title}
                     </Link>
                     <div className="text-xs text-gray-600 flex justify-between mt-1">
-                      <span>Qty: {item.quantity}</span>
+                      {/* <span>Qty: {item.quantity}</span> */}
                       <CurrencyFormatter
                         amount={item.quantity * item.price}
                         currency="AUD"
@@ -145,7 +145,7 @@ function MiniCartDropdown() {
         canResetPassword={true}
       />
     </div>
-  </>
+  </div>
 );
 
 }

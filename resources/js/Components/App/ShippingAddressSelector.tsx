@@ -28,15 +28,17 @@ function ShippingAddressSelector({
 }: Props) {
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <p className="text-lg font-bold">Choose a shipping address</p>
-         <Link
-                  href={route("profile.edit")}
-                  className="inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
-                >
-                  + Add New Address
-                </Link>
-      </div>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+  <p className="text-lg font-bold">Choose a shipping address</p>
+
+  <Link
+    href={route("profile.edit")}
+    className="w-full sm:w-auto inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 text-center"
+  >
+    + Add New Address
+  </Link>
+</div>
+
 
       {shippingAddresses.map((address) => (
         <label

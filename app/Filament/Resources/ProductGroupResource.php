@@ -12,6 +12,9 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TagsColumn;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
@@ -22,6 +25,9 @@ class ProductGroupResource extends Resource
     protected static ?string $model = ProductGroup::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?string $navigationGroup = 'Catalog';
+    protected static ?bool $navigationGroupCollapsible = true;
 
     public static function form(Form $form): Form
     {
@@ -43,24 +49,33 @@ class ProductGroupResource extends Resource
             ]);
     }
 
-    public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                //
-            ])
-            ->filters([
-                //
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+  public static function table(Table $table): Table
+{
+    return $table
+        ->columns([
+            TextColumn::make('name')
+                ->sortable()
+                ->searchable()
+                ->label('Group Name'),
+
+            TextColumn::make('slug')
+                ->sortable()
+                ->searchable(),
+
+        ImageColumn::make('image_url')  // <-- Use accessor here
+            ->label('Image')
+            ->square()
+            ->rounded(),
+
+            // For many-to-many relationship display - show related product titles as tags or badges
+            TextColumn::make('groupedProducts')
+                ->label('Products')
+                ->formatStateUsing(fn ($state, $record) =>
+                    $record->groupedProducts->pluck('title')->implode(', ')
+                )
+                ->searchable(),
+        ]);
+}
 
     public static function getRelations(): array
     {

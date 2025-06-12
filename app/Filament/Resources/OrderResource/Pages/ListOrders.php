@@ -12,23 +12,38 @@ class ListOrders extends ListRecords
 {
     protected static string $resource = OrderResource::class;
 
-     protected function getTableQuery(): Builder
-    {
-        $user = Auth::user();
+    protected function getTableQuery(): Builder
+{
+    $user = Auth::user();
 
-        $query = parent::getTableQuery()
-            ->with(['vendorUser', 'booking'])
-            ->where(function ($query) {
-                $query->whereDoesntHave('booking')
-                    ->orWhereHas('booking', function ($q) {
-                        $q->whereNull('booking_date');
-                    });
-            });
+    // Debug info — you can remove after confirming logic works
+    // dd([
+    //     'auth_user_id' => $user->id,
+    //     'user_role' => $user->roles->pluck('name'), // or use your role method
+    //     'orders_with_auth_user' => \App\Models\Order::where('vendor_user_id', $user->id)->count(),
+    //     'orders_with_ecommerce_vendor' => \App\Models\Order::whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'ecommerce'))->count(),
+    //     'orders_with_both' => \App\Models\Order::where('vendor_user_id', $user->id)
+    //         ->whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'ecommerce'))
+    //         ->count(),
+    // ]);
 
-        if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
-            return $query;
-        }
+    $query = $this->getResource()::getEloquentQuery()->with(['vendorUser.vendor']);
 
+    // Filter orders only with ecommerce vendor
+    $query->whereHas('vendorUser.vendor', fn ($q) => $q->where('vendor_type', 'ecommerce'));
+
+    // Admin sees all
+    if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
+        return $query;
+    }
+
+    // Vendor sees only their own orders
+    if ($user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
         return $query->where('vendor_user_id', $user->id);
     }
+
+    // Other roles see nothing (empty result)
+    return $query->whereRaw('1 = 0');
+}
+
 }

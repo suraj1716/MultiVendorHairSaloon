@@ -70,8 +70,8 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
   }, [open]);
 
   return (
-    <>
-      {/* Button to open search popup */}
+    <div className="">
+            {/* Button to open search popup */}
       <button
         onClick={() => setOpen(true)}
         className="flex items-center gap-2 px-4 py-2 border rounded-full hover:bg-gray-100"
@@ -83,8 +83,8 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
 
       {/* Popup Overlay */}
       {open && (
-       <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-50 flex justify-center items-start pt-5 px-4">
-          <div ref={containerRef} className="bg-white w-full max-w-2xl rounded-lg shadow-lg p-6 relative">
+       <div className="fixed inset-0 bg-black bg-opacity-30 backdrop-blur-sm z-[1000] flex justify-center items-start pt-5 px-4">
+    <div ref={containerRef} className= "bg-white w-full max-w-2xl rounded-lg shadow-lg p-6 relative z-[1001]">
             <div className="relative">
               <form onSubmit={onSubmit} className="flex items-center gap-2">
                 <input
@@ -116,7 +116,7 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
               {/* Render product suggestions */}
               {suggestions.length > 0 && (
                 <ul
-                  className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-auto rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition-opacity duration-300 z-50"
+                  className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-auto rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 transition-opacity duration-300"
                   role="listbox"
                 >
                   {suggestions.map((product) => (
@@ -150,6 +150,7 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
           </div>
         </div>
       )}
-    </>
+    </div>
+
   );
 }

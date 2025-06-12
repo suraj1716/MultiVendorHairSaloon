@@ -9,6 +9,7 @@ import {
   Product,
 } from "@/types"; // adjust path if needed
 import { Head, Link } from "@inertiajs/react";
+import { useMemo } from "react";
 
 type ShowProps = {
   category: Category & { department: Department };
@@ -23,15 +24,29 @@ export default function Show({
   products,
   categoryGroups,
 }: ShowProps) {
+
+
+  console.log("category", category);
+console.log("department on category", category.department.slug);
   const breadcrumbItems = [
     { label: "Home", href: "/" },
     {
       label: category.department.name,
-      href: `/departments/${category.department.slug}`,
+     href: route("product.byDepartment", category.department.slug),
     },
     { label: category.name, current: true },
   ];
-  console.log("products", products);
+
+
+  // Shows Random Image from All Active CategoryGroup
+const randomActiveGroup = useMemo(() => {
+  const activeGroups = categoryGroups.filter((group) => group.active);
+  if (activeGroups.length === 0) return null;
+  const randomIndex = Math.floor(Math.random() * activeGroups.length);
+  return activeGroups[randomIndex];
+}, [categoryGroups]);
+
+
 
   return (
     <AuthenticatedLayout>
@@ -40,22 +55,8 @@ export default function Show({
       <div className="bg-gray-100 py-10 text-center">
 
        <div className="ml-20">
-         {products.data.map((product) => (
-        <Breadcrumbs items={[
-              { label: "Home", href: "/" },
-
-              {
-                label: product.department?.name || "Department",
-                href: route("product.byDepartment", product.department.name),
-              },
-              {
-                label: category?.name || "Category",
-                // href: route("product.byDepartment", product.department.name),
-              }
-            ]} />
-             ))}
+        <Breadcrumbs items={breadcrumbItems}/>
         </div>
-
 
         <h1 className="text-3xl font-bold text-gray-800">
           Shop Products {category.name}
@@ -63,17 +64,16 @@ export default function Show({
       </div>
 
       <div className="block lg:hidden">
-        <aside className=" lg:block lg:w-1/4 bg-white shadow rounded p-4  xs:h-auto h-[500px] lg:sticky top-4 self-start">
-          {categoryGroups.map((group) => (
-            <div key={group.id} className="mb-6 h-full">
-              <img
-                src={`/storage/${group.image}`}
-                alt={group.name}
-                className="w-full h-full object-cover rounded"
-              />
-            </div>
-          ))}
-        </aside>
+    <aside className="lg:block lg:w-1/4 bg-white shadow rounded p-4 xs:h-auto h-[500px] lg:sticky top-4 self-start">
+  {randomActiveGroup && (
+    <img
+      src={`/storage/${randomActiveGroup.image}`}
+      alt={randomActiveGroup.name}
+      className="w-full h-full object-cover rounded"
+    />
+  )}
+</aside>
+
 
         <div className="grid grid-cols-1 xs:p-5 xs:grid-cols-2 lg:grid-cols-3 gap-6 gap-y-6 p-10">
           {products.data.map((product) => (

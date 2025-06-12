@@ -2,13 +2,29 @@ import React, { useState } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import ProductItem from "@/Components/App/ProductItem";
-import { PageProps, PaginationProps, Product, Department } from "@/types";
-import { PlusCircle, MinusCircle } from "lucide-react";
+import {
+  PageProps,
+  PaginationProps,
+  Product,
+  Department,
+  CategoryGroup,
+  ProductGroup,
+} from "@/types";
+import {
+  PlusCircle,
+  MinusCircle,
+  Filter,
+  Settings,
+  SlidersHorizontal,
+} from "lucide-react";
 
 type Props = PageProps<{
   products: PaginationProps<Product>;
   departments: Department[];
   department: Department;
+  categoryGroups: CategoryGroup[];
+  productGroups: ProductGroup[]; // camelCase too
+
   filters: {
     department_id: string | null;
     category_id: string | null;
@@ -17,13 +33,15 @@ type Props = PageProps<{
   };
 }>;
 
-const DEFAULT_MAX_PRICE = 1000;
+const DEFAULT_MAX_PRICE = 4000;
 
 export default function Index({
   department,
   products,
   departments,
   filters,
+  categoryGroups,
+  productGroups,
 }: Props) {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     filters.department_id
@@ -37,7 +55,9 @@ export default function Index({
   const [sortBy, setSortBy] = useState<string>(filters.sort_by || "default");
   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
-
+  const [selectedGroupName, setSelectedGroupName] = useState<string | null>(
+    null
+  );
   const toggleDepartment = (id: string) => {
     setExpandedDepartments((prev) =>
       prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
@@ -103,12 +123,12 @@ export default function Index({
       }
     );
   };
-  console.log("department", department);
+  console.log("productGroups", productGroups);
   return (
     <AuthenticatedLayout>
       <Head title="Product List" />
 
-      <div className="bg-gray-200 py-10 text-center">
+      <div className="bg-gray-200 py-10 text-center ">
         <h1 className="text-3xl font-semibold text-gray-800">
           Products in Department: {department.name}
         </h1>
@@ -117,9 +137,9 @@ export default function Index({
       <div className="flex flex-col lg:flex-row gap-6 p-6">
         {/* Filters */}
         <aside className="hidden lg:block lg:w-1/4 bg-white shadow rounded p-4 h-auto sticky top-4 self-start">
+          <h2 className="text-lg font-semibold mb-5">Filters</h2>
 
-
-          <div className="flex justify-between items-center mb-4">
+          {/* <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">Filters</h2>
             <button
               className="ml-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
@@ -128,12 +148,10 @@ export default function Index({
             >
               All Products
             </button>
-          </div>
+          </div> */}
 
           {/* Department Filter */}
           <div className="mb-6">
-            <h3 className="text-sm font-medium mb-2">Categories</h3>
-
             {department ? (
               <div>
                 <div className="font-semibold mb-2">{department.name}</div>
@@ -210,17 +228,72 @@ export default function Index({
         </aside>
 
         {/* Mobile filter toggle button */}
-        <div className="lg:hidden p-4">
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={() => setShowFilterModal(true)}
-          >
-            Open Filters
-          </button>
+        <div
+          className="lg:hidden overflow-x-scroll px-4 pb-20 h-10"
+          style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="overflow-x-auto whitespace-nowrap px-4 py-3 bg-white shadow-inner">
+            <div className="flex space-x-3 items-center min-w-max h-[50px]">
+              {/* Filter Button */}
+              <button
+                className="flex-shrink-0 bg-blue-600 text-white px-4 py-2 rounded-md whitespace-nowrap"
+                onClick={() => setShowFilterModal(true)}
+              >
+                <SlidersHorizontal size={18} />
+              </button>
+
+              {/* Category Groups */}
+              {categoryGroups
+                .filter((group) => group.active)
+                .map((group) => (
+                  <button
+                    key={`${group.id}`}
+                    className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                    onClick={() => {
+                      router.visit(`/?scrollTo=${group.id}`, {
+                        preserveScroll: true,
+                        preserveState: true,
+                      });
+                    }}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+
+              {/* Product Groups */}
+              {productGroups.map((group) => (
+                <button
+                  key={`${group.id}`}
+                                     className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+
+                  onClick={() => {
+                    router.visit(`/?scrollTo=${group.id}`, {
+                      preserveScroll: true,
+                      preserveState: true,
+                    });
+                  }}
+                >
+                  {group.name}
+                </button>
+              ))}
+
+              {/* Reset Button */}
+              <button
+                className="flex-shrink-0 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md whitespace-nowrap"
+                onClick={() => {
+                  handleResetFilters();
+                  setShowFilterModal(false);
+                }}
+              >
+                Reset Filters
+              </button>
+            </div>
+          </div>
         </div>
+
         {showFilterModal && (
           <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex justify-center items-center"
+            className="px-10 fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center"
             onClick={() => setShowFilterModal(false)} // click on backdrop
           >
             {/* Prevent click inside modal from closing */}

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\ProductHighlightEnum;
 use App\Enums\ProductStatusEnum;
 use App\Enums\RolesEnum;
 use App\Filament\Resources\ProductResource\Pages;
@@ -33,20 +34,23 @@ class ProductResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-s-queue-list';
 
+    protected static ?string $navigationGroup = 'Catalog';
+protected static ?bool $navigationGroupCollapsible = true;
+
     protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::End;
-      public static function getEloquentQuery(): Builder
-{
-    $query = parent::getEloquentQuery();
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
 
-    $user = Filament::auth()->user();
-logger('Logged in user ID:', ['id' => $user->id ?? null]);
+        $user = Filament::auth()->user();
+        logger('Logged in user ID:', ['id' => $user->id ?? null]);
 
-    if ($user && $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
-        return $query->forVendor();
+        if ($user && $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+            return $query->forVendor();
+        }
+
+        return $query; // admin sees all
     }
-
-    return $query; // admin sees all
-}
 
     public static function form(Form $form): Form
     {
@@ -59,6 +63,13 @@ logger('Logged in user ID:', ['id' => $user->id ?? null]);
                 ])
                 ->inline()
                 ->default(false),
+
+            Select::make('highlight')
+                ->label('Highlight')
+                ->options(ProductHighlightEnum::labels())
+                ->nullable()
+                ->searchable()
+                ->preload(),
 
             Forms\Components\Grid::make()->schema([
                 TextInput::make('title')
@@ -138,6 +149,7 @@ logger('Logged in user ID:', ['id' => $user->id ?? null]);
     {
         return $table
             ->columns([
+
                 SpatieMediaLibraryImageColumn::make('images')
                     ->collection('images')
                     ->limit(1)
@@ -147,6 +159,11 @@ logger('Logged in user ID:', ['id' => $user->id ?? null]);
                     ->sortable()
                     ->searchable()
                     ->words(10),
+                Tables\Columns\TextColumn::make('highlight')
+                    ->badge()
+                    ->colors(ProductHighlightEnum::colors())
+                    ->label('Highlight'),
+
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -163,6 +180,11 @@ logger('Logged in user ID:', ['id' => $user->id ?? null]);
                     ->options(ProductStatusEnum::labels()),
                 SelectFilter::make('department_id')
                     ->relationship('department', 'name'),
+
+                SelectFilter::make('highlight')
+                    ->label('Highlight')
+                    ->options(ProductHighlightEnum::labels()),
+
 
             ])
             ->actions([

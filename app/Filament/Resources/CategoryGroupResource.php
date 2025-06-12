@@ -27,6 +27,9 @@ class CategoryGroupResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationGroup = 'Catalog';
+    protected static ?bool $navigationGroupCollapsible = true;
+
     public static function form(Form $form): Form
 {
     return $form->schema([
