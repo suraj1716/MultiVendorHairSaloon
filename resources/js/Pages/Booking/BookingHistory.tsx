@@ -101,7 +101,6 @@ export default function BookingHistory() {
       }
     );
   };
-  console.log("today", bookingDate, timeSlot, editingItem);
   return (
     <AuthenticatedLayout
       header={

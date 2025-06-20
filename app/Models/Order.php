@@ -12,9 +12,19 @@ protected $casts=[
     'variation_type_option_ids'=>'array'
 ];
 
-    protected $fillable=['stripe_session_id','user_id',
-    'total_price','status','online_payment_comission',
-    'website_payment_comission','vendor_subtotal','payment_intent'];
+   protected $fillable = [
+    'stripe_session_id',
+    'user_id',
+    'vendor_user_id',
+    'total_price',
+    'booking_fee', // ✅ make sure this is included
+    'status',
+    'shipping_address_id',
+    'payment_intent',
+    'online_payment_comission',
+    'website_payment_comission',
+    'vendor_subtotal',
+];
 
 
 public function orderItems(): HasMany

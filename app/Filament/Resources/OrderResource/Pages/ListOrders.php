@@ -30,7 +30,13 @@ class ListOrders extends ListRecords
     $query = $this->getResource()::getEloquentQuery()->with(['vendorUser.vendor']);
 
     // Filter orders only with ecommerce vendor
-    $query->whereHas('vendorUser.vendor', fn ($q) => $q->where('vendor_type', 'ecommerce'));
+    $query
+    // ->orwhereHas('vendorUser.vendor', fn ($q) => $q->where('vendor_type', 'ecommerce'))
+    ->where(function ($q) {
+                $q->whereDoesntHave('booking') // No booking = order
+                    ->orWhereHas('booking', fn($q) => $q->whereNull('booking_date')); // booking with null date = order
+            })
+    ;
 
     // Admin sees all
     if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {

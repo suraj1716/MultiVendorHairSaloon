@@ -25,37 +25,30 @@ export default function Show({
   categoryGroups,
 }: ShowProps) {
 
-
-  console.log("category", category);
-console.log("department on category", category.department.slug);
   const breadcrumbItems = [
     { label: "Home", href: "/" },
     {
       label: category.department.name,
-     href: route("product.byDepartment", category.department.slug),
+      href: route("product.byDepartment", category.department.slug),
     },
     { label: category.name, current: true },
   ];
 
-
   // Shows Random Image from All Active CategoryGroup
-const randomActiveGroup = useMemo(() => {
-  const activeGroups = categoryGroups.filter((group) => group.active);
-  if (activeGroups.length === 0) return null;
-  const randomIndex = Math.floor(Math.random() * activeGroups.length);
-  return activeGroups[randomIndex];
-}, [categoryGroups]);
-
-
+  const randomActiveGroup = useMemo(() => {
+    const activeGroups = categoryGroups.filter((group) => group.active);
+    if (activeGroups.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * activeGroups.length);
+    return activeGroups[randomIndex];
+  }, [categoryGroups]);
 
   return (
     <AuthenticatedLayout>
       <Head title="Shop" />
 
       <div className="bg-gray-100 py-10 text-center">
-
-       <div className="ml-20">
-        <Breadcrumbs items={breadcrumbItems}/>
+        <div className="ml-20">
+          <Breadcrumbs items={breadcrumbItems} />
         </div>
 
         <h1 className="text-3xl font-bold text-gray-800">
@@ -64,16 +57,15 @@ const randomActiveGroup = useMemo(() => {
       </div>
 
       <div className="block lg:hidden">
-    <aside className="lg:block lg:w-1/4 bg-white shadow rounded p-4 xs:h-auto h-[500px] lg:sticky top-4 self-start">
-  {randomActiveGroup && (
-    <img
-      src={`/storage/${randomActiveGroup.image}`}
-      alt={randomActiveGroup.name}
-      className="w-full h-full object-cover rounded"
-    />
-  )}
-</aside>
-
+        <aside className="w-full lg:w-1/4 bg-white shadow rounded p-4 xs:h-auto h-[500px] lg:sticky top-4 self-start">
+          {randomActiveGroup && (
+            <img
+              src={`/storage/${randomActiveGroup.image}`}
+              alt={randomActiveGroup.name}
+              className="w-full h-full object-contain rounded"
+            />
+          )}
+        </aside>
 
         <div className="grid grid-cols-1 xs:p-5 xs:grid-cols-2 lg:grid-cols-3 gap-6 gap-y-6 p-10">
           {products.data.map((product) => (
@@ -91,16 +83,27 @@ const randomActiveGroup = useMemo(() => {
       <div className="hidden lg:block">
         <div className=" container mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
-          <aside className="sticky top-5 w-full lg:w-1/4 bg-white shadow rounded-lg p-6 h-[500px] overflow-auto">
-            {categoryGroups.map((group) => (
-              <div key={group.id} className=" flex flex-col h-[250px]">
-                <img
-                  src={`/storage/${group.image}`}
-                  alt={group.name}
-                  className="flex-shrink-0 h-[450px] w-full object-cover rounded"
-                />
-              </div>
-            ))}
+          <aside className="sticky top-5 w-full lg:w-1/4 bg-white shadow rounded-lg p-6 h-[500px] flex items-center justify-center">
+            {categoryGroups.length > 0 &&
+              (() => {
+                const randomIndex = Math.floor(
+                  Math.random() * categoryGroups.length
+                );
+                const randomGroup = categoryGroups[randomIndex];
+                return (
+                  <div
+                    key={randomGroup.id}
+                    className="flex flex-col items-center"
+                  >
+                    <img
+                      src={`/storage/${randomGroup.image}`}
+                      alt={randomGroup.name}
+                      className="h-[450px] w-full object-cover rounded"
+                    />
+
+                  </div>
+                );
+              })()}
           </aside>
 
           {/* Products Section */}

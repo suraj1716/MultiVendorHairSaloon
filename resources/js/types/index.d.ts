@@ -4,6 +4,7 @@ import { Config } from "ziggy-js";
 export interface Vendor {
 id: number;
    status: string;
+    booking_fee: string,
   status_label: string;
   store_name: string;
   store_address: string;
@@ -145,11 +146,15 @@ export type CartItem = {
   options: VariationTypeOption[];
   attachment_path: string;
   attachment_name: string;
-  booking: Booking[] | null; // Nullable booking field
+  booking: Booking[] | null;
+  vendor_type: string;
+
+  designer?: boolean; // <-- Add this line
 };
 
 export type GroupedCartItems = {
   user: User;
+   vendor: Vendor;
   items: CartItem[];
   totalPrice: number;
   totalQuantity: number;
@@ -234,10 +239,12 @@ export type OrderItem = {
     }[];
   };
   variation_type_option_ids: number[];
-  variation_summary?: VariationSummary[]; // ✅ Add this line
-  attachment_path?: string; // <-- add here
+  variation_summary?: VariationSummary[];
+  attachment_path?: string;
   attachment_name?: string;
   booking?: Booking;
+
+  designer?: boolean; // <-- Add this line
 };
 
 export type Order = {

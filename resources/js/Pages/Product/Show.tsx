@@ -8,6 +8,7 @@ import Review from "@/Components/App/ProductReview";
 import Breadcrumbs from "@/Components/Core/Breadcrumbs";
 import Carousel from "@/Components/Core/Carousel";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import parse from "html-react-parser";
 import {
   PaginationProps,
   Product,
@@ -34,18 +35,18 @@ function Show({
     option_ids: Record<string, number>;
     quantity: number;
     price: number | null;
-    wantsAttachment: boolean;
+    designer: boolean;
     attachment?: File | null;
   }>({
     option_ids: {},
     quantity: 1,
     price: 0,
-    wantsAttachment: false,
+    designer: false,
     attachment: null,
   });
   const reviews = product.reviews;
   const designCharge = 20;
-  const [wantsAttachment, setWantsAttachment] = useState(false);
+  const [designer, setdesigner] = useState(false);
   const { url } = usePage();
   const [selectedOptions, setSelectedOptions] = useState<
     Record<number, VariationTypeOption>
@@ -200,12 +201,10 @@ function Show({
     form.setData("quantity", parseInt(ev.target.value));
   };
 
-  console.log("review breakdown", ratingBreakdown);
-
   const finalPrice = useMemo(() => {
     const basePrice = Number(computedProduct.price); // ensure it's a number
-    return form.data.wantsAttachment ? basePrice + designCharge : basePrice;
-  }, [computedProduct.price, form.data.wantsAttachment]);
+    return form.data.designer ? basePrice + designCharge : basePrice;
+  }, [computedProduct.price, form.data.designer]);
 
   useEffect(() => {
     form.setData("price", finalPrice);
@@ -234,6 +233,7 @@ function Show({
       formData.append(`option_ids[${typeId}]`, String(option.id));
     });
 
+     formData.append("designer", form.data.designer ? "1" : "0");
     if (form.data.attachment) {
       formData.append("attachment", form.data.attachment);
     }
@@ -251,84 +251,165 @@ function Show({
     });
   };
 
+  const getValidOptionsForType = (typeId: number): Set<number> => {
+    const variationTypes = product.variationTypes;
+    const currentType = variationTypes.find((t) => t.id === typeId);
+    if (!currentType) return new Set();
+
+    // Get all selected option IDs except for the current type
+    const selectedOptionIdsExceptCurrent = Object.entries(selectedOptions)
+      .filter(([selectedTypeIdStr, opt]) => {
+        const selectedTypeId = Number(selectedTypeIdStr);
+        return selectedTypeId !== typeId && opt !== undefined;
+      })
+      .map(([_, opt]) => opt!.id);
+
+    // Find variations that include all currently selected options except current type
+    const matchingVariations = product.variations.filter((variation) =>
+      selectedOptionIdsExceptCurrent.every((selectedId) =>
+        variation.variation_type_option_ids.includes(selectedId)
+      )
+    );
+
+    const validOptionIds = new Set<number>();
+
+    // Collect only options from currentType that appear in these matching variations
+    currentType.options.forEach((option) => {
+      const optionId = option.id;
+
+      // Check if there exists at least one matching variation that includes this option
+      const exists = matchingVariations.some((variation) =>
+        variation.variation_type_option_ids.includes(optionId)
+      );
+
+      if (exists) {
+        validOptionIds.add(optionId);
+      }
+    });
+
+    return validOptionIds;
+  };
+
   const renderProductVariationTypes = () => {
+    const variationTypes = product.variationTypes;
+    const firstType = variationTypes[0];
+
     return (
       <>
-        {product.variationTypes.map((type) => (
-          <div key={type.id} className="mb-4">
-            <b className="block mb-2">{type.name}</b>
+        {variationTypes.map((type) => {
+          const validOptionIds = getValidOptionsForType(type.id);
 
-            {type.type === "Image" && (
-              <div className="flex gap-2 flex-wrap">
-                {type.options.map((option) => (
-                  <div
-                    key={option.id}
-                    onClick={() => chooseOption(type.id, option)}
-                    className={
-                      "cursor-pointer rounded-md transition-all " +
-                      (selectedOptions[type.id]?.id === option.id
-                        ? "outline outline-4 outline-primary"
-                        : "")
-                    }
+          return (
+            <div key={type.id} className="mb-6">
+              <b className="block mb-3 text-lg font-semibold text-gray-800">
+                {type.name}
+              </b>
+
+              {type.type === "Image" && (
+                <div className="flex flex-wrap gap-3">
+                  {type.options
+                    .filter(
+                      (option) =>
+                        validOptionIds.has(option.id) ||
+                        selectedOptions[type.id]?.id === option.id
+                    )
+                    .map((option) => (
+                      <label
+                        key={option.id}
+                        className={`cursor-pointer rounded-lg border  duration-150
+                        ${
+                          selectedOptions[type.id]?.id === option.id
+                            ? "ring-2 ring-indigo-600 shadow-md"
+                            : "ring-1 ring-gray-300 hover:ring-indigo-400"
+                        }`}
+                        onClick={() => chooseOption(type.id, option)}
+                        tabIndex={0}
+                        role="button"
+                        aria-pressed={
+                          selectedOptions[type.id]?.id === option.id
+                            ? "true"
+                            : "false"
+                        }
+                      >
+                        {option.images?.[0]?.thumb && (
+                          <img
+                            src={option.images[0].thumb}
+                            alt={option.name || ""}
+                            className="w-20 h-20 object-cover rounded-lg"
+                          />
+                        )}
+                      </label>
+                    ))}
+                </div>
+              )}
+
+              {type.type === "Radio" && (
+                <div className="mt-3 flex flex-wrap items-center gap-3 select-none">
+                  {type.options
+                    .filter(
+                      (option) =>
+                        validOptionIds.has(option.id) ||
+                        selectedOptions[type.id]?.id === option.id
+                    )
+                    .map((option) => (
+                      <label
+                        key={option.id}
+                        className="cursor-pointer"
+                        aria-pressed={
+                          selectedOptions[type.id]?.id === option.id
+                            ? "true"
+                            : "false"
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name={`variation_type_${type.id}`}
+                          value={option.id}
+                          className="peer sr-only"
+                          onChange={() => chooseOption(type.id, option)}
+                          checked={selectedOptions[type.id]?.id === option.id}
+                        />
+                        <span className="peer-checked:bg-indigo-600 peer-checked:text-white rounded-lg border border-indigo-600 px-6 py-2 font-semibold transition-colors">
+                          {option.name}
+                        </span>
+                      </label>
+                    ))}
+                </div>
+              )}
+
+              {type.type === "Select" && (
+                <div className="mt-3">
+                  <select
+                    className="w-full rounded-lg border border-gray-400 px-4 py-2 font-semibold transition focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    value={selectedOptions[type.id]?.id ?? ""}
+                    onChange={(e) => {
+                      const selectedId = Number(e.target.value);
+                      const selected = type.options.find(
+                        (opt) => opt.id === selectedId
+                      );
+                      if (selected) chooseOption(type.id, selected);
+                    }}
                   >
-                    {option.images?.[0]?.thumb && (
-                      <img
-                        src={option.images[0].thumb}
-                        alt={option.name || ""}
-                        className="w-[80px] h-[80px] object-cover rounded-md shadow"
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {type.type === "Radio" && (
-              <div className="mt-3 flex select-none flex-wrap items-center gap-2">
-                {type.options.map((option) => (
-                  <label key={option.id} className="cursor-pointer">
-                    <input
-                      type="radio"
-                      name={`variation_type_${type.id}`}
-                      value={option.id}
-                      className="peer sr-only"
-                      onChange={() => chooseOption(type.id, option)}
-                      checked={selectedOptions[type.id]?.id === option.id}
-                    />
-                    <p className="peer-checked:bg-black peer-checked:text-white rounded-lg border border-black px-6 py-2 font-semibold transition-all">
-                      {option.name}
-                    </p>
-                  </label>
-                ))}
-              </div>
-            )}
-
-            {type.type === "Select" && (
-              <div className="mt-3">
-                <select
-                  className="w-full rounded-lg border border-black px-4 py-2 font-semibold transition-all"
-                  value={selectedOptions[type.id]?.id ?? ""}
-                  onChange={(e) => {
-                    const selectedId = Number(e.target.value); // ✅ convert to number
-                    const selected = type.options.find(
-                      (opt) => opt.id === selectedId
-                    );
-                    if (selected) chooseOption(type.id, selected);
-                  }}
-                >
-                  <option value="" disabled>
-                    Select an option
-                  </option>
-                  {type.options.map((option) => (
-                    <option key={option.id} value={option.id}>
-                      {option.name}
+                    <option value="" disabled>
+                      Select an option
                     </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        ))}
+                    {type.options
+                      .filter(
+                        (option) =>
+                          validOptionIds.has(option.id) ||
+                          selectedOptions[type.id]?.id === option.id
+                      )
+                      .map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </>
     );
   };
@@ -406,16 +487,13 @@ function Show({
   //     </>
   //   );
 
-  console.log("relatedProducts:", relatedProducts);
-  console.log("Is array?", Array.isArray(relatedProducts));
-
   return (
     <AuthenticatedLayout>
       <Head title={product.title} />
 
       <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4">
-          {/* Breadcrumbs wrapper - no fixed margin */}
+        <div className="container mx-auto px-4 max-w-7xl">
+          {/* Breadcrumbs */}
           <div>
             <Breadcrumbs
               items={[
@@ -428,11 +506,11 @@ function Show({
                 },
                 {
                   label: product.department?.name || "Department",
-                  href: route("product.byDepartment", product.department.name),
+                  href: route("product.byDepartment", product.department.slug),
                 },
                 {
                   label: product.category?.name || "Category",
-                  href: route("product.byDepartment", product.department.name),
+                  href: route("product.byDepartment", product.department.slug),
                 },
                 { label: product.title, current: true },
               ]}
@@ -440,7 +518,7 @@ function Show({
           </div>
 
           {/* Main grid */}
-          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-16">
+          <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-5 lg:gap-20">
             {/* Carousel */}
             <div className="lg:col-span-3">
               <Carousel
@@ -456,21 +534,21 @@ function Show({
 
             {/* Product details */}
             <div className="lg:col-span-2 flex flex-col">
-              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
+              <h1 className="text-3xl font-extrabold text-gray-900 leading-tight sm:text-4xl">
                 {product.title}
               </h1>
 
-              <div className="mt-2 text-sm font-semibold text-indigo-600 tracking-wide mb-4">
+              <div className="mt-3 text-sm font-semibold text-indigo-600 tracking-wide mb-6">
                 <Link
                   href={route("vendor.profile", product.user.store_name)}
-                  className="hover:underline"
+                  className="hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
                 >
                   {product.user.name}
                 </Link>
-                &nbsp;in&nbsp;
+                <span className="mx-1 text-gray-500">in</span>
                 <Link
                   href={route("product.byDepartment", product.department.slug)}
-                  className="hover:underline"
+                  className="hover:underline focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded"
                 >
                   {product.department.name}
                 </Link>
@@ -482,31 +560,29 @@ function Show({
                 reviewsCount={product.reviews_count ?? 0}
               />
 
-              <div className="mt-5">{renderProductVariationTypes()}</div>
+              <div className="mt-6">{renderProductVariationTypes()}</div>
 
-              <label className="mt-5 inline-flex items-center cursor-pointer">
+              <label className="mt-6 inline-flex items-center cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={form.data.wantsAttachment}
+                  checked={form.data.designer}
                   onChange={(e) =>
-                    form.setData("wantsAttachment", e.target.checked)
+                    form.setData("designer", e.target.checked)
                   }
-                  className="form-checkbox text-indigo-600"
+                  className="form-checkbox text-indigo-600 h-5 w-5"
+                  aria-checked={form.data.designer}
                 />
-                <span className="ml-3 text-gray-800">
-                  Add attachment (adds ${designCharge} to price)?
+                <span className="ml-3 text-gray-900 font-medium">
+                  Need designer? (adds ${designCharge} to price)
                 </span>
               </label>
 
-              {/* Attachment upload */}
-              {form.data.wantsAttachment && (
-                <div className="mt-5">
-                  <label
-                    htmlFor="attachment"
-                    className="block mb-2 text-sm font-semibold text-gray-700"
-                  >
-                    Upload Attachment
-                  </label>
+              <div className="mt-5">
+                <div
+                  className="mt-5 relative cursor-pointer rounded-lg border-2 border-dashed border-gray-300 bg-gray-50
+               dark:border-gray-600 dark:bg-gray-800 p-6 text-center hover:border-indigo-500 focus-within:border-indigo-500"
+                  onClick={() => document.getElementById("attachment")?.click()}
+                >
                   <input
                     id="attachment"
                     type="file"
@@ -514,36 +590,45 @@ function Show({
                     onChange={(e) =>
                       form.setData("attachment", e.target.files?.[0] || null)
                     }
-                    className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-500"
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                   />
-                  {form.errors.attachment && (
-                    <p className="text-red-600 text-xs mt-1">
-                      {form.errors.attachment}
-                    </p>
-                  )}
+                  <p className="text-gray-600 dark:text-gray-400 font-medium">
+                    Got a file? Drag it here or click to upload your attachment!
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    (Images or PDFs welcome 📎)
+                  </p>
                 </div>
-              )}
 
-              {/* Price and Add to Cart button */}
-              <div className="mt-8 flex flex-col space-y-4 border-t border-b border-gray-200 py-4 sm:flex-row sm:justify-between sm:space-y-0">
-                <div className="flex items-center">
-                  <h1 className="text-3xl font-bold">
+                {form.errors.attachment && (
+                  <p className="mt-1 text-xs text-red-600">
+                    {form.errors.attachment}
+                  </p>
+                )}
+              </div>
+
+              {/* Price & Add to Cart */}
+              <div className="mt-10 flex flex-col space-y-5 border-t border-b border-gray-200 py-6 sm:flex-row sm:justify-between sm:space-y-0 sm:items-center">
+                <div>
+                  <h2 className="text-4xl font-extrabold text-gray-900">
                     <CurrencyFormatter amount={finalPrice} currency="AUD" />
-                  </h1>
+                  </h2>
                 </div>
 
                 <button
                   onClick={addToCart}
                   type="button"
-                  className="inline-flex items-center justify-center rounded-md border-2 border-transparent bg-gray-900 px-8 py-3 text-base font-bold text-white transition hover:bg-gray-800 focus:shadow focus:outline-none"
+                  className="inline-flex items-center justify-center rounded-md bg-gray-900 px-10 py-3 text-lg font-bold text-white transition hover:bg-gray-800 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-offset-2"
+                  aria-label="Add product to cart"
                 >
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="mr-3 h-5 w-5 shrink-0"
+                    className="mr-3 h-6 w-6 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
                     strokeWidth={2}
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -556,14 +641,15 @@ function Show({
               </div>
 
               {/* Shipping info */}
-              <ul className="mt-8 space-y-3 text-sm font-medium text-gray-600">
+              <ul className="mt-10 space-y-4 text-sm font-medium text-gray-600">
                 <li className="flex items-center">
                   <svg
-                    className="mr-2 h-5 w-5 text-gray-500"
+                    className="mr-3 h-6 w-6 text-gray-500 flex-shrink-0"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -577,11 +663,12 @@ function Show({
 
                 <li className="flex items-center">
                   <svg
-                    className="mr-2 h-5 w-5 text-gray-500"
+                    className="mr-3 h-6 w-6 text-gray-500 flex-shrink-0"
                     xmlns="http://www.w3.org/2000/svg"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
+                    aria-hidden="true"
                   >
                     <path
                       strokeLinecap="round"
@@ -596,35 +683,33 @@ function Show({
             </div>
           </div>
 
-
           {/* Related Products */}
-         <div className="bg-slate-50 mt-10 relative left-1/2 right-1/2 w-screen -translate-x-1/2">
-         <h1 className="lg:text-center ml-[55px] py-5 text-2xl font-bold text-gray-900 sm:text-3xl">
-  Related Products
-</h1>
-          {relatedProducts?.data?.length > 0 && (
-           <ProductCarousel
-  products={relatedProducts.data}
-  title=""
-  sectionClassName="py-5 bg-gray-50"
-    wrapperClassName="w-full px-2 sm:px-4" // ✅
-/>
-          )}
-</div>
+          <section className="bg-slate-50 mt-12 relative left-1/2 right-1/2 w-screen -translate-x-1/2">
+            <h2 className="ml-14 py-6 text-center text-2xl font-bold text-gray-900 sm:text-3xl lg:ml-0">
+              Related Products
+            </h2>
+            {relatedProducts?.data?.length > 0 && (
+              <ProductCarousel
+                products={relatedProducts.data}
+                title=""
+                sectionClassName="py-5 bg-gray-50"
+                wrapperClassName="w-full px-2 sm:px-4"
+              />
+            )}
+          </section>
 
-
-          <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-16">
-            {/* Tabs section - full width on smaller, spans 3 cols on lg */}
-            <div className="lg:px-10 lg:col-span-3 mt-10 lg:mt-0">
+          {/* Tabs section */}
+          <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-5 lg:gap-16">
+            <div className="lg:col-span-3 lg:px-10 mt-10 lg:mt-0">
               <div className="border-b border-gray-300">
-                <nav className="flex gap-6 overflow-x-auto no-scrollbar">
+                <nav className="flex gap-8 overflow-x-auto no-scrollbar">
                   <a
                     href="#"
                     onClick={(e) => {
                       e.preventDefault();
                       setActiveTab("description");
                     }}
-                    className={`border-b-2 py-4 text-sm font-medium whitespace-nowrap hover:border-gray-400 hover:text-gray-800 ${
+                    className={`border-b-2 py-4 text-sm font-semibold whitespace-nowrap hover:border-gray-400 hover:text-gray-800 ${
                       activeTab === "description"
                         ? "border-gray-900 text-gray-900"
                         : "border-transparent text-gray-600"
@@ -639,7 +724,7 @@ function Show({
                       e.preventDefault();
                       setActiveTab("reviews");
                     }}
-                    className={`inline-flex items-center border-b-2 py-4 text-sm font-medium whitespace-nowrap hover:border-gray-400 hover:text-gray-800 ${
+                    className={`inline-flex items-center border-b-2 py-4 text-sm font-semibold whitespace-nowrap hover:border-gray-400 hover:text-gray-800 ${
                       activeTab === "reviews"
                         ? "border-gray-900 text-gray-900"
                         : "border-transparent text-gray-600"
@@ -653,58 +738,37 @@ function Show({
                 </nav>
               </div>
 
-              {/* section 2 */}
-
               <div className="mt-8 flow-root sm:mt-12">
                 {activeTab === "description" && (
                   <>
-                    <h1 className="text-3xl font-bold">
-                      Delivered To Your Door
-                    </h1>
-                    <p className="mt-4">
-                      Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                      Quia accusantium nesciunt fuga.
-                    </p>
-                    <h1 className="mt-8 text-3xl font-bold">
-                      From the Fine Farms of Brazil
-                    </h1>
-                    <p className="mt-4">
-                      Lorem ipsum dolor sit amet consectetur adipisicing elit.
-                      Optio numquam enim facere.
-                    </p>
-                    <p className="mt-4">
-                      Amet consectetur adipisicing elit. Optio numquam enim
-                      facere. Lorem ipsum dolor sit amet consectetur,
-                      adipisicing elit. Dolore rerum nostrum eius facere, ad
-                      neque.
-                    </p>
+                    <div className="prose max-w-none text-gray-900 dark:text-gray-100">
+                      {parse(product.description)}
+                    </div>
                   </>
                 )}
 
                 {activeTab === "reviews" && (
                   <div>
-                    <h2 className="text-2xl font-semibold mb-4">Reviews</h2>
+                    <h2 className="text-2xl font-semibold mb-6">Reviews</h2>
 
-                    <div className="mt-5">
-                      <AdvanceProductRating
-                        rating={product.average_rating ?? 0}
-                        reviewsCount={product.reviews_count ?? 0}
-                        ratingBreakdown={ratingBreakdown}
+                    <AdvanceProductRating
+                      rating={product.average_rating ?? 0}
+                      reviewsCount={product.reviews_count ?? 0}
+                      ratingBreakdown={ratingBreakdown}
+                      productId={product.id}
+                      reviews={reviews}
+                      authUserId={auth?.user?.id ?? null}
+                    />
+
+                    <div className="mt-10 bg-background-gray rounded-lg p-6">
+                      <h3 className="text-2xl font-semibold mb-4">
+                        Customers Words
+                      </h3>
+                      <ProductReview
                         productId={product.id}
-                        reviews={reviews}
+                        reviews={product.reviews}
                         authUserId={auth?.user?.id ?? null}
                       />
-
-                      <div className="mt-10 bg-background-gray rounded-lg ">
-                        <h2 className="text-2xl font-semibold mb-4">
-                          Customers Words
-                        </h2>
-                        <ProductReview
-                          productId={product.id}
-                          reviews={product.reviews}
-                          authUserId={auth?.user?.id ?? null}
-                        />
-                      </div>
                     </div>
                   </div>
                 )}

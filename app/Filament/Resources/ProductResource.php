@@ -11,6 +11,7 @@ use App\Filament\Resources\ProductResource\Pages\ProductImages;
 use App\Filament\Resources\ProductResource\Pages\ProductVariations;
 use App\Filament\Resources\ProductResource\Pages\ProductVariationTypes;
 use App\Models\Product;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Components\Radio;
@@ -22,11 +23,15 @@ use Filament\Pages\Page;
 use Filament\Pages\SubNavigationPosition;
 use Filament\Resources\Resource;
 use Filament\Tables;
+
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
+use Filament\Tables\Actions\BulkAction;
+use Illuminate\Support\Collection;
 
 class ProductResource extends Resource
 {
@@ -35,9 +40,14 @@ class ProductResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-s-queue-list';
 
     protected static ?string $navigationGroup = 'Catalog';
-protected static ?bool $navigationGroupCollapsible = true;
+    protected static ?bool $navigationGroupCollapsible = true;
 
-    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::End;
+    protected static SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+
+
+
+
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
@@ -193,9 +203,86 @@ protected static ?bool $navigationGroupCollapsible = true;
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+
+                     // ✅ Add Duplicate Bulk Action
+                BulkAction::make('duplicate')
+                    ->label('Duplicate Selected')
+
+                    ->action(function (Collection $records) {
+                        foreach ($records as $record) {
+                            $newProduct = $record->replicate();
+                            $newProduct->title = $record->title . ' (Copy)';
+                            $newProduct->slug = \Illuminate\Support\Str::slug($newProduct->title) . '-' . uniqid();
+                            $newProduct->save();
+
+                            // Clone variation types & options
+                            $record->variationTypes->each(function ($variationType) use ($newProduct) {
+                                $newVariationType = $variationType->replicate();
+                                $newVariationType->product_id = $newProduct->id;
+                                $newVariationType->save();
+
+                                $variationType->options->each(function ($option) use ($newVariationType) {
+                                    $newOption = $option->replicate();
+                                    $newOption->variation_type_id = $newVariationType->id;
+                                    $newOption->save();
+                                });
+                            });
+
+                            // Clone media
+                            foreach ($record->getMedia('images') as $media) {
+                                $media->copy($newProduct, 'images');
+                            }
+                        }
+                    })
+                    ->requiresConfirmation()
+                    ->color('secondary'),
+
                 ]),
             ]);
     }
+
+
+
+
+
+public static function getActions(): array
+{
+    return [
+        Action::make('duplicate')
+            ->label('Duplicate')
+            ->icon('heroicon-o-duplicate')
+            ->action(function (Model $record, $livewire) {
+                $newProduct = $record->replicate(); // clone the main product data
+                $newProduct->name = $record->name . ' (Copy)'; // optional rename
+                $newProduct->save();
+
+                // If you want to clone relations like variationTypes, images, etc:
+                $record->variationTypes->each(function ($variationType) use ($newProduct) {
+                    $newVariationType = $variationType->replicate();
+                    $newVariationType->product_id = $newProduct->id;
+                    $newVariationType->save();
+
+                    // Also clone options if you have them
+                    $variationType->options->each(function ($option) use ($newVariationType) {
+                        $newOption = $option->replicate();
+                        $newOption->variation_type_id = $newVariationType->id;
+                        $newOption->save();
+                    });
+                });
+
+                // Clone media/images if using spatie media library
+                foreach ($record->getMedia('images') as $media) {
+                    $media->copy($newProduct, 'images');
+                }
+
+                $livewire->notify('success', 'Product duplicated successfully!');
+                $livewire->redirect(route('filament.resources.products.edit', $newProduct));
+            })
+            ->requiresConfirmation()
+            ->color('secondary'),
+    ];
+}
+
 
     public static function getRelations(): array
     {

@@ -37,9 +37,8 @@ class CartController extends Controller
 
 
 
-        $cartItems = CartItem::where('user_id', $user->id)
-            ->with('product.vendor')
-            ->get();
+        $cartItems = CartItem::with('product.vendor')->where('user_id', $userId)->get();
+
 
         $appointmentVendorIds = $cartItems
             ->pluck('product.vendor')            // Get vendor from each cart item's product
@@ -91,32 +90,36 @@ class CartController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, Product $product, CartService $cartService)
-    {
-        $optionIds = $request->input('option_ids');  // consistent key
+   public function store(Request $request, Product $product, CartService $cartService)
+{
+    $optionIds = $request->input('option_ids');
 
-        if (is_array($optionIds)) {
-            ksort($optionIds);
-        }
-
-        // Set default quantity if not provided
-        $request->mergeIfMissing(['quantity' => 1]);
-
-        $data = $request->validate([
-            'option_ids' => ['nullable', 'array'],
-            'quantity' => 'required|integer|min:1',
-        ]);
-
-        $cartService->addItemToCart(
-            $product,
-            $data['quantity'],
-            $data['option_ids'] ?? []
-        );
-
-
-
-        return back()->with('success', 'Product added to cart successfully.');
+    if (is_array($optionIds)) {
+        ksort($optionIds);
     }
+
+    // Set default quantity if not provided
+    $request->mergeIfMissing(['quantity' => 1]);
+
+    $data = $request->validate([
+        'option_ids' => ['nullable', 'array'],
+        'quantity' => 'required|integer|min:1',
+        'designer' => 'nullable|boolean', // ✅ validate it
+    ]);
+
+    // ✅ Explicitly get the boolean value
+    $designer = $request->boolean('designer', false);
+
+    $cartService->addItemToCart(
+        $product,
+        $data['quantity'],
+        $data['option_ids'] ?? [],
+        $designer // ✅ pass it here
+    );
+
+    return back()->with('success', 'Product added to cart successfully.');
+}
+
 
 
     public function update(Request $request, Product $product, CartService $cartService)
@@ -163,8 +166,11 @@ class CartController extends Controller
             ->firstOrFail();
 
         $vendorId = $request->input('vendor_id');
-        $allCartItems = $cartService->getCartItemsGrouped();
+        $hasBooking = Booking::where('user_id', $request->user()->id)
+            ->whereNull('order_id')
+            ->exists();
 
+        $allCartItems = $cartService->getCartItemsGrouped();
         DB::beginTransaction();
 
         try {
@@ -176,18 +182,34 @@ class CartController extends Controller
                 $user = $item['user'];
                 $cartItems = $item['items'];
 
+                // ✅ Booking fee per vendor (appointment type only)
+                $bookingFee = 0;
+                if (
+                    $hasBooking &&
+                    isset($user['vendor_type']) &&
+                    $user['vendor_type'] instanceof VendorType &&
+                    $user['vendor_type']->value === VendorType::APPOINTMENT->value
+                ) {
+                    $bookingFee = floatval($user['booking_fee'] ?? 0);
+                }
+
+                $totalPrice = $item['totalPrice'] ;
+
+
+                // ✅ Create the order
                 $order = Order::create([
                     'stripe_session_id' => null,
                     'user_id' => $request->user()->id,
                     'vendor_user_id' => $user['id'],
-                    'total_price' => $item['totalPrice'],
+                    'total_price' => $totalPrice,
+                    'booking_fee' => $bookingFee,
                     'status' => OrderStatusEnum::Draft->value,
                     'shipping_address_id' => $shippingAddress->id,
                 ]);
 
                 $orders[] = $order;
 
-                // ✅ Try linking the most recent unlinked booking (optional)
+                // ✅ Link booking to order if available
                 $latestBooking = Booking::where('user_id', $request->user()->id)
                     ->whereNull('order_id')
                     ->latest()
@@ -198,6 +220,7 @@ class CartController extends Controller
                     $latestBooking->save();
                 }
 
+                // ✅ Loop through items and create OrderItems
                 foreach ($cartItems as $cartItem) {
                     OrderItem::create([
                         'order_id' => $order->id,
@@ -207,22 +230,20 @@ class CartController extends Controller
                         'variation_type_option_ids' => $cartItem['option_ids'],
                         'attachment_path' => $cartItem['attachment_path'] ?? null,
                         'attachment_name' => $cartItem['attachment_name'] ?? null,
+                        'designer'=>$cartItem['designer'] ?? false
                     ]);
 
+                    $description = collect($cartItem['options'])
+                        ->map(fn($item) => "{$item['type']['name']}::{$item['name']}")
+                        ->implode(',');
 
-
-
-                    $description = collect($cartItem['options'])->map(fn($item) => "{$item['type']['name']}::{$item['name']}")->implode(',');
-
-                    $productData = [
-                        'name' => $cartItem['title'],
-                    ];
-
+                    $productData = ['name' => $cartItem['title']];
                     if (!empty($description)) {
                         $productData['description'] = $description;
                     }
 
-                    $lineItem = [
+                    // Stripe item for product
+                    $lineItems[] = [
                         'price_data' => [
                             'currency' => config('app.currency'),
                             'product_data' => $productData,
@@ -230,18 +251,24 @@ class CartController extends Controller
                         ],
                         'quantity' => $cartItem['quantity'],
                     ];
-
-
-
-                    $lineItems[] = $lineItem;
                 }
 
-
-
-
-
+                // ✅ Stripe line item for booking fee
+                if ($bookingFee > 0) {
+                    $lineItems[] = [
+                        'price_data' => [
+                            'currency' => config('app.currency'),
+                            'product_data' => [
+                                'name' => "Booking Fee for Installer ({$user['name']})",
+                            ],
+                            'unit_amount' => intval($bookingFee * 100),
+                        ],
+                        'quantity' => 1,
+                    ];
+                }
             }
 
+            // ✅ Create Stripe session
             $session = Session::create([
                 'customer_email' => $request->user()->email,
                 'line_items' => $lineItems,
@@ -250,10 +277,10 @@ class CartController extends Controller
                 'cancel_url' => route('stripe.failure'),
             ]);
 
+            // ✅ Save session ID per order
             foreach ($orders as $order) {
                 $order->stripe_session_id = $session->id;
                 $order->save();
-            // Auth::user()->notify(new NewOrderNotification($order));
             }
 
             DB::commit();

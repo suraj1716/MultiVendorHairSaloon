@@ -62,7 +62,7 @@ export default function ListProducts({
       }
     });
   };
-  console.log("vendor", vendor);
+
   const handleFilterChange = () => {
     router.get(
       route("vendor.profile", { vendor: vendor.data.store_name }),

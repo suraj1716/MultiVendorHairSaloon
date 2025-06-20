@@ -14,7 +14,7 @@ class OrderItem extends Model
     public $timestamps=false;
 
     protected $fillable=['order_id','product_id','quantity','price',
-    'variation_type_option_ids'];
+    'variation_type_option_ids', 'designer'];
 
     public function order(): BelongsTo
     {

@@ -97,10 +97,7 @@ export default function BookingWidget({
     ...closedDatesAsDateObjects,
   ];
 
-  console.log(
-    "BookingWidget closedDatesAsDateObjects",
-    closedDatesAsDateObjects
-  );
+
 
   return (
     <div className="space-y-2  ">
@@ -148,7 +145,6 @@ export default function BookingWidget({
   selectedSlot={timeSlot}
 
   onSelect={(slot) => {
-  console.log("Slot selected:", slot);
   setTimeSlot(slot); // ✅ Just set, don't submit here
     onOpenChange(false);
 }}

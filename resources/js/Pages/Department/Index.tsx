@@ -11,10 +11,7 @@ import {
   ProductGroup,
 } from "@/types";
 import {
-  PlusCircle,
-  MinusCircle,
-  Filter,
-  Settings,
+
   SlidersHorizontal,
 } from "lucide-react";
 
@@ -53,16 +50,9 @@ export default function Index({
     filters.max_price ? parseInt(filters.max_price) : DEFAULT_MAX_PRICE
   );
   const [sortBy, setSortBy] = useState<string>(filters.sort_by || "default");
-  const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedGroupName, setSelectedGroupName] = useState<string | null>(
-    null
-  );
-  const toggleDepartment = (id: string) => {
-    setExpandedDepartments((prev) =>
-      prev.includes(id) ? prev.filter((d) => d !== id) : [...prev, id]
-    );
-  };
+
+
 
   const handleApplyFilters = () => {
     const selectedDepartmentSlug = departments.find(
@@ -106,24 +96,7 @@ export default function Index({
     );
   };
 
-  const ShowAllProducts = () => {
-    setSelectedDepartment(null);
-    setSelectedCategory(null);
-    setExpandedDepartments([]);
-    setMaxPrice(DEFAULT_MAX_PRICE);
-    setSortBy("default");
 
-    // Fetch all products with no filters
-    router.get(
-      route("shop.search"),
-      {},
-      {
-        preserveState: true,
-        preserveScroll: true,
-      }
-    );
-  };
-  console.log("productGroups", productGroups);
   return (
     <AuthenticatedLayout>
       <Head title="Product List" />
@@ -139,16 +112,6 @@ export default function Index({
         <aside className="hidden lg:block lg:w-1/4 bg-white shadow rounded p-4 h-auto sticky top-4 self-start">
           <h2 className="text-lg font-semibold mb-5">Filters</h2>
 
-          {/* <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Filters</h2>
-            <button
-              className="ml-2 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition"
-              onClick={ShowAllProducts}
-              type="button"
-            >
-              All Products
-            </button>
-          </div> */}
 
           {/* Department Filter */}
           <div className="mb-6">
@@ -229,10 +192,10 @@ export default function Index({
 
         {/* Mobile filter toggle button */}
         <div
-          className="lg:hidden overflow-x-scroll px-4 pb-20 h-10"
-          style={{ overflowX: "scroll", WebkitOverflowScrolling: "touch" }}
+          className="lg:hidden overflow-x-scroll overflow-y-hidden px-4 pb-20 h-10"
+          style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="overflow-x-auto whitespace-nowrap px-4 py-3 bg-white shadow-inner">
+          <div className="whitespace-nowrap px-4 py-3">
             <div className="flex space-x-3 items-center min-w-max h-[50px]">
               {/* Filter Button */}
               <button
@@ -247,10 +210,10 @@ export default function Index({
                 .filter((group) => group.active)
                 .map((group) => (
                   <button
-                    key={`${group.id}`}
-                    className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
+                    key={group.id}
+                    className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
                     onClick={() => {
-                      router.visit(`/?scrollTo=${group.id}`, {
+                      router.visit(`/?scrollToCategoryId=${group.id}`, {
                         preserveScroll: true,
                         preserveState: true,
                       });
@@ -263,30 +226,21 @@ export default function Index({
               {/* Product Groups */}
               {productGroups.map((group) => (
                 <button
-                  key={`${group.id}`}
-                                     className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium"
-
+                  key={group.id}
+                  className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
                   onClick={() => {
-                    router.visit(`/?scrollTo=${group.id}`, {
-                      preserveScroll: true,
-                      preserveState: true,
-                    });
+                    router.visit(
+                      route("productGroup.show", { productGroup: group.slug }),
+                      {
+                        preserveScroll: true,
+                        preserveState: true,
+                      }
+                    );
                   }}
                 >
                   {group.name}
                 </button>
               ))}
-
-              {/* Reset Button */}
-              <button
-                className="flex-shrink-0 bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded-md whitespace-nowrap"
-                onClick={() => {
-                  handleResetFilters();
-                  setShowFilterModal(false);
-                }}
-              >
-                Reset Filters
-              </button>
             </div>
           </div>
         </div>
@@ -405,11 +359,54 @@ export default function Index({
               No products found.
             </div>
           ) : (
-            <div className=" grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:mr-5">
-              {products.data.map((product) => (
-                <ProductItem key={product.id} product={product} />
-              ))}
-            </div>
+            <>
+              {/* Filters row */}
+              <div className="hidden md:flex space-x-3 items-center min-h-[50px] mb-6 ml-10 overflow-x-auto overflow-y-hidden whitespace-nowrap">
+                {/* Category Groups */}
+                {categoryGroups
+                  .filter((group) => group.active)
+                  .map((group) => (
+                    <button
+                      key={group.id}
+                      className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+                      onClick={() => {
+                        router.visit(`/?scrollToCategoryId=${group.id}`, {
+                          preserveScroll: true,
+                          preserveState: true,
+                        });
+                      }}
+                    >
+                      {group.name}
+                    </button>
+                  ))}
+
+                {/* Product Groups */}
+                {productGroups.map((group) => (
+                 <button
+                  key={group.id}
+                  className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+                  onClick={() => {
+                    router.visit(
+                      route("productGroup.show", { productGroup: group.slug }),
+                      {
+                        preserveScroll: true,
+                        preserveState: true,
+                      }
+                    );
+                  }}
+                >
+                  {group.name}
+                </button>
+                ))}
+              </div>
+
+              {/* Products grid */}
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-10 xs:mr-5">
+                {products.data.map((product) => (
+                  <ProductItem key={product.id} product={product} />
+                ))}
+              </div>
+            </>
           )}
 
           {/* Pagination */}

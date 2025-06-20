@@ -11,6 +11,8 @@ use Livewire\Attributes\Modelable;
 class ProductVariation extends Model
 {
     protected $table = 'product_variations';
+    public Product $product;
+    protected $fillable = ['variation_type_option_ids', 'quantity', 'price','product_id',];
 
     // Cast the 'variation_type_option_ids' attribute to an array
     protected $casts = [

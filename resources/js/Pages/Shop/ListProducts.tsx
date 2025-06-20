@@ -1,26 +1,46 @@
 import React, { useState } from "react";
-import { Head, Link, router } from "@inertiajs/react";
+import { Head, Link, router, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import ProductItem from "@/Components/App/ProductItem";
-import { PageProps, PaginationProps, Product, Department } from "@/types";
-import { PlusCircle, MinusCircle } from "lucide-react";
+import {
+  PageProps,
+  PaginationProps,
+  Product,
+  Department,
+  CategoryGroup,
+  ProductGroup,
+} from "@/types";
+import { PlusCircle, MinusCircle, SlidersHorizontal } from "lucide-react";
 
 type ProfileProps = PageProps<{
+  allProducts:PaginationProps<Product>
   products: PaginationProps<Product>;
+  searchedProducts?: PaginationProps<Product>; // <-- Add thi
+  categoryGroups: CategoryGroup[];
+  productGroups: ProductGroup[];
+  department: Department;
   departments: Department[];
   filters: {
     department_id: string | null;
     category_id: string | null;
     max_price: string | null;
     sort_by: string | null;
+    keyword?: string | null;
   };
 }>;
 
 export default function ListProducts({
   products,
+allProducts,
+  searchedProducts,
+  categoryGroups,
+  productGroups,
   departments,
+  department,
   filters,
 }: ProfileProps) {
+
+
   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     null
@@ -48,7 +68,7 @@ export default function ListProducts({
     filters.max_price ? parseInt(filters.max_price) : 5000
   );
   const [sortBy, setSortBy] = useState<string>(filters.sort_by || "default");
-  const handleFilterChange = () => {
+  const handleApplyFilters = () => {
     const selectedDepartmentSlug = departments.find(
       (d) => d.id.toString() === selectedDepartment?.toString()
     )?.slug;
@@ -57,8 +77,9 @@ export default function ListProducts({
       console.error("No slug found for selected department");
       return;
     }
+
     router.get(
-      route("shop.search"),
+      route("product.byDepartment", selectedDepartmentSlug),
       {
         department_id: selectedDepartment,
         category_id: selectedCategory,
@@ -107,6 +128,25 @@ export default function ListProducts({
       }
     );
   };
+
+  const displayedProducts =
+    filters.keyword && searchedProducts?.data?.length
+      ? searchedProducts
+      : products;
+
+
+  // Ensure uniqueness by ID
+  const uniqueProducts = Array.from(
+    new Map(allProducts.data.map((p) => [p.id, p])).values()
+  );
+
+
+//       const uniqueProducts = Array.from(
+//   new Map(displayedProducts.data.map((p) => [p.id, p])).values()
+// );
+
+
+console.log('products',products);
 
   return (
     <AuthenticatedLayout>
@@ -237,7 +277,7 @@ export default function ListProducts({
           <div className="space-y-2">
             <button
               className="w-full bg-blue-600 text-white py-2 rounded"
-              onClick={handleFilterChange}
+              onClick={handleApplyFilters}
             >
               Apply Filters
             </button>
@@ -252,17 +292,60 @@ export default function ListProducts({
         </aside>
 
         {/* Mobile filter toggle button */}
-        <div className="lg:hidden p-4">
-          <button
-            className="bg-blue-600 text-white px-4 py-2 rounded w-full"
-            onClick={() => setShowFilterModal(true)}
-          >
-            Open Filters
-          </button>
+        <div
+          className="lg:hidden overflow-x-scroll overflow-y-hidden px-4 pb-20 h-10"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="whitespace-nowrap px-4 py-3">
+            <div className="flex space-x-3 items-center min-w-max h-[50px]">
+              {/* Filter Button */}
+              <button
+                className="flex-shrink-0 bg-blue-600 text-white px-4 py-2 rounded-md whitespace-nowrap"
+                onClick={() => setShowFilterModal(true)}
+              >
+                <SlidersHorizontal size={18} />
+              </button>
+
+              {/* Category Groups */}
+              {categoryGroups
+                .filter((group) => group.active)
+                .map((group) => (
+                  <button
+                    key={group.id}
+                    className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+                    onClick={() => {
+                      router.visit(`/?scrollToCategoryId=${group.id}`, {
+                        preserveScroll: true,
+                        preserveState: true,
+                      });
+                    }}
+                  >
+                    {group.name}
+                  </button>
+                ))}
+
+              {/* Product Groups */}
+              {productGroups.map((group) => (
+                <button
+                  key={group.id}
+                  className="flex-shrink-0 bg-slate-200 hover:bg-indigo-100 text-gray-800 px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap"
+                  onClick={() => {
+                    router.visit(`/?scrollToProductId=${group.id}`, {
+                      preserveScroll: true,
+                      preserveState: true,
+                    });
+                  }}
+                >
+                  {group.name}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
+
         {showFilterModal && (
           <div
-            className="px-5  z-[9999] fixed inset-0 bg-black/30 backdrop-blur-sm flex justify-center items-center"
+            className="px-10 fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999] flex justify-center items-center"
             onClick={() => setShowFilterModal(false)} // click on backdrop
           >
             {/* Prevent click inside modal from closing */}
@@ -283,51 +366,30 @@ export default function ListProducts({
               {/* Categories */}
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-bold font-medium mb-5">
-                    Departments & Categories
-                  </h3>
+                  <h3 className="text-sm font-medium mb-2">Categories</h3>
                   <ul className="text-sm space-y-1">
-                    {departments.map((department) => {
-                      const idStr = department.id.toString();
-                      const isExpanded = expandedDepartments.includes(idStr);
-                      return (
-                        <li key={idStr}>
-                          <button
-                            className="font-semibold w-full text-left"
-                            onClick={() => onDepartmentClick(idStr)}
-                          >
-                            {department.name}
-                          </button>
+                    {department?.categories?.map((category) => (
+                      <li key={category.id}>
+                        <label className="inline-flex items-center space-x-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="category"
+                            value={category.id.toString()}
+                            checked={
+                              selectedCategory === category.id.toString()
+                            }
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              requestAnimationFrame(() => {
+                                setSelectedCategory(value);
+                              });
+                            }}
+                          />
 
-                          {isExpanded && (
-                            <ul className="ml-4 mt-1">
-                              {department.categories.map((category) => {
-                                const catIdStr = category.id.toString();
-                                return (
-                                  <li key={catIdStr}>
-                                    <label className="inline-flex items-center space-x-2 cursor-pointer">
-                                      <input
-                                        key={catIdStr + selectedCategory}
-                                        type="radio"
-                                        name="category"
-                                        value={catIdStr}
-                                        checked={selectedCategory === catIdStr}
-                                        onChange={() =>
-                                          setSelectedCategory(catIdStr)
-                                        }
-                                        className="form-radio text-blue-600 "
-                                      />
-
-                                      <span>{category.name}</span>
-                                    </label>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </li>
-                      );
-                    })}
+                          <span>{category.name}</span>
+                        </label>
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
@@ -367,7 +429,7 @@ export default function ListProducts({
                   <button
                     className="w-full bg-blue-600 text-white py-2 rounded"
                     onClick={() => {
-                      handleFilterChange();
+                      handleApplyFilters();
                       setShowFilterModal(false);
                     }}
                   >
@@ -388,137 +450,34 @@ export default function ListProducts({
           </div>
         )}
 
-        {/* Product List */}
-        <main className="w-full lg:w-full ">
-          {products.data.length === 0 ? (
-            <div className="text-center py-20 text-gray-500">
-              No products found.
-            </div>
-          ) : (
-            <div className=" grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 xs:mr-5">
-              {products.data.map((product) => (
-                <ProductItem key={product.id} product={product} />
-              ))}
-            </div>
-          )}
+      {/* Product List */}
+<main className="w-full lg:w-full">
+  {filters.keyword && searchedProducts?.data?.length ? (
+    // ✅ If searchedProducts exist
+    searchedProducts.data.length === 0 ? (
+      <div className="text-center py-20 text-gray-500">No products found.</div>
+    ) : (
+      <div className="grid grid-cols-1 xs:grid-cols-2 xs:gap-10 sm:grid-cols-3 lg:grid-cols-4 gap-10 xs:mr-5">
+        {searchedProducts.data.map((product) => (
+          <ProductItem key={product.id} product={product} />
+        ))}
+      </div>
+    )
+  ) : (
+    // ✅ Otherwise show default unique products
+    displayedProducts.data.length === 0 ? (
+      <div className="text-center py-20 text-gray-500">No products found.</div>
+    ) : (
+      <div className="grid grid-cols-1 xs:grid-cols-2 xs:gap-10 sm:grid-cols-3 lg:grid-cols-4 gap-10 xs:mr-5">
+        {uniqueProducts.map((product) => (
+          <ProductItem key={product.id} product={product} />
+        ))}
+      </div>
+    )
+  )}
+</main>
 
-          {/* Pagination */}
-          <div className="mt-6 flex justify-center space-x-2">
-            {products.meta.links.map((link, index) =>
-              link.url ? (
-                <Link
-                  key={index}
-                  href={link.url}
-                  className={`px-3 py-1 border rounded ${
-                    link.active
-                      ? "bg-blue-600 text-white"
-                      : "bg-white text-gray-700"
-                  }`}
-                >
-                  {link.label.replace("&laquo;", "«").replace("&raquo;", "»")}
-                </Link>
-              ) : (
-                <span
-                  key={index}
-                  className="px-3 py-1 border rounded text-gray-400 cursor-not-allowed"
-                  dangerouslySetInnerHTML={{ __html: link.label }}
-                />
-              )
-            )}
-          </div>
-        </main>
       </div>
     </AuthenticatedLayout>
   );
 }
-
-// import React, { useState } from "react";
-
-// type Department = {
-//   id: number;
-//   name: string;
-//   categories: { id: number; name: string }[];
-// };
-
-// export default function FilterExample() {
-//   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
-//   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-
-//   const departments: Department[] = [
-//     {
-//       id: 1,
-//       name: "Electronics",
-//       categories: [
-//         { id: 101, name: "Phones" },
-//         { id: 102, name: "Laptops" },
-//       ],
-//     },
-//     {
-//       id: 2,
-//       name: "Home & Garden",
-//       categories: [
-//         { id: 201, name: "Furniture" },
-//         { id: 202, name: "Tools" },
-//       ],
-//     },
-//   ];
-
-//   function toggleDepartment(id: string) {
-//     setExpandedDepartments((prev) =>
-//       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-//     );
-//   }
-
-//   return (
-//     <div>
-//       <h2>Departments & Categories</h2>
-//       <ul>
-//         {departments.map((department) => {
-//           const isExpanded = expandedDepartments.includes(department.id.toString());
-
-//           return (
-//             <li key={department.id} style={{ marginBottom: "1rem" }}>
-//               <div style={{ display: "flex", justifyContent: "space-between" }}>
-//                 <button
-//                   onClick={() => toggleDepartment(department.id.toString())}
-//                   style={{ fontWeight: "bold" }}
-//                 >
-//                   {department.name}
-//                 </button>
-//                 <button
-//                   onClick={() => toggleDepartment(department.id.toString())}
-//                   aria-label={isExpanded ? "Collapse" : "Expand"}
-//                 >
-//                   {isExpanded ? "-" : "+"}
-//                 </button>
-//               </div>
-
-//               {isExpanded && (
-//                 <ul style={{ marginLeft: "1rem" }}>
-//                   {department.categories.map((category) => (
-//                     <li key={category.id}>
-//                       <label style={{ cursor: "pointer" }}>
-//                         <input
-//                           type="radio"
-//                           name="category"
-//                           value={category.id.toString()}
-//                           checked={selectedCategory === category.id.toString()}
-//                           onChange={() => setSelectedCategory(category.id.toString())}
-//                           onClick={(e) => e.stopPropagation()}
-//                         />{" "}
-//                         {category.name}
-//                       </label>
-//                     </li>
-//                   ))}
-//                 </ul>
-//               )}
-//             </li>
-//           );
-//         })}
-//       </ul>
-//       <p>
-//         <strong>Selected Category:</strong> {selectedCategory}
-//       </p>
-//     </div>
-//   );
-// }

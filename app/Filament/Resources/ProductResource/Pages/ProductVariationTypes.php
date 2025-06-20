@@ -19,45 +19,65 @@ class ProductVariationTypes extends EditRecord
     protected static ?string $navigationIcon = 'heroicon-m-numbered-list';
 
 
-    public function form(Form $form): Form
-    {
-        return $form
+   public function form(Form $form): Form
+{
+    $types = $this->record->variationTypes;
+
+    return $form->schema([
+        Repeater::make('variationTypes')
+            ->relationship('variationTypes')
+            ->label('Variation Type')
+            ->collapsible()
+            ->orderable()
+            ->defaultItems(1)
+            ->addActionLabel('Add new variation type')
+            ->columns(min(4, count($types) + 2))
+            ->columnSpan('full')
             ->schema([
-                Repeater::make('variationTypes')
-                    ->relationship('variationTypes')
-                    ->label(false)
-                    ->defaultItems(1)
+                TextInput::make('name')
+                    ->required()
+                    ->columnSpan(1),
+
+                Select::make('type')
+                    ->options(ProductVariationTypeEnum::labels())
+                    ->required()
+                    ->columnSpan(1),
+
+                Repeater::make('options')
+                    ->relationship()
+                    ->label('Options')
                     ->collapsible()
-                    ->addActionLabel('Add new  variation type')
-                    ->columns(2)
-                    ->columnSpan(2)
+                    ->columns(3) // Adjusted to 3 columns
+                    ->columnSpan('full')
                     ->schema([
                         TextInput::make('name')
-                            ->required(),
-                        Select::make('type')
-                            ->options(ProductVariationTypeEnum::labels())
-                            ->required(),
-                        Repeater::make('options')
-                            ->relationship()->collapsible()
-                            ->schema([
-                                TextInput::make('name')
-                                    ->required()
-                                    ->columnSpan(2),
-                                SpatieMediaLibraryFileUpload::make('image')
-                                    ->collection('images')
-                                    ->openable()
-                                    ->panelLayout('grid')
-                                    ->reorderable()
-                                    ->image()
-                                    ->appendFiles()
-                                    ->preserveFilenames()
-                                    ->multiple()
-                                    ->columnSpan(3)
-                            ])->columnSpan(2)
-                    ])
+                            ->required()
+                            ->columnSpan(1),
 
-            ]);
-    }
+                        TextInput::make('price_modifier')
+                            ->label('Price Modifier')
+                            ->numeric()
+                            ->prefix('+')
+                            ->default(0)
+                            ->columnSpan(1),
+
+                        SpatieMediaLibraryFileUpload::make('image')
+                            ->collection('images')
+                            ->openable()
+                            ->panelLayout('grid')
+                            ->reorderable()
+                            ->image()
+                            ->appendFiles()
+                            ->preserveFilenames()
+                            ->multiple()
+                            ->columnSpan(1),
+                    ]),
+            ])
+    ]);
+}
+
+
+
     protected function getHeaderActions(): array
     {
         return [

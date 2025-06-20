@@ -12,43 +12,36 @@ use Inertia\Inertia;
 class CategoryController extends Controller
 {
 
-    public function show(Category $category)
-    {
-        $category->load(['department', 'products.user', 'products.department', 'products.options']); // eager load relations for products
+  public function show(Category $category)
+{
+    $category->load(['department', 'products.user', 'products.department', 'products.options']);
 
-        // Get products filtered by category with necessary relations (e.g. user, department, options)
-        $products = Product::with(['user', 'department', 'options'])
-            ->where('category_id', $category->id)
-            ->get();
+  $products = Product::with(['user', 'department', 'options'])
+    ->where('category_id', $category->id)
+    ->distinct('id')       // Ensure distinct product IDs at DB level
+    ->get()
+    ->unique('id')        // Extra safety on collection level
+    ->values();
 
-       $groups = CategoryGroup::with([
-    'categories' => function ($query) {
-        $query->select(
-            'categories.id',       // prefix here
-            'categories.name',
-            'categories.image',
-            'categories.department_id',
-            'categories.parent_id',
-            'categories.active'
-        )->with('department');
-    }
-])->where('active', true)->get();
+    $groups = CategoryGroup::with([
+        'categories' => function ($query) {
+            $query->select(
+                'categories.id',
+                'categories.name',
+                'categories.image',
+                'categories.department_id',
+                'categories.parent_id',
+                'categories.active'
+            )->with('department');
+        }
+    ])->where('active', true)->get();
 
+    return Inertia::render('Category/Show', [
+        'category' => $category,
+        'department' => $category->department,
+        'products' => ProductListResource::collection($products),
+        'categoryGroups' => $groups,
+    ]);
+}
 
-
-        // dd($products->map(function ($product) {
-        //     return [
-        //         'id' => $product->id,
-        //         'title' => $product->title,
-        //         'first_image_url' => $product->getImages()->first()?->getUrl('thumb'),
-        //         'image_count' => $product->getImages()->count(),
-        //     ];
-        // }));
-        return Inertia::render('Category/Show', [
-            'category' => $category,
-            'department' => $category->department,
-            'products' => ProductListResource::collection($products),
-            'categoryGroups' => $groups,
-        ]);
-    }
 }

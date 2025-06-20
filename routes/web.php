@@ -38,11 +38,11 @@ Route::get('/', [ProductController::class, 'home'])->name('dashboard');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('product.show');
 
 Route::get('/category/{category}', [CategoryController::class, 'show'])->name('category.show');
+Route::get('/product-groups/{productGroup}', [ProductController::class, 'showProductGroup'])->name('productGroup.show');
 
 
 Route::get('/search-suggestions', function (Request $request) {
     $keyword = $request->query('keyword');
-
     $products = Product::query()
         ->forWebsite()
         ->with([
@@ -53,7 +53,7 @@ Route::get('/search-suggestions', function (Request $request) {
             'variations',
             'reviews'
         ])
-        ->where('title', 'LIKE', "%{$keyword}%")
+        ->where('slug', 'LIKE', "%{$keyword}%")
         ->limit(10)
         ->get();
 
@@ -84,16 +84,10 @@ Route::controller(CartController::class)->group(function () {
     Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
 });
 
-// Route::post('/stripe/webhook', function (Request $request) {
-//     Log::info('Webhook route hit', ['payload' => $request->all()]);
-//     return response('OK', 200);
-// });
+
 
 Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
 
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -117,9 +111,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
         Route::get('/stripe/failure', [StripeController::class, 'failure'])->name('stripe.failure');
         Route::post('/become-a-vendor', [VendorController::class, 'store'])->name('vendor.store');
-        Route::post('/stripe/connect', [StripeController::class, 'connect'])
-            ->name('stripe.connect')
-            ->middleware(['role:' . RolesEnum::Vendor->value]);
+
+        //    connect from user profile
+        // Route::post('/stripe/connect', [StripeController::class, 'connect'])
+        //     ->name('stripe.connect')
+        //     ->middleware(['role:' . RolesEnum::Vendor->value]);
+
+
+        // connect from admin dash board
+        // In web.php
+        Route::get('/stripe/connect/{user?}', [StripeController::class, 'connect'])->name('stripe.connect');
     });
 });
 
@@ -142,6 +143,9 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::get('/about', function () {
+    return Inertia::render('About');
+})->name('about');
 
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
@@ -152,6 +156,13 @@ Route::middleware('auth')->group(function () {
 });
 
 
+
+// Route::fallback(function () {
+//     return Inertia::render('ErrorPage', [
+//         'statusCode' => 404,
+//         'message' => 'Page not found.'
+//     ])->toResponse(request())->setStatusCode(404);
+// });
 
 
 require __DIR__ . '/auth.php';

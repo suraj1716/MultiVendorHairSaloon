@@ -103,6 +103,19 @@ function MiniCartDropdown() {
                         currency="AUD"
                       />
                     </div>
+
+
+ {/* Variations */}
+      {item.options && item.options.length > 0 && (
+        <div className="text-xs text-gray-600 mt-1">
+          {item.options.map((opt: any) => (
+            <div key={opt.id}>
+              {opt.type.name}: {opt.name}
+            </div>
+          ))}
+        </div>
+      )}
+
                   </div>
                 </div>
               ))}

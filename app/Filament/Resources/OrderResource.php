@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Auth;
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document';
 
     public static function table(Table $table): Table
     {
@@ -29,21 +30,15 @@ class OrderResource extends Resource
 
             ->columns([
 
-IconColumn::make('is_read')
-    ->label('Read')
-    ->boolean()
-    ->trueIcon('heroicon-o-check-circle')
-    ->falseIcon('heroicon-s-exclamation-circle')
-    ->color(fn (bool $state): string => $state ? 'gray' : 'danger')
-    ->sortable(),
+                IconColumn::make('is_read')
+                    ->label('Read')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-check-circle')
+                    ->falseIcon('heroicon-s-exclamation-circle')
+                    ->color(fn(bool $state): string => $state ? 'gray' : 'danger')
+                    ->sortable(),
 
-                // Tables\Columns\TextColumn::make('is_read')
-                //     ->label('Read Status')
-                //     ->badge()
-                //     ->color(fn($state) => $state ? 'success' : 'danger')
-                //     ->icon(fn($state) => $state ? 'heroicon-m-check' : 'heroicon-m-x-mark')
-                //     ->label('Read Status')
-                //     ->formatStateUsing(fn($state) => $state ? 'Read' : 'Unread'),
+
 
 
                 Tables\Columns\TextColumn::make('id')
@@ -51,6 +46,11 @@ IconColumn::make('is_read')
                     ->label('Order ID'),
 
 
+TextColumn::make('designer')
+    ->label('Designer')
+    ->getStateUsing(fn(Order $record) => optional($record->orderItems()->first())->designer == 1 ? 'Yes' : 'No')
+    ->badge()
+    ->color(fn($state) => $state === 'Yes' ? 'success' : 'gray'),
 
 
 
@@ -72,16 +72,6 @@ IconColumn::make('is_read')
                     })
                     ->sortable()
                     ->searchable(),
-
-
-                // {-- this table returns rows that have booking.booking_date== null, so hiding this columns--}
-
-                // Tables\Columns\TextColumn::make('booking.booking_date')
-                //     ->label('Booking Date')
-                //     ->date(),
-
-                // Tables\Columns\TextColumn::make('booking.time_slot')
-                //     ->label('Time Slot'),
 
 
 
@@ -167,30 +157,31 @@ IconColumn::make('is_read')
     }
 
 
-   public static function getNavigationBadge(): ?string
-{
-    $user = Auth::user();
+    public static function getNavigationBadge(): ?string
+    {
+        $user = Auth::user();
 
-    $query = static::getModel()::where('is_read', false)
-        ->where(function ($q) {
-            $q->whereDoesntHave('booking') // No booking = order
-              ->orWhereHas('booking', fn($q) => $q->whereNull('booking_date')); // booking with null date = order
-        })
-        ->whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'ecommerce'));
+        $query = static::getModel()::where('is_read', false)
+            ->where(function ($q) {
+                $q->whereDoesntHave('booking') // No booking = order
+                    ->orWhereHas('booking', fn($q) => $q->whereNull('booking_date')); // booking with null date = order
+            })
+            // ->whereHas('vendorUser.vendor', fn($q) => $q->where('vendor_type', 'ecommerce'))
+            ;
 
-    if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
-        // Admin: no extra restriction
-        // show all orders matching the criteria
-    } elseif ($user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
-        // Vendor: only orders belonging to this vendor user
-        $query->where('vendor_user_id', $user->id);
-    } else {
-        // Other roles: no orders
-        $query->whereRaw('1 = 0');
+        if ($user->hasRole(\App\Enums\RolesEnum::Admin->value)) {
+            // Admin: no extra restriction
+            // show all orders matching the criteria
+        } elseif ($user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+            // Vendor: only orders belonging to this vendor user
+            $query->where('vendor_user_id', $user->id);
+        } else {
+            // Other roles: no orders
+            $query->whereRaw('1 = 0');
+        }
+
+        return (string) $query->count();
     }
-
-    return (string) $query->count();
-}
 
 
 
@@ -203,9 +194,10 @@ IconColumn::make('is_read')
     {
         $query = parent::getTableQuery()
             ->with(['vendorUser.vendor']) // ensure nested eager loading
-            ->whereHas('vendorUser.vendor', function ($query) {
-                $query->where('vendor_type', 'ecommerce');
-            });
+            // ->orwhereHas('vendorUser.vendor', function ($query) {
+            //     $query->where('vendor_type', 'ecommerce');
+            // })
+            ->WhereHas('booking', fn($q) => $q->whereNull('booking_date'));
 
         dd($query->first()->vendorUser->vendor ?? 'null');
 

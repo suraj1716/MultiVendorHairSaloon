@@ -31,7 +31,6 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
     fetch(`/search-suggestions?keyword=${encodeURIComponent(searchTerm)}`)
       .then((res) => res.json())
       .then((res: { data: Product[] }) => {
-        console.log("Fetched suggestions:", res.data);
         setSuggestions(res.data);
       })
       .catch(() => setSuggestions([]));

@@ -62,6 +62,8 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
     useForm({
       store_name: "",
       store_address: "",
+      booking_fee: "",
+      vendor_type: "",
       start_time: "",
       end_time: "",
       slot_interval: 15,
@@ -86,6 +88,8 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
       setData({
         store_name: vendor.store_name ?? "",
         store_address: vendor.store_address ?? "",
+        booking_fee: vendor.booking_fee ?? "",
+        vendor_type: vendor.vendor_type ?? "",
         start_time: vendor.business_start_time ?? "",
         end_time: vendor.business_end_time ?? "",
         slot_interval: vendor.slot_interval_minutes ?? 15,
@@ -214,6 +218,36 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                 />
                 <InputError className="mt-2" message={errors.store_name} />
               </div>
+
+
+               <div className="mb-4">
+                <InputLabel htmlFor="booking_fee" value="Booking Fee (in AUD)" />
+                <TextInput
+                  id="booking_fee"
+                  type="number"
+                  step="0.01"
+                  className="mt-1 block w-full"
+                  value={data.booking_fee}
+                  onChange={(e) => setData("booking_fee", e.target.value)}
+                />
+                <InputError className="mt-2" message={errors.booking_fee} />
+              </div>
+
+             <div className="mb-4">
+  <InputLabel htmlFor="vendor_type" value="Vendor Type" />
+  <select
+    id="vendor_type"
+    className="mt-1 block w-full rounded border-gray-300"
+    value={data.vendor_type}
+    onChange={(e) => setData("vendor_type", e.target.value)}
+  >
+    <option value="">Select Vendor Type</option>
+    <option value="appointment">Appointment</option>
+    <option value="ecommerce">E-commerce</option>
+  </select>
+  <InputError className="mt-2" message={errors.vendor_type} />
+</div>
+
 
               <div className="mb-4">
                 <InputLabel htmlFor="store_address" value="Store Address" />

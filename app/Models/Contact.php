@@ -6,6 +6,34 @@ use Illuminate\Database\Eloquent\Model;
 
 class Contact extends Model
 {
-    protected $fillable = ['name', 'email', 'message'];
+   protected $fillable = [
+    'name',
+    'email',
+    'message',
+    'reason',
+    'department_id',
+    'category_id',
+    'product_id',
+    'quantity',
+    'file_path',
+];
+
+
+public function department()
+{
+    return $this->belongsTo(Department::class);
+}
+
+public function category()
+{
+    return $this->belongsTo(Category::class);
+}
+
+public function product()
+{
+    return $this->belongsTo(Product::class);
+}
+
+
 }
 

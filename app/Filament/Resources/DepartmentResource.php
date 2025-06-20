@@ -53,30 +53,39 @@ protected static ?bool $navigationGroupCollapsible = true;
     }
 
     public static function table(Table $table): Table
-    {
-        return $table
-            ->columns([
-                ImageColumn::make('image')
-                    ->circular()
-                    ->defaultImageUrl(asset('images/department-placeholder.png')),
+{
+    return $table
+        ->columns([
+            ImageColumn::make('image')
+                ->circular()
+                ->defaultImageUrl(asset('images/department-placeholder.png')),
 
-                TextColumn::make('name')
-                    ->sortable()
-                    ->searchable()
-            ])
-            ->defaultSort('created_at', 'desc')
-            ->filters([])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+            TextColumn::make('name')
+                ->sortable()
+                ->searchable(),
 
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+            // ✅ Related Categories Column correctly placed
+            TextColumn::make('categories.name')
+                ->label('Categories')
+                ->limit(50)
+                ->toggleable()
+                ->wrap()
+                ->formatStateUsing(function ($state, $record) {
+                    return $record->categories->pluck('name')->implode(', ');
+                }),
+        ])
+        ->defaultSort('created_at', 'desc')
+        ->filters([])
+        ->actions([
+            Tables\Actions\EditAction::make(),
+            Tables\Actions\DeleteAction::make(),
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
+            ]),
+        ]);
+}
 
     public static function getRelations(): array
     {

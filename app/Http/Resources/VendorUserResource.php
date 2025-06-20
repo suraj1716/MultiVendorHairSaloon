@@ -20,6 +20,7 @@ class VendorUserResource extends JsonResource
             'store_name'=>$this->vendor->store_name,
             'store_address'=>$this->vendor->store_address,
             'vendor_type'=>$this->vendor->vendor_type,
+             'booking_fee'=>$this->vendor->booking_fee,
             'business_start_time'=>$this->vendor->business_start_time,
             'business_end_time'=>$this->vendor->business_end_time,
             'slot_interval_minutes'=>$this->vendor->slot_interval_minutes,

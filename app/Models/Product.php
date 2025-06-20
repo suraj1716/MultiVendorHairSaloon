@@ -22,7 +22,9 @@ class Product extends Model implements HasMedia
 {
 use HasFactory;
     use InteractsWithMedia;
-
+protected $casts = [
+    'deleted_combinations' => 'array',
+];
     // protected $casts = [
     //     'variations' => 'array'
     // ];
@@ -120,10 +122,12 @@ public function scopeSearchKeyword($query, $keyword)
     }
 
 
-    public function variationTypes(): HasMany
-    {
-        return $this->hasMany(VariationType::class);
-    }
+  public function variationTypes()
+{
+    return $this->hasMany(VariationType::class);
+    // ->with('options')->orderBy('sort');
+}
+
 
 
     public function variations()

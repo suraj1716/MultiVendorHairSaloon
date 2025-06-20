@@ -9,7 +9,6 @@ use App\Models\Vendor;
 use Filament\Forms;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -17,41 +16,32 @@ use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\SelectColumn;
+use Illuminate\Support\Facades\Hash;
 
 class VendorResource extends Resource
 {
     protected static ?string $model = Vendor::class;
+     protected static ?string $navigationIcon = 'heroicon-o-building-storefront'; // for a "store" icon
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                TextColumn::make('user.name')
-                    ->label('Name')
-                    ->sortable()
-                    ->searchable(),
+                TextColumn::make('user.name')->label('Name')->sortable()->searchable(),
+                TextColumn::make('user.email')->label('Email')->sortable()->searchable(),
+                TextColumn::make('store_name')->label('Store Name')->sortable()->searchable(),
 
-                TextColumn::make('user.email')
-                    ->label('Email')
-                    ->sortable()
-                    ->searchable(),
-
-                TextColumn::make('store_name')
-                    ->label('Store Name')
-                    ->sortable()
-                    ->searchable(),
-
-                // Display vendor type as text with labels
+                // Display vendor_type with labels
                 TextColumn::make('vendor_type')
                     ->label('Vendor Type')
                     ->sortable()
                     ->searchable()
                     ->formatStateUsing(fn($state) => VendorType::labels()[$state] ?? $state),
 
-                // Select dropdown to update vendor type with options from enum labels
+                // Editable vendor_type dropdown in table
                 SelectColumn::make('vendor_type')
                     ->label('Update Vendor Type')
-                    ->options(VendorType::labels())   // pass the array of [value => label]
+                    ->options(VendorType::labels())
                     ->rules(['required'])
                     ->searchable()
                     ->sortable()
@@ -60,36 +50,37 @@ class VendorResource extends Resource
                         $record->save();
                     }),
 
+                // New booking_fee column added
+                TextColumn::make('booking_fee')
+                    ->label('Booking Fee')
+                    ->sortable()
+                    ->searchable(),
 
                 TextColumn::make('business_start_time')->label('Start Time'),
                 TextColumn::make('business_end_time')->label('End Time'),
                 TextColumn::make('slot_interval_minutes')->label('Slot Interval'),
+
                 TextColumn::make('recurring_closed_days')
-    ->label('Recurring Closed Days')
-    ->formatStateUsing(function ($state) {
-        // If state is a string like "0,6", convert to array
-        if (is_string($state)) {
-            $state = array_map('trim', explode(',', $state));
-        }
-
-        if (is_array($state)) {
-            $dayMap = [
-                0 => 'Sunday',
-                1 => 'Monday',
-                2 => 'Tuesday',
-                3 => 'Wednesday',
-                4 => 'Thursday',
-                5 => 'Friday',
-                6 => 'Saturday',
-            ];
-            // Map strings to int keys if they are strings, so cast to int
-            $days = array_map(fn($num) => $dayMap[(int)$num] ?? $num, $state);
-            return implode(', ', $days);
-        }
-
-        return $state;
-    }),
-
+                    ->label('Recurring Closed Days')
+                    ->formatStateUsing(function ($state) {
+                        if (is_string($state)) {
+                            $state = array_map('trim', explode(',', $state));
+                        }
+                        if (is_array($state)) {
+                            $dayMap = [
+                                0 => 'Sunday',
+                                1 => 'Monday',
+                                2 => 'Tuesday',
+                                3 => 'Wednesday',
+                                4 => 'Thursday',
+                                5 => 'Friday',
+                                6 => 'Saturday',
+                            ];
+                            $days = array_map(fn($num) => $dayMap[(int)$num] ?? $num, $state);
+                            return implode(', ', $days);
+                        }
+                        return $state;
+                    }),
 
                 TextColumn::make('closed_dates')->label('Closed Dates'),
 
@@ -116,35 +107,29 @@ class VendorResource extends Resource
                     }),
             ])
             ->actions([
-                Action::make('approve')
-                    ->label('Approve')
+                Action::make('connect_to_stripe')
+                    ->label('Connect to Stripe')
+                    ->color('primary')
+                    ->icon('heroicon-o-link')
+                    ->visible(fn($record) => !$record->user->stripe_account_active)
+                    ->url(fn($record) => route('stripe.connect', ['user' => $record->user->id]))
+                    ->openUrlInNewTab(),
+
+                Action::make('stripe_connected')
+                    ->label('Connected to Stripe')
                     ->color('success')
                     ->icon('heroicon-o-check-circle')
-                    ->requiresConfirmation()
-                    ->visible(fn($record) => $record->status === VendorStatusEnum::Pending->value)
-                    ->action(function ($record) {
-                        $record->status = VendorStatusEnum::Approved->value;
-                        $record->save();
-                    }),
-
-                Action::make('reject')
-                    ->label('Reject')
-                    ->color('danger')
-                    ->icon('heroicon-o-x-circle')
-                    ->requiresConfirmation()
-                    ->visible(fn($record) => $record->status === VendorStatusEnum::Pending->value)
-                    ->action(function ($record) {
-                        $record->status = VendorStatusEnum::Rejected->value;
-                        $record->save();
-                    }),
+                    ->disabled()
+                    ->visible(fn($record) => $record->user->stripe_account_active),
             ]);
     }
 
-
-    public static function form(Form $form): Form
+    public static function form(Forms\Form $form): Forms\Form
     {
         return $form
             ->schema([
+
+
                 TimePicker::make('business_start_time')
                     ->label('Business Start Time')
                     ->required(),
@@ -159,58 +144,82 @@ class VendorResource extends Resource
                     ->minValue(5)
                     ->required(),
 
-               Select::make('recurring_closed_days')
-    ->multiple()
-    ->options([
-        0 => 'Sunday',
-        1 => 'Monday',
-        2 => 'Tuesday',
-        3 => 'Wednesday',
-        4 => 'Thursday',
-        5 => 'Friday',
-        6 => 'Saturday',
-    ])
-    ->label('Recurring Closed Days')
-    ->formatStateUsing(fn ($state) => array_filter(
-        array_map(fn ($item) => is_numeric($item) ? (int) $item : null, $state ?? []),
-        fn ($item) => $item !== null
-    )),
-
+                Select::make('recurring_closed_days')
+                    ->multiple()
+                    ->options([
+                        0 => 'Sunday',
+                        1 => 'Monday',
+                        2 => 'Tuesday',
+                        3 => 'Wednesday',
+                        4 => 'Thursday',
+                        5 => 'Friday',
+                        6 => 'Saturday',
+                    ])
+                    ->label('Recurring Closed Days')
+                    ->formatStateUsing(fn($state) => array_filter(
+                        array_map(fn($item) => is_numeric($item) ? (int) $item : null, $state ?? []),
+                        fn($item) => $item !== null
+                    )),
 
                 Forms\Components\Textarea::make('closed_dates')
                     ->label('Closed Dates')
                     ->helperText('Enter closed dates as comma-separated (e.g., 2025-05-30,2025-06-10)')
-                    // ->afterStateHydrated(function ($state, callable $set) {
-                    //     if (is_array($state)) {
-                    //         $set(implode(',', $state));
-                    //     }
-                    // })
                     ->dehydrateStateUsing(function ($state) {
-    if (is_array($state)) {
-        // Already an array, trim each element and filter empty strings
-        return array_filter(array_map('trim', $state));
-    } elseif (is_string($state)) {
-        // Convert comma-separated string to array, trim and filter
-        return array_filter(array_map('trim', explode(',', $state)));
-    }
-    // For other types, just return as is or empty array
-    return [];
-}),
+                        if (is_array($state)) {
+                            return array_filter(array_map('trim', $state));
+                        } elseif (is_string($state)) {
+                            return array_filter(array_map('trim', explode(',', $state)));
+                        }
+                        return [];
+                    }),
 
+                // Added vendor_type select field
+                Select::make('vendor_type')
+                    ->label('Vendor Type')
+                    ->options(VendorType::labels())
+                    ->required(),
+
+                // Added booking_fee text input
+                Forms\Components\TextInput::make('booking_fee')
+                    ->label('Booking Fee')
+                    ->numeric()
+                    ->required(),
             ]);
     }
-
 
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListVendors::route('/'),
-            'edit' => Pages\EditVendor::route('/{record}/edit'),  // Add this line
+            'create' => Pages\CreateVendor::route('/create'),
+            'edit' => Pages\EditVendor::route('/{record}/edit'),
         ];
     }
 
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->with('user');
+    }
+
+    public static function mutateFormDataBeforeCreate(array $data): array
+    {
+        // Extract email and hashed password from form data
+        $email = $data['email'];
+        $password = $data['password']; // Already hashed by dehydrateStateUsing
+
+        // Create User
+        $user = \App\Models\User::create([
+            'email' => $email,
+            'password' => $password,
+            // Add more fields if needed
+        ]);
+
+        // Assign new user id to vendor
+        $data['user_id'] = $user->id;
+
+        // Remove email and password from vendor data
+        unset($data['email'], $data['password']);
+
+        return $data;
     }
 }

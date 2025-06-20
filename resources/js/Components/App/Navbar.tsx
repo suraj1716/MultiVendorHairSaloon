@@ -6,31 +6,19 @@ import {
   DialogBackdrop,
   DialogPanel,
   Disclosure,
-  Popover,
-  PopoverButton,
-  PopoverGroup,
-  PopoverPanel,
-  Tab,
-  TabGroup,
-  TabList,
-  TabPanel,
-  TabPanels,
+  DisclosurePanel,
 } from "@headlessui/react";
-import {
-  Bars3Icon,
-  MagnifyingGlassIcon,
-  ShoppingBagIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useForm, usePage } from "@inertiajs/react";
 import MiniCartDropdown from "./MiniCartDropdown";
 import { PageProps } from "@/types";
 import { Search } from "lucide-react";
 import CategoriesDropdown from "./CategoriesDropdown";
 import SearchBar from "./SearchBar";
-import Department from "./Department";
+import DepartmentComponent from "./Department";
 import LoginModal from "@/Pages/Auth/Login";
-
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { router } from "@inertiajs/react";
 interface Category {
   id: string;
   name: string;
@@ -43,159 +31,70 @@ interface Department {
   image?: string; // optional
 }
 
-interface Props {
-  departments: Department[];
-}
+// interface Props {
+//   departments: Department[];
+// }
 
-const navigation = {
-  categories: [
-    {
-      id: "women",
-      name: "Women",
-      featured: [
-        {
-          name: "New Arrivals",
-          href: "#",
-          imageSrc:
-            "https://tailwindcss.com/plus-assets/img/ecommerce-images/mega-menu-category-01.jpg",
-          imageAlt:
-            "Models sitting back to back, wearing Basic Tee in black and bone.",
-        },
-        {
-          name: "Basic Tees",
-          href: "#",
-          imageSrc:
-            "https://tailwindcss.com/plus-assets/img/ecommerce-images/mega-menu-category-02.jpg",
-          imageAlt:
-            "Close up of Basic Tee fall bundle with off-white, ochre, olive, and black tees.",
-        },
-      ],
-      sections: [
-        {
-          id: "clothing",
-          name: "Clothing",
-          items: [
-            { name: "Tops", href: "#" },
-            { name: "Dresses", href: "#" },
-            { name: "Pants", href: "#" },
-            { name: "Denim", href: "#" },
-            { name: "Sweaters", href: "#" },
-            { name: "T-Shirts", href: "#" },
-            { name: "Jackets", href: "#" },
-            { name: "Activewear", href: "#" },
-            { name: "Browse All", href: "#" },
-          ],
-        },
-        {
-          id: "accessories",
-          name: "Accessories",
-          items: [
-            { name: "Watches", href: "#" },
-            { name: "Wallets", href: "#" },
-            { name: "Bags", href: "#" },
-            { name: "Sunglasses", href: "#" },
-            { name: "Hats", href: "#" },
-            { name: "Belts", href: "#" },
-          ],
-        },
-        {
-          id: "brands",
-          name: "Brands",
-          items: [
-            { name: "Full Nelson", href: "#" },
-            { name: "My Way", href: "#" },
-            { name: "Re-Arranged", href: "#" },
-            { name: "Counterfeit", href: "#" },
-            { name: "Significant Other", href: "#" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "men",
-      name: "Men",
-      featured: [
-        {
-          name: "New Arrivals",
-          href: "#",
-          imageSrc:
-            "https://tailwindcss.com/plus-assets/img/ecommerce-images/product-page-04-detail-product-shot-01.jpg",
-          imageAlt:
-            "Drawstring top with elastic loop closure and textured interior padding.",
-        },
-        {
-          name: "Artwork Tees",
-          href: "#",
-          imageSrc:
-            "https://tailwindcss.com/plus-assets/img/ecommerce-images/category-page-02-image-card-06.jpg",
-          imageAlt:
-            "Three shirts in gray, white, and blue arranged on table with same line drawing of hands and shapes overlapping on front of shirt.",
-        },
-      ],
-      sections: [
-        {
-          id: "clothing",
-          name: "Clothing",
-          items: [
-            { name: "Tops", href: "#" },
-            { name: "Pants", href: "#" },
-            { name: "Sweaters", href: "#" },
-            { name: "T-Shirts", href: "#" },
-            { name: "Jackets", href: "#" },
-            { name: "Activewear", href: "#" },
-            { name: "Browse All", href: "#" },
-          ],
-        },
-        {
-          id: "accessories",
-          name: "Accessories",
-          items: [
-            { name: "Watches", href: "#" },
-            { name: "Wallets", href: "#" },
-            { name: "Bags", href: "#" },
-            { name: "Sunglasses", href: "#" },
-            { name: "Hats", href: "#" },
-            { name: "Belts", href: "#" },
-          ],
-        },
-        {
-          id: "brands",
-          name: "Brands",
-          items: [
-            { name: "Re-Arranged", href: "#" },
-            { name: "Counterfeit", href: "#" },
-            { name: "Full Nelson", href: "#" },
-            { name: "My Way", href: "#" },
-          ],
-        },
-      ],
-    },
-  ],
-  pages: [
-    { name: "Company", href: "#" },
-    { name: "Stores", href: "#" },
-  ],
+type Product = {
+  title: string;
+  slug: string;
+  department?: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  category?: {
+    id: number;
+    name: string;
+  };
 };
 
+interface ProductGroup {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+interface CategoryGroup {
+  id: number;
+  name: string;
+  active: boolean;
+}
+interface Props {
+  departments: any[]; // for categories dropdown
+  categoryGroups: CategoryGroup[];
+  productGroups: ProductGroup[];
+}
 export default function Navbar() {
   const {
     departments,
     auth,
     keyword,
-    totalPrice,
-    totalQuantity,
-    miniCartItems,
-  } = usePage<PageProps<{ keyword: string }>>().props;
+    categoryGroups = [],
+    productGroups = [],
+  } = usePage<
+    PageProps<{
+      keyword: string;
+      departments: Department[];
+      categoryGroups: CategoryGroup[];
+      productGroups: ProductGroup[];
+      auth: { user: any };
+    }>
+  >().props;
   const { user } = auth;
   const [loginOpen, setLoginOpen] = useState(false);
   const [open, setOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-
-    console.log('avatar',user)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [showDealsDropdown, setShowDealsDropdown] = useState(false);
+  const [dealsOpen, setDealsOpen] = useState(false);
   return (
     <div className="relative z-[500] top-0  bg-white shadow">
       {/* Mobile menu */}
-      <Dialog open={open} onClose={setOpen} className="relative z-[600] lg:hidden">
+      <Dialog
+        open={open}
+        onClose={setOpen}
+        className="relative z-[600] lg:hidden"
+      >
         <DialogBackdrop
           transition
           className="fixed inset-0 bg-black/25 transition-opacity duration-300 ease-linear data-closed:opacity-0"
@@ -206,6 +105,7 @@ export default function Navbar() {
             transition
             className="relative flex w-full max-w-xs transform flex-col overflow-y-auto bg-white pb-12 shadow-xl transition duration-300 ease-in-out data-closed:-translate-x-full"
           >
+            {/* Close Button */}
             <div className="flex px-4 pt-5 pb-2">
               <button
                 type="button"
@@ -218,96 +118,230 @@ export default function Navbar() {
               </button>
             </div>
 
-            {/* Links */}
-            <CategoriesDropdown departments={departments} />
-
-            {user && (
-              <Disclosure>
-                {({ open }) => (
-                  <>
-                    <Disclosure.Button className="w-full text-left border-t border-gray-200 px-4 py-4 text-sm font-semibold text-gray-900 hover:bg-gray-50 flex justify-between items-center">
-                      <span>
-    <img src={user.avatar} alt="User Avatar" className="inline-block w-6 h-6 rounded-full mr-2" />
-
-  </span>
-                      <svg
-                        className={`h-5 w-5 transform transition-transform duration-200 ${
-                          open ? "rotate-180" : ""
-                        }`}
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M19 9l-7 7-7-7"
-                        />
-                      </svg>
-                    </Disclosure.Button>
-
-                    <Disclosure.Panel className="px-4 pt-2 pb-4 space-y-2 text-sm text-gray-700">
-                      <Link
-                        href={route("profile.edit")}
-                        className="block hover:text-indigo-600"
-                      >
-                        Profile
-                      </Link>
-                      <Link
-                        href={route("bookings.history")}
-                        className="block hover:text-indigo-600"
-                      >
-                        Bookings
-                      </Link>
-                      <Link
-                        href={route("orders.history")}
-                        className="block hover:text-indigo-600"
-                      >
-                        Order History
-                      </Link>
-                    </Disclosure.Panel>
-                  </>
-                )}
-              </Disclosure>
-            )}
-
-            {user ? (
-              <div>
-                <Link
-                  href={route("logout")}
-                  method="post"
-                  as="button"
-                  className="hover:bg-indigo-50 px-3 py-2 rounded"
-                >
-                  Logout
-                </Link>
-              </div>
-            ) : (
-              <div className="border-t border-gray-200 px-4 py-6">
-                <div className="space-y-2">
-                  <span
+            {/* Auth or User Account Section */}
+            <div className="border-b border-gray-200 px-6 pb-6 pt-2 text-left space-y-3">
+              {!user ? (
+                <>
+                  <button
+                    type="button"
                     onClick={() => setLoginOpen(true)}
-                    className="cursor-pointer block text-gray-700 hover:text-indigo-600"
+                    className="w-full rounded-md border border-indigo-600 px-4 py-2 text-indigo-600 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     Sign in
-                  </span>
-
+                  </button>
                   <Link
                     href={route("register")}
-                    className="block text-gray-700 hover:text-indigo-600"
+                    className="block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
                   >
                     Create account
                   </Link>
-                </div>
-              </div>
-            )}
+                </>
+              ) : (
+                <Disclosure>
+                  {({ open }) => (
+                    <>
+                      <Disclosure.Button className="w-full text-left text-sm font-semibold text-gray-900 hover:bg-gray-50 flex justify-between items-center">
+                        <span className="flex items-center space-x-3 px-2 py-1 rounded  transition-colors duration-200 cursor-pointer">
+                          <img
+                            src={user.avatar}
+                            alt="User Avatar"
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <span className="text-xl font-medium">Account</span>
+                        </span>
 
-            <div className="border-t border-gray-200 px-4 py-6">
+                        <ChevronDownIcon
+                          className={`h-5 w-5 transition-transform duration-200 ${
+                            open ? "rotate-180" : ""
+                          }`}
+                        />
+                      </Disclosure.Button>
+
+                      <Disclosure.Panel className=" bg-slate-100 px-4 pt-2 pb-4 space-y-2 text-sm text-gray-700">
+                        <Link
+                          href={route("profile.edit")}
+                          className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                        >
+                          Profile
+                        </Link>
+                        <Link
+                          href={route("bookings.history")}
+                          className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                        >
+                          Bookings
+                        </Link>
+                        <Link
+                          href={route("orders.history")}
+                          className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                        >
+                          Order History
+                        </Link>
+                        <Link
+                          href={route("logout")}
+                          method="post"
+                          as="button"
+                          className="ml-2 block text-lg text-gray-700 hover:bg-red-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                        >
+                          Logout
+                        </Link>
+                      </Disclosure.Panel>
+                    </>
+                  )}
+                </Disclosure>
+              )}
+            </div>
+
+            {/* Mobile Navigation Links */}
+            <div className=" flex flex-col space-y-4 px-4 mt-6 mb-6 w-full">
+              <Link
+                href={route("shop.search")}
+                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+              >
+                All Products
+              </Link>
+
+              {/* Expandable Categories Section */}
+              <Disclosure>
+                {({ open }) => (
+                  <>
+                    <Disclosure.Button className="w-full text-left flex justify-between items-center text-lg font-medium text-gray-900 hover:bg-purple-700 hover:text-white px-4 py-3 border-t border-b">
+                      <span>All Categories</span>
+                      <ChevronDownIcon
+                        className={`h-5 w-5 transition-transform duration-200 ${
+                          open ? "rotate-180" : ""
+                        }`}
+                      />
+                    </Disclosure.Button>
+
+                    <DisclosurePanel>
+                      <CategoriesDropdown departments={departments} />
+                    </DisclosurePanel>
+                  </>
+                )}
+              </Disclosure>
+              {/* Deals Dropdown */}
+              <div className="relative">
+                <button
+                  onClick={() => setDealsOpen(!dealsOpen)}
+                  className="w-full text-left flex justify-between items-center text-lg font-medium text-gray-900 hover:bg-purple-700 hover:text-white px-4 py-3 border-t border-b rounded"
+                  aria-expanded={dealsOpen}
+                  aria-controls="deals-menu"
+                >
+                  <span     >Deals</span>
+                  <ChevronDownIcon
+                    className={`h-5 w-5 transition-transform duration-200 ${
+                      dealsOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                {dealsOpen && (
+                  <div
+                    id="deals-menu"
+                    className="absolute bg-slate-100 z-20 left-0 mt-1 w-full  rounded border border-gray-200 max-h-80 overflow-y-auto"
+                  >
+                    {/* Category Groups */}
+                    <div className="border-b border-gray-200 px-4 py-2">
+                      <h4 className=" block font-bold text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded">
+                        Category Groups
+                      </h4>
+                      {categoryGroups.filter((g) => g.active).length === 0 && (
+                        <p className="text-gray-500 text-sm">
+                          No active category groups
+                        </p>
+                      )}
+                      <ul>
+                        {categoryGroups
+                          .filter((group) => group.active)
+                          .map((group) => (
+                            <li key={group.id}>
+                              <button
+                                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                                onClick={() => {
+                                  router.visit(
+                                    `/?scrollToCategoryId=${group.id}`,
+                                    {
+                                      preserveScroll: true,
+                                      preserveState: true,
+                                    }
+                                  );
+                                  setDealsOpen(false);
+                                  setOpen(false); // close mobile menu too
+                                }}
+                              >
+                                {group.name}
+                              </button>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+
+                    {/* Product Groups */}
+                    <div className="px-4 py-2">
+                      <h4 className="block font-bold text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded">
+                        Product Groups
+                      </h4>
+                      {productGroups.length === 0 && (
+                        <p className="text-gray-500 text-sm">
+                          No product groups available
+                        </p>
+                      )}
+                      <ul>
+                        {productGroups.map((group) => (
+                          <li key={group.id}>
+                            <button
+                              className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                              onClick={() => {
+                                router.visit(
+                                  route("productGroup.show", {
+                                    productGroup: group.slug,
+                                  }),
+                                  {
+                                    preserveScroll: true,
+                                    preserveState: true,
+                                  }
+                                );
+                                setDealsOpen(false);
+                                setOpen(false); // close mobile menu too
+                              }}
+                            >
+                              {group.name}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <Link
+                href={route("contact.index")}
+                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+              >
+                Get Quotes
+              </Link>
+
+              <Link
+                href={route("about")}
+                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+              >
+                About
+              </Link>
+
+              <Link
+                href={route("contact.index")}
+                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+              >
+                Contact Us
+              </Link>
+            </div>
+
+            {/* Currency Switcher */}
+            <div className="mt-auto border-t border-gray-200 px-4 py-6">
               <a href="#" className="-m-2 flex items-center p-2">
                 <img
-                  alt=""
+                  alt="Flag"
                   src="https://tailwindcss.com/plus-assets/img/flags/flag-canada.svg"
                   className="block h-auto w-5 shrink-0"
                 />
@@ -345,103 +379,20 @@ export default function Navbar() {
                 </a>
               </div>
 
-              {/* Flyout menus */}
-              <PopoverGroup className="hidden lg:ml-8 lg:block lg:self-stretch">
-                <div className="flex h-full space-x-8">
-                  {navigation.categories.map((category) => (
-                    <Popover key={category.name} className="flex">
-                      <div className="relative flex">
-                        <PopoverButton className="relative z-10 -mb-px flex items-center border-b-2 border-transparent pt-px text-sm font-medium text-gray-700 transition-colors duration-200 ease-out hover:text-gray-800 data-open:border-indigo-600 data-open:text-indigo-600">
-                          {category.name}
-                        </PopoverButton>
-                      </div>
-
-                      <PopoverPanel
-                        transition
-                        className="absolute inset-x-0 top-full text-sm text-gray-500 transition data-closed:opacity-0 data-enter:duration-200 data-enter:ease-out data-leave:duration-150 data-leave:ease-in"
-                      >
-                        {/* Presentational element used to render the bottom shadow, if we put the shadow on the actual panel it pokes out the top, so we use this shorter element to hide the top of the shadow */}
-                        <div
-                          aria-hidden="true"
-                          className="absolute inset-0 top-1/2 bg-white shadow-sm"
-                        />
-
-                        <div className="relative bg-white">
-                          <div className="mx-auto max-w-7xl px-8">
-                            <div className="grid grid-cols-2 gap-x-8 gap-y-10 py-16">
-                              <div className="col-start-2 grid grid-cols-2 gap-x-8">
-                                {category.featured.map((item) => (
-                                  <div
-                                    key={item.name}
-                                    className="group relative text-base sm:text-sm"
-                                  >
-                                    <img
-                                      alt={item.imageAlt}
-                                      src={item.imageSrc}
-                                      className="aspect-square w-full rounded-lg bg-gray-100 object-cover group-hover:opacity-75"
-                                    />
-                                    <a
-                                      href={item.href}
-                                      className="mt-6 block font-medium text-gray-900"
-                                    >
-                                      <span
-                                        aria-hidden="true"
-                                        className="absolute inset-0 z-10"
-                                      />
-                                      {item.name}
-                                    </a>
-                                    <p aria-hidden="true" className="mt-1">
-                                      Shop now
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="row-start-1 grid grid-cols-3 gap-x-8 gap-y-10 text-sm">
-                                {category.sections.map((section) => (
-                                  <div key={section.name}>
-                                    <p
-                                      id={`${section.name}-heading`}
-                                      className="font-medium text-gray-900"
-                                    >
-                                      {section.name}
-                                    </p>
-                                    <ul
-                                      role="list"
-                                      aria-labelledby={`${section.name}-heading`}
-                                      className="mt-6 space-y-6 sm:mt-4 sm:space-y-4"
-                                    >
-                                      {section.items.map((item) => (
-                                        <li key={item.name} className="flex">
-                                          <a
-                                            href={item.href}
-                                            className="hover:text-gray-800"
-                                          >
-                                            {item.name}
-                                          </a>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </PopoverPanel>
-                    </Popover>
-                  ))}
-
-                  {navigation.pages.map((page) => (
-                    <a
-                      key={page.name}
-                      href={page.href}
-                      className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-800"
-                    >
-                      {page.name}
-                    </a>
-                  ))}
+              <div className="hidden lg:flex gap-10">
+                <div className="ml-auto flex items-center">
+                  <Link href={route("shop.search")}>All Products</Link>
                 </div>
-              </PopoverGroup>
+                <div className="ml-auto flex items-center">
+                  <Link href={route("shop.search")}>Get Quotes</Link>
+                </div>
+                <div className="ml-auto flex items-center">
+                  <Link href={route("about")}>About</Link>
+                </div>
+                <div className="ml-auto flex items-center">
+                  <Link href={route("contact.index")}>Contact Us</Link>
+                </div>
+              </div>
 
               <div className="ml-auto flex items-center">
                 {/* Cart (visible on all screen sizes) */}
@@ -463,10 +414,10 @@ export default function Navbar() {
                       aria-label="User menu"
                     >
                       <img
-        src={user.avatar}
-        alt={user.name || "User"}
-        className="rounded-full w-10 h-10 object-cover"
-      />
+                        src={user.avatar}
+                        alt={user.name || "User"}
+                        className="rounded-full w-10 h-10 object-cover"
+                      />
                     </button>
                     <ul
                       tabIndex={0}
@@ -531,7 +482,7 @@ export default function Navbar() {
                       />
                       <Link
                         href={route("register")}
-                        className="text-sm font-medium text-gray-700 hover:text-gray-800"
+                        className="text-lg font-medium text-gray-700 hover:text-gray-800"
                       >
                         Create account
                       </Link>
@@ -557,11 +508,10 @@ export default function Navbar() {
             </div>
           </div>
           <div className="sticky top-4 mt-5 w-full lg:static">
-            <Department />
+            <DepartmentComponent />
           </div>
         </nav>
       </header>
     </div>
-
   );
 }

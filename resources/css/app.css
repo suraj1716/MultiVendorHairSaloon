@@ -8,6 +8,43 @@
     @apply bg-blue-600 text-white;
 }
 
+#nprogress .bar {
+  background: #2563eb; /* Tailwind blue-600 */
+  height: 3px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@font-face {
+  font-family: 'Custom Swing Tags';
+  src: url('/fonts/CustomSwingTags.woff2') format('woff2'),
+       url('/fonts/CustomSwingTags.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Heading style */
+.seo-h1 {
+  font-family: 'Custom Swing Tags', cursive, sans-serif;
+  font-weight: normal;
+  font-size: 2.5rem; /* 40px */
+  line-height: 1;
+  text-align: center;
+  color: #1F2937; /* Tailwind’s gray-800 */
+  margin-bottom: 1.5rem; /* mb-6 */
+}
+
+
+
 @layer base {
   :root {
     --background: 0 0% 100%;

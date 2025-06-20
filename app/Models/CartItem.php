@@ -24,6 +24,7 @@ class CartItem extends Model
         'attachment_path',
         'attachment_name', // <- this MUST be here
         'variation_type_option_ids',
+        'designer'
         // other fields...
     ];
 

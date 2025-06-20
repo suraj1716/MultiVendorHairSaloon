@@ -71,6 +71,8 @@ function Department() {
             />
             <Link
               href={route("product.byDepartment", department.slug)}
+                preserveScroll={true}
+  preserveState={true}
               className={`text-center px-3 py-1 rounded-full text-xs font-medium transition ${
                 isActive
                   ? "bg-indigo-600 text-white shadow-md"

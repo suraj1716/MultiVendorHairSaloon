@@ -17,20 +17,20 @@ import Contact from "@/Pages/Contact";
 // other imports...
 
 import { CategoryGroup, Category, Department, ProductGroup } from "@/types"; // Add these types
-import { usePage } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
 import ProductCarousel from "@/Components/App/ProductCarousel";
 
 export default function Home({
   products,
   categoryGroups,
   productGroups,
+  allproducts,
 }: PageProps<{
+  allproducts: PaginationProps<Product>;
   products: PaginationProps<Product>;
   categoryGroups: CategoryGroup[];
   productGroups: ProductGroup[]; // camelCase too
 }>) {
-  //  console.log(products.data);
-  console.log(products); // Just to verify data
   const { props, url } = usePage();
 
   useEffect(() => {
@@ -51,9 +51,11 @@ export default function Home({
   useEffect(() => {
     // Extract scrollTo param from URL query string
     const params = new URLSearchParams(window.location.search);
-    const scrollTo = params.get("scrollTo");
-    if (scrollTo) {
-      const el = document.getElementById(`category-group-${scrollTo}`);
+    const scrollToCategoryId = params.get("scrollToCategoryId");
+    if (scrollToCategoryId) {
+      const el = document.getElementById(
+        `category-group-${scrollToCategoryId}`
+      );
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
       }
@@ -63,164 +65,189 @@ export default function Home({
   // Redirect to Product Group
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const scrollTo = urlParams.get("scrollTo");
-    if (scrollTo) {
-      const el = document.getElementById(`product-group-${scrollTo}`);
+    const scrollToProductId = urlParams.get("scrollToProductId");
+    if (scrollToProductId) {
+      const el = document.getElementById(`product-group-${scrollToProductId}`);
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
       }
     }
   }, []);
 
-  return (
-    <div className="overflow-x-hidden">
-      <AuthenticatedLayout>
-        {/* Use Hero_Banner */}
+  const headingClass =
+    "text-center text-4xl font-bold text-gray-900 mb-12 font-Roboto tracking-wide";
 
+  return (
+    <div className="overflow-x-hidden font-montserrat">
+      <AuthenticatedLayout>
+        {/* Hero Banner */}
         <div className="z-[400]">
           <HeroBanner />
         </div>
 
-        {/* Custom Product Groups */}
-        <div className="w-full px-0 sm:px-4 mt-12 space-y-16">
-          {productGroups.map((group) => {
+        {/* Product Groups Section */}
+        <section className="w-full">
+          {productGroups.map((group, index) => {
             const products = Array.isArray(group.products?.data)
               ? group.products.data
               : [];
 
+            const bgColor = index % 2 === 0 ? "bg-gray-100" : "bg-white";
+
             return (
-              <ProductCarousel
+              <div
                 key={group.id}
-                title={group.name}
-                products={products}
-                wrapperClassName="scroll-mt-20"
-                sectionClassName="bg-white rounded-lg shadow px-4 py-6 sm:px-6"
-              />
-            );
-          })}
-        </div>
+                id={`product-group-${group.id}`}
+                className={`${bgColor} w-full py-12`}
+              >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+                  <div className="grid grid-cols-3 items-center">
+                    <div></div>
 
-        <Contact />
+                    <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-2 md:mb-8 leading-snug col-span-3 md:col-span-1">
+                      {group.name}
+                    </h2>
 
-        {/* Custom Category Group */}
-        <div className="px-6 mt-12 space-y-10">
-          {categoryGroups.map((group) => (
-            <div
-              id={`category-group-${group.id}`}
-              key={group.id}
-              className="bg-white rounded-lg shadow p-4 border border-gray-300"
-            >
-              <h2 className="text-xl font-bold mb-2">{group.name}</h2>
+                    {/* Desktop version (right side) */}
+                    <Link
+                      href={route("productGroup.show", {
+                        productGroup: group.slug,
+                      })}
+                      className="hidden md:block text-sm text-blue-600 hover:underline font-medium text-right"
+                    >
+                      Show all products →
+                    </Link>
+                  </div>
 
-              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-4">
-                {group.categories.map((category) => (
-                  <a
-                    key={category.id}
-                    href={route("category.show", category.id)}
-                    className="block p-2 border border-gray-300 rounded hover:bg-gray-100 text-center"
-                  >
-                    {category.image && (
-                      <img
-                        src={`/storage/${category.image}`}
-                        alt={category.name}
-                        className="w-full h-32 object-contain rounded mb-2"
-                      />
-                    )}
-                    <div className="font-semibold">{category.name}</div>
-                    <div className="text-sm text-gray-500">
-                      {category.department?.name}
-                    </div>
-                  </a>
-                ))}
+                  {/* Mobile version (bottom below heading) */}
+                  <div className="md:hidden text-center mb-4">
+                    <Link
+                      href={route("productGroup.show", {
+                        productGroup: group.slug,
+                      })}
+                      className="text-sm text-blue-600 hover:underline font-medium"
+                    >
+                      Show all products →
+                    </Link>
+                  </div>
+
+                  <ProductCarousel
+                    title=""
+                    products={products}
+                    wrapperClassName="scroll-mt-20"
+                    sectionClassName="px-0 py-0"
+                  />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        <main className="w-full mb-10 mt-20">
-          <div className="flex items-center justify-between px-4 md:px-20 mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Products</h2>
-            <a
-              href="/products"
-              className="text-sm text-indigo-600 hover:underline font-medium"
-            >
-              See all products →
-            </a>
-          </div>
-
-          {productGroups.map((group) => {
-            const products = Array.isArray(group.products?.data)
-              ? group.products.data
-              : [];
-
-            return (
-              <ProductCarousel
-                key={group.id}
-                title={group.name}
-                products={products}
-                wrapperClassName={`scroll-mt-20`}
-                sectionClassName="bg-white rounded-lg shadow px-4 py-6 sm:px-6"
-              />
             );
           })}
-        </main>
+        </section>
 
-        <section className="text-gray-600 body-font">
-          <div className="container px-5 py-24 mx-auto">
-            <div className="flex flex-wrap -mx-4 -my-8">
-              {[1, 2, 3].map((item, i) => (
-                <div
-                  key={i}
-                  className="py-8 px-4 lg:w-1/3 opacity-0 animate-fadeUp delay-[100ms]"
-                  style={{ animationDelay: `${i * 200}ms` }}
-                >
-                  <div className="h-full flex items-start hover:scale-[1.02] transition-transform duration-300 ease-in-out">
-                    <div className="w-12 flex-shrink-0 flex flex-col text-center leading-none">
-                      <span className="text-gray-500 pb-2 mb-2 border-b-2 border-gray-200">
-                        Jul
-                      </span>
-                      <span className="font-medium text-lg text-gray-800 title-font leading-none">
-                        18
-                      </span>
-                    </div>
-                    <div className="flex-grow pl-6">
-                      <h2 className="tracking-widest text-xs title-font font-medium text-indigo-500 mb-1">
-                        CATEGORY
-                      </h2>
-                      <h1 className="title-font text-xl font-medium text-gray-900 mb-3">
-                        {["The 400 Blows", "Shooting Stars", "Neptune"][i]}
-                      </h1>
-                      <p className="leading-relaxed mb-5">
-                        Photo booth fam kinfolk cold-pressed sriracha leggings
-                        jianbing microdosing tousled waistcoat.
-                      </p>
-                      <a className="inline-flex items-center cursor-pointer hover:opacity-80 transition-opacity">
-                        <img
-                          alt="blog"
-                          src={`https://dummyimage.com/10${3 - i}x10${3 - i}`}
-                          className="w-8 h-8 rounded-full flex-shrink-0 object-cover object-center"
-                        />
-                        <span className="flex-grow flex flex-col pl-3">
-                          <span className="title-font font-medium text-gray-900">
-                            {
-                              [
-                                "Alper Kamu",
-                                "Holden Caulfield",
-                                "Henry Letham",
-                              ][i]
-                            }
-                          </span>
-                        </span>
+        {/* Category Groups Section */}
+        <section className="w-full ">
+          {categoryGroups.map((group, index) => {
+            const bgColor = index % 2 === 0 ? "bg-gray-100" : "bg-white";
+            return (
+              <div
+                key={group.id}
+                id={`category-group-${group.id}`}
+                className={`${bgColor} w-full py-12`}
+              >
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 space-y-12">
+                  <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-8 leading-snug">
+                    {group.name}
+                  </h2>
+                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-6 ">
+                    {group.categories.map((category) => (
+                      <a
+                        key={category.id}
+                        href={route("category.show", category.id)}
+                        className="block overflow-hidden transition"
+                      >
+                        <div className="relative aspect-square w-full bg-slate-300 border-2 rounded-3xl overflow-hidden">
+                          {category.image && (
+                            <img
+                              src={`/storage/${category.image}`}
+                              alt={category.name}
+                              className="w-full h-full object-cover opacity-70"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-black/60"></div>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-white font-semibold text-lg text-center px-2">
+                              {category.name}
+                            </span>
+                          </div>
+                        </div>
                       </a>
-                    </div>
+                    ))}
                   </div>
                 </div>
-              ))}
+              </div>
+            );
+          })}
+        </section>
+
+        {/* All Products Section */}
+        <section className="w-full bg-gray-100 relative">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 relative z-10">
+            <div className="grid grid-cols-3 items-center">
+              <div></div>
+
+              <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-2 md:mb-8 leading-snug col-span-3 md:col-span-1">
+                Products
+              </h2>
+
+              {/* Desktop version (right side) */}
+              <a
+                href="/shop"
+                className="hidden md:block text-sm text-indigo-600 hover:underline font-medium text-right"
+              >
+                See all products →
+              </a>
             </div>
+
+            {/* Mobile version (bottom below heading) */}
+            <div className="md:hidden text-center mb-4">
+              <a
+                href="/shop"
+                className="text-sm text-indigo-600 hover:underline font-medium"
+              >
+                See all products →
+              </a>
+            </div>
+          </div>
+
+          {/* Full-width carousel outside the container */}
+          <div
+            className="relative z-0 w-full overflow-x-hidden px-10"
+            style={{
+              marginLeft: "calc(-50vw + 50%)",
+              marginRight: "calc(-50vw + 50%)",
+            }}
+          >
+            <ProductCarousel
+              products={allproducts.data}
+              sectionClassName="bg-gray-100 mb-20"
+            />
           </div>
         </section>
 
-        {/* Other sections like Product List, Vendors, Testimonials, etc. */}
+        {/* Contact Section */}
+        {/* <section className="w-full bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12">
+            <Contact />
+          </div>
+        </section> */}
+
+        {/* Blog Section */}
+        <section className="w-full bg-gray-50 text-gray-600">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12">
+            <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-8 leading-snug">
+              Blog
+            </h2>
+          </div>
+        </section>
       </AuthenticatedLayout>
     </div>
   );

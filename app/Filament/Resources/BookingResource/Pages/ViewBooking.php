@@ -9,10 +9,15 @@ use App\Models\Booking;
 
 class ViewBooking extends ViewRecord
 {
-    protected static string $resource = OrderResource::class;
+    protected static string $resource = BookingResource::class;
 
     protected static string $view = 'filament.bookings.view-booking';
 
+
+//  public function getTitle(): ?string
+// {
+//     return 'View Booking';
+// }
     protected function getQuery()
     {
         return parent::getQuery()->with([
@@ -32,6 +37,9 @@ class ViewBooking extends ViewRecord
         'items' => $order->orderItems,
     ];
 }
+
+
+
 
 public function view(): \Illuminate\View\View
 {

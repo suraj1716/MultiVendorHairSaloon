@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\OrderStatusEnum;
+use App\Enums\VendorStatusEnum;
 use App\Http\Resources\OrderViewResource;
 use App\Mail\CheckoutCompleted;
 use App\Mail\NewOrderMail;
@@ -16,7 +17,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+use Stripe\Account;
 use Stripe\Exception\SignatureVerificationException;
+use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use UnexpectedValueException;
@@ -59,7 +62,6 @@ class StripeController extends Controller
 
     public function webhook(Request $request)
     {
-        Log::info('Webhook hit');
         $stripe = new StripeClient(config('app.stripe_secret_key'));
         $endpointSecret = config('app.stripe_webhook_secret');
         $payload = $request->getContent();
@@ -69,14 +71,11 @@ class StripeController extends Controller
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
         } catch (UnexpectedValueException $e) {
-            Log::error('Invalid payload: ' . $e->getMessage());
             return response('Invalid payload', 400);
         } catch (SignatureVerificationException $e) {
-            Log::error('Invalid signature: ' . $e->getMessage());
             return response('Invalid signature', 400);
         }
 
-        Log::info('Stripe webhook received: ' . $event->type);
 
         switch ($event->type) {
             case 'charge.updated':
@@ -109,7 +108,6 @@ class StripeController extends Controller
 
 
                     if ($orders->isEmpty()) {
-                        Log::warning("No orders found for payment_intent: $paymentIntent");
                         return response('No orders found', 404);
                     }
 
@@ -128,7 +126,6 @@ class StripeController extends Controller
                     // Now it's safe to access $orders[0]
                     Mail::to($orders[0]->user)->send(new CheckoutCompleted($orders));
                 } catch (\Exception $e) {
-                    Log::error('Error processing charge.updated: ' . $e->getMessage());
                     return response('Webhook error: ' . $e->getMessage(), 500);
                 }
                 break;
@@ -190,70 +187,115 @@ class StripeController extends Controller
 
 
 
-    case 'refund.created':
-    $refund = $event->data->object;
-    $paymentIntent = $refund['payment_intent'] ?? null;
+            case 'refund.created':
+                $refund = $event->data->object;
+                $paymentIntent = $refund['payment_intent'] ?? null;
 
-    Log::info('Stripe webhook: refund.created event received');
-    Log::info('Refund Event Data', ['payment_intent' => $paymentIntent]);
+                Log::info('Stripe webhook: refund.created event received');
+                Log::info('Refund Event Data', ['payment_intent' => $paymentIntent]);
 
-    if ($paymentIntent) {
-        $order = Order::where('payment_intent', $paymentIntent)
-            ->with(['user', 'vendorUser']) // Load relations
-            ->first();
+                if ($paymentIntent) {
+                    $order = Order::where('payment_intent', $paymentIntent)
+                        ->with(['user', 'vendorUser']) // Load relations
+                        ->first();
 
-        if ($order) {
-            $order->refund_id = $refund['id'];
-            $order->refund_amount = $refund['amount'] / 100;
-            $order->refunded_at = now();
-            $order->save();
-
-            Log::info("Refund saved for order ID {$order->id}");
-
-            try {
-                Mail::to($order->user)->send(new RefundProcessedForUser($order));
-                Mail::to($order->vendorUser)->send(new RefundProcessedForVendor($order));
-                Log::info("Refund emails sent to user and vendor for order ID {$order->id}");
-            } catch (\Exception $e) {
-                Log::error('Failed to send refund emails: ' . $e->getMessage());
-            }
-        } else {
-            Log::warning("No order found for refund payment_intent: $paymentIntent");
-        }
-    } else {
-        Log::warning('Refund event missing payment_intent');
-    }
-    break;
+                    if ($order) {
+                        $order->refund_id = $refund['id'];
+                        $order->refund_amount = $refund['amount'] / 100;
+                        $order->refunded_at = now();
+                        $order->save();
 
 
-
-
-
-
-
-
-
-                default:
-                Log::info('Unhandled event type: ' . $event->type);
+                        try {
+                            Mail::to($order->user)->send(new RefundProcessedForUser($order));
+                            Mail::to($order->vendorUser)->send(new RefundProcessedForVendor($order));
+                            Log::info("Refund emails sent to user and vendor for order ID {$order->id}");
+                        } catch (\Exception $e) {
+                            Log::error('Failed to send refund emails: ' . $e->getMessage());
+                        }
+                    } else {
+                        Log::warning("No order found for refund payment_intent: $paymentIntent");
+                    }
+                } else {
+                    Log::warning('Refund event missing payment_intent');
+                }
                 break;
 
-            }
-        Log::debug('Event payload', ['event' => $event]);
+
+
+
+            default:
+                break;
+        }
 
         return response('', 200);
     }
 
-    public function connect()
+
+
+    // connect from userprofile
+    // public function connect()
+    // {
+    //     $user = Auth::user();
+    //     if (!$user->getStripeAccountId()) {
+    //         $user->createStripeAccount(['type' => 'express']);
+    //     }
+
+    //     if (!$user->isStripeAccountActive()) {
+    //         return redirect($user->getstripeAccountLink());
+    //     }
+
+    //     return back()->with('success', 'Your account is already connected');
+    // }
+
+
+    // connect from admin dash board
+    public function connect(Request $request)
     {
+        Stripe::setApiKey(config('services.stripe.secret'));
+
         $user = Auth::user();
-        if (!$user->getStripeAccountId()) {
+
+        // Step 1: Create Stripe Account if it doesn't exist
+        if (!$user->stripe_account_id) {
             $user->createStripeAccount(['type' => 'express']);
+
+            // After creation, get the latest user record with new stripe_account_id
+            $user->refresh();
         }
 
-        if (!$user->isStripeAccountActive()) {
-            return redirect($user->getstripeAccountLink());
+        // Step 2: Check if onboarding is completed
+        if ($user->stripe_account_id) {
+            $account = \Stripe\Account::retrieve($user->stripe_account_id);
+
+            if ($account->details_submitted && empty($account->requirements->currently_due)) {
+                // ✅ Onboarding complete
+                if (!$user->stripe_account_active && $user->charges_enabled) {
+                    dd( $account->charges_enabled);
+                    $user->stripe_account_active = true;
+                    $user->save();
+                }
+
+                // Optionally approve vendor if linked
+                if ($user->vendor && $user->vendor->status !== 'approved') {
+                    $user->vendor->status = 'approved';
+                    $user->vendor->save();
+                }
+
+                return redirect()->route('dashboard')->with('success', 'Stripe onboarding complete and account active!');
+            }
+
+            // Step 3: Onboarding not complete → redirect to Stripe onboarding
+            $onboardingLink = \Stripe\AccountLink::create([
+                'account' => $user->stripe_account_id,
+                'refresh_url' => route('stripe.connect'),
+                'return_url' => route('stripe.connect'),
+                'type' => 'account_onboarding',
+            ]);
+
+            return redirect($onboardingLink->url);
         }
 
-        return back()->with('success', 'Your account is already connected');
+        abort(500, 'Unexpected error. Please try again.');
     }
 }

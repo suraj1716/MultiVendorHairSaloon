@@ -24,12 +24,16 @@ export default function ProductItem({ product }: Props) {
   };
 
   return (
-    <div className="w-[160px] sm:w-[180px] md:w-[200px] lg:w-[250px] xl:w-[260px] mx-auto">
+    <div className="border-slate-100 border-2 rounded-xl w-[160px] sm:w-[180px] md:w-[200px] lg:w-[250px] xl:w-[260px] mx-auto">
       <div className="relative overflow-hidden rounded-xl bg-white shadow hover:shadow-md transition-shadow duration-300">
         <div className="overflow-hidden">
           <Link href={route("product.show", product.slug)}>
             <img
-              className="h-[130px] sm:h-[150px] md:h-[160px] lg:h-[180px] w-full object-cover transition duration-300 transform hover:-translate-y-1 hover:scale-105"
+              className={`h-[130px] bg-slate-300 sm:h-[150px] md:h-[160px] lg:h-[180px] w-full  transition duration-300 transform hover:-translate-y-1 hover:scale-105 ${
+                product.image?.toLowerCase().endsWith(".png")
+                  ? "object-contain"
+                  : "object-cover"
+              }`}
               src={product.image}
               alt={product.title}
             />
@@ -54,13 +58,16 @@ export default function ProductItem({ product }: Props) {
               }
             `}
           >
-            {product.highlight.charAt(0).toUpperCase() + product.highlight.slice(1)}
+            {product.highlight.charAt(0).toUpperCase() +
+              product.highlight.slice(1)}
           </span>
         )}
 
-        <div className="mt-3 px-2 pb-3">
+        <div className="mt-3 px-3 pb-3">
           <h5 className="text-sm font-semibold tracking-tight text-slate-900 line-clamp-1">
-            <Link href={route("product.show", product.slug)}>{product.title}</Link>
+            <Link href={route("product.show", product.slug)}>
+              {product.title}
+            </Link>
           </h5>
 
           <p className="text-[10px] text-gray-600 line-clamp-2 mt-1">
@@ -72,7 +79,10 @@ export default function ProductItem({ product }: Props) {
             </Link>
             &nbsp;in&nbsp;
             <Link
-              href={route("product.byDepartment", product.department?.slug ?? "")}
+              href={route(
+                "product.byDepartment",
+                product.department?.slug ?? ""
+              )}
               className="hover:underline"
             >
               {product.department?.name ?? "Unknown Department"}
@@ -90,7 +100,10 @@ export default function ProductItem({ product }: Props) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex flex-col items-start space-y-0.5">
               <span className="text-sm font-bold text-slate-900">
-                <CurrencyFormatter amount={product.price ?? product.price} currency="AUD" />
+                <CurrencyFormatter
+                  amount={product.price ?? product.price}
+                  currency="AUD"
+                />
               </span>
               {product.price && (
                 <span className="text-[10px] text-slate-400 line-through">

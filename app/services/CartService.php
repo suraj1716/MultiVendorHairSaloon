@@ -17,7 +17,7 @@ class CartService
     protected const COOKIE_NAME = 'cartItems';
     protected const COOKIE_LIFETIME = 60 * 24 * 30; // 30 days
 
-    public function addItemToCart(Product $product, int $quantity = 1, $optionIds = null)
+    public function addItemToCart(Product $product, int $quantity = 1, $optionIds = null, bool $designer = false)
     {
         $optionIds = $this->normalizeOptionIds($optionIds ?? request()->input('option_ids'));
         if (empty($optionIds)) {
@@ -28,6 +28,9 @@ class CartService
 
         $submittedPrice = request()->input('price');
         $price = (is_numeric($submittedPrice) && $submittedPrice > 0) ? $submittedPrice : $product->price;
+
+        $designer = request()->boolean('designer', false);
+
 
         $attachmentPath = null;
         $attachmentFileName = null;
@@ -40,20 +43,10 @@ class CartService
             $attachmentPath = $file->storeAs('attachments', $attachmentFileName, 'public');
         }
 
-        // dd([
-        //     'product_id' => $product->id,
-        //     'quantity' => $quantity,
-        //     'price' => $price,
-        //     'optionIds' => $optionIds,
-        //     'attachmentPath' => $attachmentPath,
-        //     'attachmentFileName' => $attachmentFileName,
-        //     'user_id' => Auth::id(),
-        // ]);
-
         if (Auth::check()) {
-            $this->saveItemToDatabase($product->id, $quantity, $price, $optionIds, $attachmentPath, $attachmentFileName);
+            $this->saveItemToDatabase($product->id, $quantity, $price, $optionIds, $attachmentPath, $attachmentFileName, $designer);
         } else {
-            $this->saveItemToCookies($product->id, $quantity, $price, $optionIds, $attachmentPath, $attachmentFileName);
+            $this->saveItemToCookies($product->id, $quantity, $price, $optionIds, $attachmentPath, $attachmentFileName, $designer);
         }
     }
 
@@ -179,15 +172,19 @@ class CartService
                         'user' => [
                             'id' => $product->created_by,
                             'name' => $product->user->vendor->store_name ?? null,
+                            'booking_fee' => $product->user->vendor->booking_fee,
+                            'vendor_type' => $product->user->vendor->vendor_type,
                         ],
+
+
                         'attachment_path' => $cartItem['attachment_path'] ?? null,
-                        'attachment_name' => $cartItem['attachment_name'] ?? null
+                        'attachment_name' => $cartItem['attachment_name'] ?? null,
+                        'designer'=>$cartItem['designer'] ?? false
 
                     ];
                 }
 
                 $this->cachedCartItems = $cartItemData;
-                Log::debug('Raw cart item:', $cartItemData);
             }
 
             return $this->cachedCartItems;
@@ -209,60 +206,60 @@ class CartService
         return array_reduce($this->getCartItems(), fn($carry, $item) => $carry + ($item['price'] * $item['quantity']), 0.0);
     }
 
-   protected function updateItemQuantityInDatabase(int $productId, int $quantity, array $optionIds): void
-{
-    $userId = Auth::id();
+    protected function updateItemQuantityInDatabase(int $productId, int $quantity, array $optionIds): void
+    {
+        $userId = Auth::id();
 
-    // Normalize option IDs once
-    $normOptionIds = $this->normalizeOptionIds($optionIds);
+        // Normalize option IDs once
+        $normOptionIds = $this->normalizeOptionIds($optionIds);
 
-    // Create the key string for lookup
-    $itemKey = $productId . '_' . json_encode($normOptionIds);
+        // Create the key string for lookup
+        $itemKey = $productId . '_' . json_encode($normOptionIds);
 
-    Log::debug('Update quantity called', [
-        'user_id' => $userId,
-        'product_id' => $productId,
-        'quantity' => $quantity,
-        'normalized_option_ids' => $normOptionIds,
-        'encoded_option_ids' => json_encode($normOptionIds),
-    ]);
-
-    $cartItems = $this->getCartItemsFromDatabase();
-
-    // Build a map keyed by productId_encodedOptionIds
-    $cartItemsMap = [];
-    foreach ($cartItems as $item) {
-        $itemNormOptionIds = $this->normalizeOptionIds($item['option_ids']);
-        $key = $item['product_id'] . '_' . json_encode($itemNormOptionIds);
-        $cartItemsMap[$key] = $item;
-    }
-
-    if (isset($cartItemsMap[$itemKey])) {
-        Log::debug('Item key found in cartItemsMap', ['itemKey' => $itemKey]);
-        $cartItemsMap[$itemKey]['quantity'] = $quantity;
-    } else {
-        Log::debug('Item key NOT found in cartItemsMap', ['itemKey' => $itemKey]);
-    }
-
-    // Now update DB item directly
-   $cartItem = CartItem::where('user_id', $userId)
-    ->where('product_id', $productId)
-    ->get()
-    ->first(function ($item) use ($normOptionIds) {
-        return json_decode((string)($item->variation_type_option_ids ?? ''), true) == $normOptionIds;
-    });
-
-
-    if ($cartItem) {
-        Log::debug('CartItem found in DB', ['cartItem_id' => $cartItem->id]);
-        $cartItem->update([
+        Log::debug('Update quantity called', [
+            'user_id' => $userId,
+            'product_id' => $productId,
             'quantity' => $quantity,
+            'normalized_option_ids' => $normOptionIds,
+            'encoded_option_ids' => json_encode($normOptionIds),
         ]);
-        Log::debug('CartItem quantity updated');
-    } else {
-        Log::debug('No CartItem found in DB');
+
+        $cartItems = $this->getCartItemsFromDatabase();
+
+        // Build a map keyed by productId_encodedOptionIds
+        $cartItemsMap = [];
+        foreach ($cartItems as $item) {
+            $itemNormOptionIds = $this->normalizeOptionIds($item['option_ids']);
+            $key = $item['product_id'] . '_' . json_encode($itemNormOptionIds);
+            $cartItemsMap[$key] = $item;
+        }
+
+        if (isset($cartItemsMap[$itemKey])) {
+            Log::debug('Item key found in cartItemsMap', ['itemKey' => $itemKey]);
+            $cartItemsMap[$itemKey]['quantity'] = $quantity;
+        } else {
+            Log::debug('Item key NOT found in cartItemsMap', ['itemKey' => $itemKey]);
+        }
+
+        // Now update DB item directly
+        $cartItem = CartItem::where('user_id', $userId)
+            ->where('product_id', $productId)
+            ->get()
+            ->first(function ($item) use ($normOptionIds) {
+                return json_decode((string)($item->variation_type_option_ids ?? ''), true) == $normOptionIds;
+            });
+
+
+        if ($cartItem) {
+            Log::debug('CartItem found in DB', ['cartItem_id' => $cartItem->id]);
+            $cartItem->update([
+                'quantity' => $quantity,
+            ]);
+            Log::debug('CartItem quantity updated');
+        } else {
+            Log::debug('No CartItem found in DB');
+        }
     }
-}
 
 
 
@@ -288,7 +285,8 @@ class CartService
         $price,
         array $optionIds,
         ?string $attachmentPath = null,
-        ?string $attachmentFileName = null
+        ?string $attachmentFileName = null,
+        bool $designer = false
     ): void {
         $userId = Auth::id();
 
@@ -325,7 +323,9 @@ class CartService
                 'price' => $price,
                 'attachment_path' => $attachmentPath,
                 'attachment_name' => $attachmentFileName,
+                'designer' => $designer
             ]);
+
 
             Log::debug('Cart item created');
         }
@@ -344,7 +344,8 @@ class CartService
         $price,
         $optionIds,
         ?string $attachmentPath = null,
-        ?string $attachmentFileName = null
+        ?string $attachmentFileName = null,
+        bool $designer = false
     ): void {
         // Normalize option IDs
         if (is_string($optionIds)) {
@@ -377,6 +378,7 @@ class CartService
                 'option_ids' => $normalizedOptionIds,
                 'attachment_path' => $attachmentPath,
                 'attachment_name' => $attachmentFileName, // 👈 Added
+                'designer' => $designer
             ];
         }
 
@@ -486,6 +488,7 @@ class CartService
                     'price' => $cartItem->price,
                     'attachment_path' => $cartItem->attachment_path,
                     'attachment_name' => $cartItem->attachment_name,
+                    'designer' => $cartItem->designer
                 ];
             })->toArray();
 
@@ -507,11 +510,9 @@ class CartService
         $cartItems = json_decode($cookieValue, true);
 
         if (!is_array($cartItems)) {
-            Log::warning('Cart cookie contains invalid JSON or non-array data', ['cookie_value' => $cookieValue]);
             return [];
         }
 
-        Log::debug('Decoded cart items from cookie', ['cart_items' => $cartItems]);
 
         $normalizedCartItems = [];
         foreach ($cartItems as $key => $item) {
@@ -521,7 +522,8 @@ class CartService
                 'price' => $item['price'] ?? 0,
                 'option_ids' => $item['option_ids'] ?? [],
                 'attachment_path' => $item['attachment_path'] ?? null,
-                'attachment_name' => $item['attachment_name'] ?? null
+                'attachment_name' => $item['attachment_name'] ?? null,
+                'designer' => $item['designer'] ?? false
             ];
         }
 
@@ -574,6 +576,7 @@ class CartService
                     'variation_type_option_ids' => $optionIdsJson,
                     'attachment_path' => $cartItem['attachment_path'] ?? null,
                     'attachment_name' => $cartItem['attachment_name'] ?? null,
+                    'designer' => $cartItem['designer'] ?? false
                 ]);
             }
         }
@@ -584,18 +587,47 @@ class CartService
 
 
 
-    public function getCartItemsGrouped(): array
+    // public function getCartItemsGrouped(): array
+    // {
+    //     $cartItems = $this->getCartItems();
+    //     return collect($cartItems)
+    //         ->groupBy(fn($item) => $item['user']['id'])
+    //         ->map(fn($items, $userId) => [
+    //             'user' => $items->first()['user'],
+    //             'items' => $items->toArray(),
+    //             'totalQuantity' => $items->sum('quantity'),
+    //             'totalPrice' => $items->sum(fn($item) => $item['price'] * $item['quantity']),
+    //         ])->toArray();
+    // }
+
+
+    public function getCartItemsGrouped()
     {
         $cartItems = $this->getCartItems();
-        return collect($cartItems)
+
+        $grouped = collect($cartItems)
             ->groupBy(fn($item) => $item['user']['id'])
-            ->map(fn($items, $userId) => [
-                'user' => $items->first()['user'],
-                'items' => $items->toArray(),
-                'totalQuantity' => $items->sum('quantity'),
-                'totalPrice' => $items->sum(fn($item) => $item['price'] * $item['quantity']),
-            ])->toArray();
+            ->map(function ($items, $userId) {
+                $firstItem = $items->first();
+
+                $vendor = $firstItem['product']['vendor'] ?? null;
+
+                return [
+                    'user' => $firstItem['user'],
+                    'vendor' => $vendor,
+                    'items' => $items->toArray(),
+                    'totalQuantity' => $items->sum('quantity'),
+                    'totalPrice' => $items->sum(fn($item) => $item['price'] * $item['quantity']),
+                ];
+            })
+            ->toArray();
+
+        // dump and die here to inspect grouped cart items with vendor info
+
+        return $grouped; // unreachable after dd, but good practice
     }
+
+
 
 
     protected function normalizeOptionIds($optionIds): array

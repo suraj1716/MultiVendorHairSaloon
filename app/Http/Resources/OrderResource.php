@@ -15,6 +15,7 @@ class OrderResource extends JsonResource
      */
     protected static string $model = \App\Models\Order::class;
 
+
     /**
      * Transform the resource into an array.
      *

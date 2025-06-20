@@ -103,7 +103,6 @@ class BookingController extends Controller
         $now = now()->timezone($timezone);
         $formattedDate = \Carbon\Carbon::parse($date, $timezone)->format('Y-m-d');
 
-        Log::info("Requested date: {$formattedDate}, Current time: {$now->toDateTimeString()}");
 
         // Business hours: 9 AM to 10 PM on the requested date
         $user = Auth::user();
@@ -207,12 +206,6 @@ class BookingController extends Controller
         $dayOfWeek = \Carbon\Carbon::parse($formattedDate, $timezone)->dayOfWeek;
 
 
-        if (in_array($formattedDate, $closedDates)) {
-            Log::info("Date {$formattedDate} is a closed date.");
-        }
-        if (in_array($dayOfWeek, $recurringClosedDays)) {
-            Log::info("Date {$formattedDate} is a recurring closed day (dayOfWeek={$dayOfWeek}).");
-        }
 
         // Check if the date is closed
         if (in_array($formattedDate, $closedDates) || in_array($dayOfWeek, $recurringClosedDays)) {
@@ -240,8 +233,6 @@ class BookingController extends Controller
         $isToday = $formattedDate === $now->format('Y-m-d');
         $cutoffTime = $now->copy()->addHours(2);
 
-        Log::info("Is today: " . ($isToday ? 'true' : 'false'));
-        Log::info("Cutoff time (now + 2 hours): {$cutoffTime->toTimeString()}");
 
         $current = $businessStart->copy();
 
@@ -252,7 +243,6 @@ class BookingController extends Controller
             if ($isToday) {
                 if ($current->greaterThanOrEqualTo($cutoffTime) && $current->greaterThanOrEqualTo($now)) {
                     $allSlots[] = $slotLabel;
-                    Log::info("Including slot (today): {$slotLabel}");
                 } else {
                     Log::info("Skipping slot (today, before cutoff or now): {$slotLabel}");
                 }

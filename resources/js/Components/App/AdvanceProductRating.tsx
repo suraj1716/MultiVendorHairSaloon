@@ -102,7 +102,6 @@ const AdvanceProductRating: React.FC<ProductRatingProps> = ({
     });
   };
 
-  console.log("dasda", authUserId, reviews, alreadyReviewed);
   return (
     <div className="flex flex-col max-w-md">
       {/* Overall stars and rating */}

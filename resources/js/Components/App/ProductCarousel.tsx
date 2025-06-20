@@ -17,12 +17,12 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
   products,
   title,
   wrapperClassName = '',
-  sectionClassName = 'bg-white rounded-lg shadow px-4 py-6 sm:px-6',
+  sectionClassName = 'bg-white rounded-lg  px-4 py-6 sm:px-6',
 }) => {
   return (
    <div className={`w-full ${wrapperClassName}`}>
       <div className={sectionClassName}>
-        {title && <h2 className="text-xl font-bold mb-5">{title}</h2>}
+        {title && <h2 className="text-xl font-bold mb-5 ml-10">{title}</h2>}
 
         {products.length === 0 ? (
           <div className="text-center py-20 text-gray-500">No products found.</div>
@@ -40,8 +40,8 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
               375: { slidesPerView: 2.2, spaceBetween: 12 },
               480: { slidesPerView: 2.5, spaceBetween: 14 },
               640: { slidesPerView: 3, spaceBetween: 16 },
-              768: { slidesPerView: 3.3, spaceBetween: 20 },
-              1024: { slidesPerView: 4, spaceBetween: 24 },
+              768: { slidesPerView: 4, spaceBetween: 10 },
+              1024: { slidesPerView: 4.3, spaceBetween: 25 },
             }}
             className="w-full"
           >
