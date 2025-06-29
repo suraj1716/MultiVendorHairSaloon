@@ -29,4 +29,9 @@ protected $casts = [
     {
         return $this->belongsTo(User::class);
     }
+
+    public function order()
+{
+    return $this->belongsTo(Order::class);
+}
 }

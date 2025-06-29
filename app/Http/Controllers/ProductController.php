@@ -8,6 +8,7 @@ use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductListResource;
 use App\Models\CategoryGroup;
 use App\Models\Department;
+use App\Models\HeroBanner;
 use App\Models\Product;
 use App\Models\ProductGroup;
 use App\services\ProductSearchService;
@@ -23,6 +24,9 @@ class ProductController extends Controller
 
     public function home(Request $request)
     {
+
+           $hero = HeroBanner::where('is_active', true)->latest()->first();
+
         $keyword = $request->query('keyword');
 
         // Load category groups with departments
@@ -68,6 +72,7 @@ class ProductController extends Controller
 
         // Render home page
         return Inertia::render('Home', [
+             'hero' => $hero,
             'products'        => ProductResource::collection($products),
             'keyword'         => $keyword,
             'departments'     => $departments,

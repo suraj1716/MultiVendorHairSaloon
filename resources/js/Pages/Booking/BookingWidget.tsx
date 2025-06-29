@@ -4,7 +4,11 @@ import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog";
 import { DayPicker, Matcher } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import dayjs from "dayjs";
-import { DialogDescription, DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
+import {
+  DialogDescription,
+  DialogOverlay,
+  DialogTitle,
+} from "@radix-ui/react-dialog";
 import AvailableSlots from "../AvailableSlots";
 
 type BookingWidgetProps = {
@@ -27,6 +31,7 @@ export default function BookingWidget({
   onOpenChange,
   vendorId, // add vendorId here
   onSubmit,
+
 }: BookingWidgetProps) {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
 
@@ -40,7 +45,7 @@ export default function BookingWidget({
   // Convert closedDates (strings) to Date objects for DayPicker
 
   useEffect(() => {
-    if (!bookingDate ) {
+    if (!bookingDate) {
       setAvailableTimeSlots([]);
       setTimeSlot("");
       return;
@@ -97,8 +102,6 @@ export default function BookingWidget({
     ...closedDatesAsDateObjects,
   ];
 
-
-
   return (
     <div className="space-y-2  ">
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,11 +110,11 @@ export default function BookingWidget({
     <button className="btn-primary">Book Appointment</button>
   )}
         </DialogTrigger> */}
- <DialogOverlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9998]" />
-       <DialogContent
-  className="fixed top-1/2 left-1/2 xs:p-7 -translate-x-1/2 -translate-y-1/2
+        <DialogOverlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999]" />
+       <DialogContent aria-describedby="booking-description"
+          className="fixed top-1/2 left-1/2 xs:p-7 -translate-x-1/2 -translate-y-1/2
                z-[9999] bg-white rounded-lg shadow-lg p-6 max-w-lg max-h-[90vh] overflow-y-auto"
->
+        >
           <DialogTitle className="text-lg font-bold mb-4">
             Select Booking Details
           </DialogTitle>
@@ -139,19 +142,15 @@ export default function BookingWidget({
               ) : error ? (
                 <p className="text-red-600">{error}</p>
               ) : availableTimeSlots.length > 0 ? (
-             <AvailableSlots
-  date={bookingDate}
-  availableSlots={availableTimeSlots}
-  selectedSlot={timeSlot}
-
-  onSelect={(slot) => {
-  setTimeSlot(slot); // ✅ Just set, don't submit here
-    onOpenChange(false);
-}}
-
-
-/>
-
+                <AvailableSlots
+                  date={bookingDate}
+                  availableSlots={availableTimeSlots}
+                  selectedSlot={timeSlot}
+                  onSelect={(slot) => {
+                    setTimeSlot(slot); // ✅ Just set, don't submit here
+                    onOpenChange(false);
+                  }}
+                />
               ) : (
                 <p>No available slots.</p>
               )}

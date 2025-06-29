@@ -233,7 +233,7 @@ function Show({
       formData.append(`option_ids[${typeId}]`, String(option.id));
     });
 
-     formData.append("designer", form.data.designer ? "1" : "0");
+    formData.append("designer", form.data.designer ? "1" : "0");
     if (form.data.attachment) {
       formData.append("attachment", form.data.attachment);
     }
@@ -492,35 +492,35 @@ function Show({
       <Head title={product.title} />
 
       <section className="py-12 sm:py-16">
-        <div className="container mx-auto px-4 max-w-7xl">
+        <div className="w-full px-4 md:px-5 pt-1">
+          <Breadcrumbs
+            items={[
+              { label: "Home", href: "/" },
+              {
+                label: product.user.store_name || "Vendor",
+                href: route("vendor.profile", {
+                  vendor: product.user.store_name,
+                }),
+              },
+              {
+                label: product.department?.name || "Department",
+                href: route("product.byDepartment", product.department.slug),
+              },
+              {
+                label: product.category?.name || "Category",
+                href: route("product.byDepartment", product.department.slug),
+              },
+              { label: product.title, current: true },
+            ]}
+          />
+        </div>
+        <div className="container mx-auto px-5 max-w-7xl">
           {/* Breadcrumbs */}
-          <div>
-            <Breadcrumbs
-              items={[
-                { label: "Home", href: "/" },
-                {
-                  label: product.user.store_name || "Vendor",
-                  href: route("vendor.profile", {
-                    vendor: product.user.store_name,
-                  }),
-                },
-                {
-                  label: product.department?.name || "Department",
-                  href: route("product.byDepartment", product.department.slug),
-                },
-                {
-                  label: product.category?.name || "Category",
-                  href: route("product.byDepartment", product.department.slug),
-                },
-                { label: product.title, current: true },
-              ]}
-            />
-          </div>
 
           {/* Main grid */}
-          <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-5 lg:gap-20">
+          <div className="mt-8 flex flex-col lg:flex-row gap-5 lg:gap-10">
             {/* Carousel */}
-            <div className="lg:col-span-3">
+            <div className="w-full lg:w-[50%]">
               <Carousel
                 images={images.map((img) => ({
                   ...img,
@@ -528,12 +528,11 @@ function Show({
                 }))}
                 index={carouselIndex}
                 onIndexChange={setCarouselIndex}
-                // className="w-full max-h-[400px] object-contain"
               />
             </div>
 
             {/* Product details */}
-            <div className="lg:col-span-2 flex flex-col">
+            <div className="w-full lg:w-[45%] flex flex-col lg:px-10">
               <h1 className="text-3xl font-extrabold text-gray-900 leading-tight sm:text-4xl">
                 {product.title}
               </h1>
@@ -566,9 +565,7 @@ function Show({
                 <input
                   type="checkbox"
                   checked={form.data.designer}
-                  onChange={(e) =>
-                    form.setData("designer", e.target.checked)
-                  }
+                  onChange={(e) => form.setData("designer", e.target.checked)}
                   className="form-checkbox text-indigo-600 h-5 w-5"
                   aria-checked={form.data.designer}
                 />

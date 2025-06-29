@@ -6,8 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 class ProductGroup extends Model
 {
-    protected $fillable = ['name', 'slug', 'image', 'active'];
+    protected $fillable = ['name', 'slug', 'images', 'active'];
      public $products;
+     protected $casts = [
+    'images' => 'array',
+];
 
   public function products()
 {

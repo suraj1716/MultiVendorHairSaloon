@@ -29,11 +29,11 @@ function ShippingAddressSelector({
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
-  <p className="text-lg font-bold">Choose a shipping address</p>
+  <p className="text-lg font-semibold">Choose a shipping address</p>
 
   <Link
     href={route("profile.edit")}
-    className="w-full sm:w-auto inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 text-center"
+    className="w-full sm:w-auto inline-block px-3 py-1.5 text-sm font-semibold text-white bg-purple-700 rounded hover:bg-blue-700 text-center"
   >
     + Add New Address
   </Link>

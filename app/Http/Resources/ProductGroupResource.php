@@ -13,7 +13,7 @@ class ProductGroupResource extends JsonResource
             'id'     => $this->id,
             'name'   => $this->name,
             'slug'   => $this->slug,
-            'image'  => $this->image,
+            'images'  => $this->images,
             'active' => $this->active,
              'products' => ProductListResource::collection($this->groupedProducts),
         ];

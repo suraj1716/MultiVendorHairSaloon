@@ -62,7 +62,7 @@ public function vendor(): HasOne
     return $this->hasOne(Vendor::class, 'user_id','id');
 }
 
-public function shippingAddress()
+public function shippingAddresses()
 {
     return $this->hasMany(ShippingAddress::class);
 }

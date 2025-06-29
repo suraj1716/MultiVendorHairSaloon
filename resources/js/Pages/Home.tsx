@@ -1,249 +1,260 @@
 import Hero_Banner from "@/Components/App/Hero_Banner";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { PageProps, PaginationProps, Product } from "@/types";
+import {
+  CategoryGroup,
+  PageProps,
+  PaginationProps,
+  Product,
+  ProductGroup,
+} from "@/types";
 import { useEffect } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
-import ProductItem from "@/Components/App/ProductItem";
-import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay, Navigation } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/autoplay";
-import "swiper/css/navigation";
-import HeroBanner from "@/Components/App/Hero_Banner";
-import LandingPage from "./LandingPage";
-import Footer from "@/Components/App/Footer";
-import Contact from "@/Pages/Contact";
-// other imports...
-
-import { CategoryGroup, Category, Department, ProductGroup } from "@/types"; // Add these types
 import { Link, usePage } from "@inertiajs/react";
 import ProductCarousel from "@/Components/App/ProductCarousel";
+import {
+  FireIcon,
+  ArrowTrendingUpIcon,
+  TagIcon,
+  SparklesIcon,
+  StarIcon,
+  ShoppingCartIcon,
+  Squares2X2Icon,
+  GiftIcon,
+  TicketIcon,
+  ShoppingBagIcon,
+} from "@heroicons/react/24/solid";
+import { Card, CardHeader } from "@/Components/ui/card";
+import { Button } from "@/Components/ui/button";
+import { cn } from "@/lib/utils";
+
+const iconPool = [
+  FireIcon,
+  ArrowTrendingUpIcon,
+  TagIcon,
+  SparklesIcon,
+  StarIcon,
+  ShoppingCartIcon,
+  Squares2X2Icon,
+  GiftIcon,
+  TicketIcon,
+  ShoppingBagIcon,
+];
+
+const getIconByIndex = (index: number) => {
+  const Icon = iconPool[index % iconPool.length];
+  const colors = [
+    "text-red-500",
+    "text-blue-500",
+    "text-green-500",
+    "text-yellow-500",
+    "text-purple-500",
+    "text-pink-500",
+    "text-indigo-500",
+    "text-orange-500",
+  ];
+  return (
+    <Icon
+      className={cn("w-5 h-5 sm:w-6 sm:h-6", colors[index % colors.length])}
+    />
+  );
+};
 
 export default function Home({
   products,
   categoryGroups,
   productGroups,
   allproducts,
+  hero,
 }: PageProps<{
   allproducts: PaginationProps<Product>;
   products: PaginationProps<Product>;
   categoryGroups: CategoryGroup[];
-  productGroups: ProductGroup[]; // camelCase too
+  productGroups: ProductGroup[];
+  hero: {
+    title: string;
+    subtitle: string;
+    image_path: string;
+    button_text?: string;
+    button_link?: string;
+  };
 }>) {
-  const { props, url } = usePage();
+  const { url } = usePage();
 
   useEffect(() => {
-    AOS.init({
-      duration: 800,
-      once: true,
-    });
-
-    // Remove opacity-0 after AOS is ready to prevent flicker
+    AOS.init({ duration: 800, once: true });
     setTimeout(() => {
       document.querySelectorAll(".aos-init").forEach((el) => {
         el.classList.remove("opacity-0");
       });
-    }, 100); // small delay ensures AOS is initialized
+    }, 100);
   }, []);
 
-  // Redirect to Category Group
   useEffect(() => {
-    // Extract scrollTo param from URL query string
     const params = new URLSearchParams(window.location.search);
     const scrollToCategoryId = params.get("scrollToCategoryId");
     if (scrollToCategoryId) {
-      const el = document.getElementById(
-        `category-group-${scrollToCategoryId}`
-      );
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
+      document
+        .getElementById(`category-group-${scrollToCategoryId}`)
+        ?.scrollIntoView({ behavior: "smooth" });
     }
   }, [url]);
 
-  // Redirect to Product Group
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const scrollToProductId = urlParams.get("scrollToProductId");
+    const scrollToProductId = new URLSearchParams(window.location.search).get(
+      "scrollToProductId"
+    );
     if (scrollToProductId) {
-      const el = document.getElementById(`product-group-${scrollToProductId}`);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth" });
-      }
+      document
+        .getElementById(`product-group-${scrollToProductId}`)
+        ?.scrollIntoView({ behavior: "smooth" });
     }
   }, []);
 
-  const headingClass =
-    "text-center text-4xl font-bold text-gray-900 mb-12 font-Roboto tracking-wide";
-
   return (
-    <div className="overflow-x-hidden font-montserrat">
+    <div className="overflow-x-hidden font-sans">
       <AuthenticatedLayout>
-        {/* Hero Banner */}
-        <div className="z-[400]">
-          <HeroBanner />
+        <div className="z-40">
+          <Hero_Banner
+            title={hero.title}
+            subtitle={hero.subtitle}
+            image_path={
+              hero.image_path
+                ? `/storage/${hero.image_path}`
+                : "/fallback-image.jpg"
+            }
+            button_text={hero.button_text}
+            button_link={hero.button_link}
+          />
         </div>
 
-        {/* Product Groups Section */}
-        <section className="w-full">
-          {productGroups.map((group, index) => {
-            const products = Array.isArray(group.products?.data)
-              ? group.products.data
-              : [];
+        {productGroups.map((group, index) => {
+          const products = Array.isArray(group.products?.data)
+            ? group.products.data
+            : [];
+          const bgColor = index % 2 === 0 ? "bg-muted" : "bg-background";
 
-            const bgColor = index % 2 === 0 ? "bg-gray-100" : "bg-white";
-
-            return (
-              <div
-                key={group.id}
-                id={`product-group-${group.id}`}
-                className={`${bgColor} w-full py-12`}
-              >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
-                  <div className="grid grid-cols-3 items-center">
-                    <div></div>
-
-                    <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-2 md:mb-8 leading-snug col-span-3 md:col-span-1">
+          return (
+            <section
+              key={group.id}
+              id={`product-group-${group.id}`}
+              className={`${bgColor} py-10`}
+            >
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+                <div className="flex justify-between items-center mb-6">
+                  <div className="flex items-center gap-3">
+                    {getIconByIndex(index)}
+                    <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
                       {group.name}
                     </h2>
-
-                    {/* Desktop version (right side) */}
-                    <Link
-                      href={route("productGroup.show", {
-                        productGroup: group.slug,
-                      })}
-                      className="hidden md:block text-sm text-blue-600 hover:underline font-medium text-right"
-                    >
-                      Show all products →
-                    </Link>
                   </div>
-
-                  {/* Mobile version (bottom below heading) */}
-                  <div className="md:hidden text-center mb-4">
-                    <Link
-                      href={route("productGroup.show", {
-                        productGroup: group.slug,
-                      })}
-                      className="text-sm text-blue-600 hover:underline font-medium"
-                    >
-                      Show all products →
-                    </Link>
-                  </div>
-
-                  <ProductCarousel
-                    title=""
-                    products={products}
-                    wrapperClassName="scroll-mt-20"
-                    sectionClassName="px-0 py-0"
-                  />
+                  <Link
+                    href={route("productGroup.show", {
+                      productGroup: group.slug,
+                    })}
+                    className="text-sm sm:text-base text-primary hover:underline"
+                  >
+                    Show all →
+                  </Link>
                 </div>
-              </div>
-            );
-          })}
-        </section>
 
-        {/* Category Groups Section */}
-        <section className="w-full ">
-          {categoryGroups.map((group, index) => {
-            const bgColor = index % 2 === 0 ? "bg-gray-100" : "bg-white";
-            return (
-              <div
-                key={group.id}
-                id={`category-group-${group.id}`}
-                className={`${bgColor} w-full py-12`}
-              >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 space-y-12">
-                  <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-8 leading-snug">
+                <ProductCarousel
+                  title=""
+                  products={products}
+                  wrapperClassName="scroll-mt-20"
+                  sectionClassName="px-0 mb-10"
+                />
+
+                {group.images?.[0] && (
+                  <img
+                    src={`/storage/${group.images[0]}`}
+                    alt={group.name}
+                    className="w-full mt-6 rounded-xl object-cover shadow-md h-[220px] sm:h-[350px]"
+                  />
+                )}
+              </div>
+            </section>
+          );
+        })}
+
+        {categoryGroups.map((group, index) => {
+          const bgColor = index % 2 === 0 ? "bg-muted" : "bg-background";
+          return (
+            <section
+              key={group.id}
+              id={`category-group-${group.id}`}
+              className={`${bgColor} py-5`}
+            >
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10">
+                <div className="flex items-center gap-3 mb-6">
+                  {getIconByIndex(index + 3)}
+                  <h2 className="text-xl sm:text-2xl font-semibold text-foreground leading-snug">
                     {group.name}
                   </h2>
-                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-4 gap-6 ">
-                    {group.categories.map((category) => (
-                      <a
-                        key={category.id}
-                        href={route("category.show", category.id)}
-                        className="block overflow-hidden transition"
-                      >
-                        <div className="relative aspect-square w-full bg-slate-300 border-2 rounded-3xl overflow-hidden">
-                          {category.image && (
-                            <img
-                              src={`/storage/${category.image}`}
-                              alt={category.name}
-                              className="w-full h-full object-cover opacity-70"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-black/60"></div>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-white font-semibold text-lg text-center px-2">
-                              {category.name}
-                            </span>
-                          </div>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-10">
+  {group.categories.map((category) => (
+    <Link
+      key={category.id}
+      href={route("category.show", category.id)}
+      className="
+        relative block bg-secondary overflow-hidden rounded-md
+        h-48 sm:h-56 md:h-64 lg:h-80
+      "
+    >
+      {category.image && (
+        <img
+          src={`/storage/${category.image}`}
+          alt={category.name}
+          className="w-full h-full object-cover opacity-70"
+        />
+      )}
+      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+        <span className="text-white text-base sm:text-lg lg:text-xl font-semibold text-center px-2">
+          {category.name}
+        </span>
+      </div>
+    </Link>
+  ))}
+</div>
+
               </div>
-            );
-          })}
-        </section>
+            </section>
+          );
+        })}
 
-        {/* All Products Section */}
-        <section className="w-full bg-gray-100 relative">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12 relative z-10">
-            <div className="grid grid-cols-3 items-center">
-              <div></div>
-
-              <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-2 md:mb-8 leading-snug col-span-3 md:col-span-1">
-                Products
-              </h2>
-
-              {/* Desktop version (right side) */}
+        <section className="w-full bg-muted">
+          <div className="max-w-7xl mx-auto px-4 sm:px-4 md:px-10 py-10">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                {getIconByIndex(6)}
+                <h2 className="text-xl sm:text-3xl font-bold text-foreground leading-snug">
+                  Products
+                </h2>
+              </div>
               <a
                 href="/shop"
-                className="hidden md:block text-sm text-indigo-600 hover:underline font-medium text-right"
+                className="text-base sm:text-lg text-primary hover:underline font-medium"
               >
-                See all products →
-              </a>
-            </div>
-
-            {/* Mobile version (bottom below heading) */}
-            <div className="md:hidden text-center mb-4">
-              <a
-                href="/shop"
-                className="text-sm text-indigo-600 hover:underline font-medium"
-              >
-                See all products →
+                See all →
               </a>
             </div>
           </div>
 
-          {/* Full-width carousel outside the container */}
-          <div
-            className="relative z-0 w-full overflow-x-hidden px-10"
-            style={{
-              marginLeft: "calc(-50vw + 50%)",
-              marginRight: "calc(-50vw + 50%)",
-            }}
-          >
-            <ProductCarousel
-              products={allproducts.data}
-              sectionClassName="bg-gray-100 mb-20"
-            />
+          <div className="relative z-0 w-full overflow-x-hidden px-4 sm:px-6 md:px-10">
+            <div className="md:-mx-[50vw] md:px-[50vw]">
+              <ProductCarousel
+                products={allproducts.data}
+                sectionClassName="bg-muted mb-20"
+              />
+            </div>
           </div>
         </section>
 
-        {/* Contact Section */}
-        {/* <section className="w-full bg-white">
+        <section className="w-full bg-background text-muted-foreground">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12">
-            <Contact />
-          </div>
-        </section> */}
-
-        {/* Blog Section */}
-        <section className="w-full bg-gray-50 text-gray-600">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-12">
-            <h2 className="text-center text-3xl font-montserrat text-gray-800 mb-8 leading-snug">
+            <h2 className="text-center text-2xl sm:text-4xl font-semibold text-foreground mb-8 leading-snug">
               Blog
             </h2>
           </div>

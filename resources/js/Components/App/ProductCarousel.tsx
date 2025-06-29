@@ -35,14 +35,17 @@ const ProductCarousel: React.FC<ProductCarouselProps> = ({
             }}
             navigation
             loop
-            breakpoints={{
-              320: { slidesPerView: 2, spaceBetween: 10 },
-              375: { slidesPerView: 2.2, spaceBetween: 12 },
-              480: { slidesPerView: 2.5, spaceBetween: 14 },
-              640: { slidesPerView: 3, spaceBetween: 16 },
-              768: { slidesPerView: 4, spaceBetween: 10 },
-              1024: { slidesPerView: 4.3, spaceBetween: 25 },
-            }}
+          breakpoints={{
+  320: { slidesPerView: 2.5, spaceBetween: 8 },
+  375: { slidesPerView: 2.1, spaceBetween: 8 },
+  480: { slidesPerView: 3.2, spaceBetween: 12 },
+  640: { slidesPerView: 3.8, spaceBetween: 16 },
+  768: { slidesPerView: 3, spaceBetween: 20 },
+  1024: { slidesPerView: 4, spaceBetween: 28 }, // reduced count, more spacing
+  1280: { slidesPerView: 3.5, spaceBetween: 25 },
+  1536: { slidesPerView: 3.8, spaceBetween: 36 },
+}}
+
             className="w-full"
           >
             {products.map((product) => (

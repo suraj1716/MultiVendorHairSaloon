@@ -77,13 +77,12 @@ Route::get('/check-auth', function () {
     ];
 });
 
-Route::controller(CartController::class)->group(function () {
-    Route::get('/cart', 'index')->name('cart.index');
-    Route::post('/cart/add/{product}', 'store')->name('cart.store');
-    Route::put('/cart/{product}', 'update')->name('cart.update');
-    Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
-});
-
+// Route::controller(CartController::class)->group(function () {
+//     Route::get('/cart', 'index')->name('cart.index');
+//     Route::post('/cart/add/{product}', 'store')->name('cart.store');
+//     Route::put('/cart/{product}', 'update')->name('cart.update');
+//     Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
+// });
 
 
 Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
@@ -95,6 +94,12 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/orders-history', [OrderController::class, 'index'])->name('orders.history');
     Route::get('/orders/{order}', [OrderController::class, 'show']);
+
+
+
+Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
+    ->name('admin.orders.refund')
+    ->middleware(['auth', 'role:Admin']); // adjust middleware as needed
 
 
     Route::middleware(['verified'])->group(function () {
@@ -126,10 +131,12 @@ Route::middleware('auth')->group(function () {
 
 
 
+
 // RESTful resource routes for BookingController (index, store, update, destroy)
 Route::middleware('auth')->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('/booking-history', [BookingController::class, 'history'])->name('bookings.history');
+
     Route::post('/bookings/store', [BookingController::class, 'store'])->name('bookings.store');
     Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
@@ -150,6 +157,9 @@ Route::get('/about', function () {
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
 Route::get('auth/google-callback', [GoogleController::class, 'handleGoogleCallback']);
+// Route::get('/auth/google/redirect', [GoogleController::class, 'redirectToGoogle']);
+// Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
+
 
 Route::middleware('auth')->group(function () {
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');

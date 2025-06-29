@@ -24,7 +24,6 @@ export default function Show({
   products,
   categoryGroups,
 }: ShowProps) {
-
   const breadcrumbItems = [
     { label: "Home", href: "/" },
     {
@@ -46,32 +45,36 @@ export default function Show({
     <AuthenticatedLayout>
       <Head title="Shop" />
 
-      <div className="bg-gray-100 py-10 text-center">
-        <div className="ml-20">
-          <Breadcrumbs items={breadcrumbItems} />
-        </div>
+      <div className="bg-gray-100 py-6 px-4 lg:px-20">
+        <div className="max-w-7xl mx-auto">
+          {/* Breadcrumb top-left */}
+          <div className="mb-4">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
 
-        <h1 className="text-3xl font-bold text-gray-800">
-          Shop Products {category.name}
-        </h1>
+          {/* Page Title centered */}
+          <h1 className="text-2xl lg:text-3xl font-bold text-gray-800 text-center">
+            Shop Products {category.name}
+          </h1>
+        </div>
       </div>
 
       <div className="block lg:hidden">
-        <aside className="w-full lg:w-1/4 bg-white shadow rounded p-4 xs:h-auto h-[500px] lg:sticky top-4 self-start">
+        <aside className="w-full lg:w-1/4 bg-white xs:h-auto h-[500px] lg:sticky top-4 self-start">
           {randomActiveGroup && (
             <img
               src={`/storage/${randomActiveGroup.image}`}
               alt={randomActiveGroup.name}
-              className="w-full h-full object-contain rounded"
+              className="w-full h-full object-cover"
             />
           )}
         </aside>
 
-        <div className="grid grid-cols-1 xs:p-5 xs:grid-cols-2 lg:grid-cols-3 gap-6 gap-y-6 p-10">
+        <div className="grid grid-cols-1 xs:p-5 xs:mt-5 xs:grid-cols-2 lg:grid-cols-3 xs:gap-y-5 p-10">
           {products.data.map((product) => (
             <div
               key={product.id}
-              className="w-full h-[300px] xs:h-[350px] lg:h-[400px]"
+              className="w-full lg:h-[400px]"
             >
               <ProductItem product={product} />
             </div>
@@ -83,7 +86,7 @@ export default function Show({
       <div className="hidden lg:block">
         <div className=" container mx-auto px-4 py-10 flex flex-col lg:flex-row gap-8">
           {/* Filters Sidebar */}
-          <aside className="sticky top-5 w-full lg:w-1/4 bg-white shadow rounded-lg p-6 h-[500px] flex items-center justify-center">
+          <aside className="sticky top-5 w-full lg:w-1/4 bg-white h-[500px] flex items-center justify-center">
             {categoryGroups.length > 0 &&
               (() => {
                 const randomIndex = Math.floor(
@@ -100,7 +103,6 @@ export default function Show({
                       alt={randomGroup.name}
                       className="h-[450px] w-full object-cover rounded"
                     />
-
                   </div>
                 );
               })()}

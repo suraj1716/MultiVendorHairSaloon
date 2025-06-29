@@ -47,7 +47,7 @@ function Department() {
   <div className="overflow-hidden">
     <ul
       ref={scrollRef}
-      className="flex overflow-x-auto whitespace-nowrap gap-6 py-4 px-8 items-start scrollbar-hide"
+      className="flex overflow-x-auto whitespace-nowrap gap-6 py-4  items-start scrollbar-hide"
       style={{ scrollBehavior: "smooth" }}
     >
       {/* Official departments */}

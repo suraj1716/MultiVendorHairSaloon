@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEventHandler, Fragment, useRef, useState } from "react";
+import { FormEventHandler, Fragment, useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogBackdrop,
@@ -12,7 +12,7 @@ import { Bars3Icon, XMarkIcon } from "@heroicons/react/24/outline";
 import { Link, useForm, usePage } from "@inertiajs/react";
 import MiniCartDropdown from "./MiniCartDropdown";
 import { PageProps } from "@/types";
-import { Search } from "lucide-react";
+import { Search, UserIcon } from "lucide-react";
 import CategoriesDropdown from "./CategoriesDropdown";
 import SearchBar from "./SearchBar";
 import DepartmentComponent from "./Department";
@@ -84,9 +84,26 @@ export default function Navbar() {
   const { user } = auth;
   const [loginOpen, setLoginOpen] = useState(false);
   const [open, setOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [showDealsDropdown, setShowDealsDropdown] = useState(false);
+
   const [dealsOpen, setDealsOpen] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
   return (
     <div className="relative z-[500] top-0  bg-white shadow">
       {/* Mobile menu */}
@@ -192,71 +209,59 @@ export default function Navbar() {
             </div>
 
             {/* Mobile Navigation Links */}
-            <div className=" flex flex-col space-y-4 px-4 mt-6 mb-6 w-full">
+            <div className="flex flex-col divide-y divide-gray-300 px-4 mt-6 mb-6 w-full">
               <Link
                 href={route("shop.search")}
-                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                className="block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-4 py-1 rounded"
               >
                 All Products
               </Link>
 
               {/* Expandable Categories Section */}
-              <Disclosure>
-                {({ open }) => (
-                  <>
-                    <Disclosure.Button className="w-full text-left flex justify-between items-center text-lg font-medium text-gray-900 hover:bg-purple-700 hover:text-white px-4 py-3 border-t border-b">
-                      <span>All Categories</span>
-                      <ChevronDownIcon
-                        className={`h-5 w-5 transition-transform duration-200 ${
-                          open ? "rotate-180" : ""
-                        }`}
-                      />
-                    </Disclosure.Button>
+              <div>
+                <Disclosure>
+                  {({ open }) => (
+                    <>
+                      <Disclosure.Button className="w-full text-left flex justify-between items-center text-lg font-regular text-gray-900 px-4 py-3">
+                        <span>All Categories</span>
+                        <ChevronDownIcon
+                          className={`h-5 w-5 transition-transform duration-200 ${
+                            open ? "rotate-180" : ""
+                          }`}
+                        />
+                      </Disclosure.Button>
 
-                    <DisclosurePanel>
-                      <CategoriesDropdown departments={departments} />
-                    </DisclosurePanel>
-                  </>
-                )}
-              </Disclosure>
+                      <Disclosure.Panel className="p-0">
+                        <CategoriesDropdown departments={departments} />
+                      </Disclosure.Panel>
+                    </>
+                  )}
+                </Disclosure>
+              </div>
+
               {/* Deals Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setDealsOpen(!dealsOpen)}
-                  className="w-full text-left flex justify-between items-center text-lg font-medium text-gray-900 hover:bg-purple-700 hover:text-white px-4 py-3 border-t border-b rounded"
-                  aria-expanded={dealsOpen}
-                  aria-controls="deals-menu"
-                >
-                  <span     >Deals</span>
-                  <ChevronDownIcon
-                    className={`h-5 w-5 transition-transform duration-200 ${
-                      dealsOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
+              <div>
+                <Disclosure>
+                  {({ open }) => (
+                    <>
+                      <Disclosure.Button className="w-full text-left flex justify-between items-center text-lg font-regular text-gray-900 px-4 py-3">
+                        <span>Deals</span>
+                        <ChevronDownIcon
+                          className={`h-5 w-5 transition-transform duration-200 ${
+                            open ? "rotate-180" : ""
+                          }`}
+                        />
+                      </Disclosure.Button>
 
-                {dealsOpen && (
-                  <div
-                    id="deals-menu"
-                    className="absolute bg-slate-100 z-20 left-0 mt-1 w-full  rounded border border-gray-200 max-h-80 overflow-y-auto"
-                  >
-                    {/* Category Groups */}
-                    <div className="border-b border-gray-200 px-4 py-2">
-                      <h4 className=" block font-bold text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded">
-                        Category Groups
-                      </h4>
-                      {categoryGroups.filter((g) => g.active).length === 0 && (
-                        <p className="text-gray-500 text-sm">
-                          No active category groups
-                        </p>
-                      )}
-                      <ul>
-                        {categoryGroups
-                          .filter((group) => group.active)
-                          .map((group) => (
-                            <li key={group.id}>
+                      <Disclosure.Panel className="pt-1 mb-14">
+                        <div className="flex flex-col divide-y divide-gray-300">
+                          {/* Category Groups */}
+                          {categoryGroups
+                            .filter((g) => g.active)
+                            .map((group) => (
                               <button
-                                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                                key={group.id}
+                                className="text-left w-full px-4 py-4 text-gray-700 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                 onClick={() => {
                                   router.visit(
                                     `/?scrollToCategoryId=${group.id}`,
@@ -266,31 +271,20 @@ export default function Navbar() {
                                     }
                                   );
                                   setDealsOpen(false);
-                                  setOpen(false); // close mobile menu too
+                                  setOpen(false);
                                 }}
                               >
-                                {group.name}
+                                <span className="text-left w-full px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-700 transition-colors">
+                                  {group.name}
+                                </span>
                               </button>
-                            </li>
-                          ))}
-                      </ul>
-                    </div>
+                            ))}
 
-                    {/* Product Groups */}
-                    <div className="px-4 py-2">
-                      <h4 className="block font-bold text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded">
-                        Product Groups
-                      </h4>
-                      {productGroups.length === 0 && (
-                        <p className="text-gray-500 text-sm">
-                          No product groups available
-                        </p>
-                      )}
-                      <ul>
-                        {productGroups.map((group) => (
-                          <li key={group.id}>
+                          {/* Product Groups */}
+                          {productGroups.map((group) => (
                             <button
-                              className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
+                              key={group.id}
+                              className="text-left w-full px-4 py-4 text-gray-700 hover:bg-purple-700 hover:text-white transition-colors"
                               onClick={() => {
                                 router.visit(
                                   route("productGroup.show", {
@@ -302,39 +296,48 @@ export default function Navbar() {
                                   }
                                 );
                                 setDealsOpen(false);
-                                setOpen(false); // close mobile menu too
+                                setOpen(false);
                               }}
                             >
-                              {group.name}
+                              {" "}
+                              <span className="text-left w-full px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-700 transition-colors">
+                                {group.name}
+                              </span>
                             </button>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                )}
+                          ))}
+                        </div>
+                      </Disclosure.Panel>
+                    </>
+                  )}
+                </Disclosure>
               </div>
 
-              <Link
-                href={route("contact.index")}
-                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
-              >
-                Get Quotes
-              </Link>
+              <div className="pb-4">
+                <Link
+                  href={route("contact.index")}
+                  className="block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-4 py-1 rounded"
+                >
+                  Get Quotes
+                </Link>
+              </div>
 
-              <Link
-                href={route("about")}
-                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
-              >
-                About
-              </Link>
+              <div className="pb-4">
+                <Link
+                  href={route("about")}
+                  className="block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-4 py-1 rounded"
+                >
+                  About
+                </Link>
+              </div>
 
-              <Link
-                href={route("contact.index")}
-                className="ml-2 block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-2 py-1 rounded"
-              >
-                Contact Us
-              </Link>
+              <div className="pb-4">
+                <Link
+                  href={route("contact.index")}
+                  className="block text-lg text-gray-700 hover:bg-purple-700 hover:text-white transition-colors duration-200 ease-in-out px-4 py-1 rounded"
+                >
+                  Contact Us
+                </Link>
+              </div>
             </div>
 
             {/* Currency Switcher */}
@@ -464,29 +467,50 @@ export default function Navbar() {
                   </div>
                 ) : (
                   <>
-                    {/* Auth links (only visible on lg and up) */}
-                    <div className="hidden lg:flex lg:items-center lg:space-x-6 ml-4">
-                      {/* Sign-in link */}
-                      <span
-                        onClick={() => setLoginOpen(true)}
-                        className="cursor-pointer block text-gray-700 hover:text-indigo-600"
+                    <div
+                      className="relative dropdown dropdown-end hidden lg:flex ml-4"
+                      ref={dropdownRef}
+                    >
+                      {/* Dropdown button */}
+                      <button
+                        onClick={() => setDropdownOpen((prev) => !prev)}
+                        className="flex items-center justify-center w-10 h-10 rounded-full border-2 border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        aria-haspopup="true"
+                        aria-expanded={dropdownOpen}
                       >
-                        Sign in
-                      </span>
+                        <UserIcon className="w-6 h-6 text-indigo-500" />
+                      </button>
 
-                      {/* Login Modal */}
-
-                      <span
-                        aria-hidden="true"
-                        className="h-6 w-px bg-gray-200"
-                      />
-                      <Link
-                        href={route("register")}
-                        className="text-lg font-medium text-gray-700 hover:text-gray-800"
-                      >
-                        Create account
-                      </Link>
+                      {/* Dropdown menu */}
+                      {dropdownOpen && (
+                        <ul
+                          className="dropdown-content menu menu-sm bg-white rounded-lg shadow-lg p-2 mt-12 w-52 ring-1 ring-black ring-opacity-5 z-50"
+                          aria-label="Guest user dropdown"
+                        >
+                          <li>
+                            <button
+                              onClick={() => {
+                                setDropdownOpen(false);
+                                setLoginOpen(true);
+                              }}
+                              className="w-full text-left hover:bg-indigo-50 px-3 py-2 rounded text-gray-700"
+                            >
+                              Sign in
+                            </button>
+                          </li>
+                          <li>
+                            <Link
+                              href={route("register")}
+                              className="hover:bg-indigo-50 px-3 py-2 rounded text-gray-700"
+                              onClick={() => setDropdownOpen(false)}
+                            >
+                              Create account
+                            </Link>
+                          </li>
+                        </ul>
+                      )}
                     </div>
+
                     <LoginModal
                       isOpen={loginOpen}
                       onClose={() => setLoginOpen(false)}

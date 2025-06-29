@@ -13,7 +13,7 @@ import {
 import { PlusCircle, MinusCircle, SlidersHorizontal } from "lucide-react";
 
 type ProfileProps = PageProps<{
-  allProducts:PaginationProps<Product>
+  allProducts: PaginationProps<Product>;
   products: PaginationProps<Product>;
   searchedProducts?: PaginationProps<Product>; // <-- Add thi
   categoryGroups: CategoryGroup[];
@@ -31,7 +31,7 @@ type ProfileProps = PageProps<{
 
 export default function ListProducts({
   products,
-allProducts,
+  allProducts,
   searchedProducts,
   categoryGroups,
   productGroups,
@@ -39,8 +39,6 @@ allProducts,
   department,
   filters,
 }: ProfileProps) {
-
-
   const [expandedDepartments, setExpandedDepartments] = useState<string[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     null
@@ -134,19 +132,16 @@ allProducts,
       ? searchedProducts
       : products;
 
-
   // Ensure uniqueness by ID
   const uniqueProducts = Array.from(
     new Map(allProducts.data.map((p) => [p.id, p])).values()
   );
 
+  //       const uniqueProducts = Array.from(
+  //   new Map(displayedProducts.data.map((p) => [p.id, p])).values()
+  // );
 
-//       const uniqueProducts = Array.from(
-//   new Map(displayedProducts.data.map((p) => [p.id, p])).values()
-// );
-
-
-console.log('products',products);
+  console.log("products", products);
 
   return (
     <AuthenticatedLayout>
@@ -293,7 +288,7 @@ console.log('products',products);
 
         {/* Mobile filter toggle button */}
         <div
-          className="lg:hidden overflow-x-scroll overflow-y-hidden px-4 pb-20 h-10"
+          className="lg:hidden overflow-x-scroll overflow-y-hidden  pb-20 h-10"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
           <div className="whitespace-nowrap px-4 py-3">
@@ -450,30 +445,30 @@ console.log('products',products);
           </div>
         )}
 
-      {/* Product List */}
-<main className="w-full lg:w-full">
+        {/* Product List */}
+       <main className="w-full lg:w-full">
   {filters.keyword && searchedProducts?.data?.length ? (
-    // ✅ If searchedProducts exist
     searchedProducts.data.length === 0 ? (
-      <div className="text-center py-20 text-gray-500">No products found.</div>
+      <div className="text-center py-20 text-gray-500">
+        No products found.
+      </div>
     ) : (
-      <div className="grid grid-cols-1 xs:grid-cols-2 xs:gap-10 sm:grid-cols-3 lg:grid-cols-4 gap-10 xs:mr-5">
+      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-x-10 gap-y-12 xs:mr-5">
         {searchedProducts.data.map((product) => (
           <ProductItem key={product.id} product={product} />
         ))}
       </div>
     )
+  ) : displayedProducts.data.length === 0 ? (
+    <div className="text-center py-20 text-gray-500">
+      No products found.
+    </div>
   ) : (
-    // ✅ Otherwise show default unique products
-    displayedProducts.data.length === 0 ? (
-      <div className="text-center py-20 text-gray-500">No products found.</div>
-    ) : (
-      <div className="grid grid-cols-1 xs:grid-cols-2 xs:gap-10 sm:grid-cols-3 lg:grid-cols-4 gap-10 xs:mr-5">
-        {uniqueProducts.map((product) => (
-          <ProductItem key={product.id} product={product} />
-        ))}
-      </div>
-    )
+    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-x-10 gap-y-12 xs:mr-5">
+      {uniqueProducts.map((product) => (
+        <ProductItem key={product.id} product={product} />
+      ))}
+    </div>
   )}
 </main>
 

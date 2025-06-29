@@ -9,7 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Order extends Model
 {
 protected $casts=[
-    'variation_type_option_ids'=>'array'
+    'variation_type_option_ids'=>'array',
+      'total_price' => 'float',
 ];
 
    protected $fillable = [
@@ -49,12 +50,12 @@ public function vendor(): BelongsTo
 
 public function vendorUser(): BelongsTo
 {
-    return $this->BelongsTo(User::class,'vendor_user_id');
+    return $this->belongsTo(User::class, 'vendor_user_id');
 }
 
-public function shippingAddress()
+public function shippingAddress(): BelongsTo
 {
-    return $this->belongsTo(ShippingAddress::class);
+    return $this->belongsTo(ShippingAddress::class, 'shipping_address_id');
 }
 public function cartItems()
 {

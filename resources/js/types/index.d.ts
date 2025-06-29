@@ -40,6 +40,14 @@ export type VariationType = {
   options: VariationTypeOption[];
 };
 
+export type HeroBannerProps = {
+  title: string;
+  subtitle?: string;
+  image_path: string;
+  button_text?: string;
+  button_link?: string;
+  is_active?: boolean;
+};
 
 export type CategoryGroup = {
   id: number;
@@ -113,7 +121,7 @@ export type Product = {
 export type ProductGroup={
   id: number;
   name:string;
-  image: string;
+  images: string[];
   slug: string;
   active: boolean;
   products: {

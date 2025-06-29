@@ -128,6 +128,8 @@ export default function ShippingAddresses({
     }
   };
 
+
+  console.log(shipping_addresses);
   return (
     <section className={className}>
       <header>

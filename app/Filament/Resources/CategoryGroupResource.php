@@ -58,12 +58,13 @@ public static function table(Table $table): Table
             TernaryFilter::make('active'),
         ])
         ->actions([
-            Tables\Actions\EditAction::make(),
+            Tables\Actions\EditAction::make() ->url(fn ($record) => route('filament.admin.resources.category-groups.edit', ['record' => $record->id])),
         ])
         ->bulkActions([
             Tables\Actions\DeleteBulkAction::make(),
         ]);
 }
+
 
     public static function getRelations(): array
     {

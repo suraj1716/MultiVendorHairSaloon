@@ -15,6 +15,7 @@ export default function Edit() {
 
   const { mustVerifyEmail, status, shipping_addresses } = page.props;
 
+  console.log(shipping_addresses)
   return (
     <AuthenticatedLayout
       header={

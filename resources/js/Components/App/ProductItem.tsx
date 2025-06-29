@@ -24,12 +24,12 @@ export default function ProductItem({ product }: Props) {
   };
 
   return (
-    <div className="border-slate-100 border-2 rounded-xl w-[160px] sm:w-[180px] md:w-[200px] lg:w-[250px] xl:w-[260px] mx-auto">
-      <div className="relative overflow-hidden rounded-xl bg-white shadow hover:shadow-md transition-shadow duration-300">
+    <div className="w-[170px] sm:w-[200px] md:w-[220px] lg:w-[270px] xl:w-[300px] mx-auto">
+      <div className="relative overflow-hidden bg-white border-2 border-slate-100 shadow hover:shadow-md transition-shadow duration-300 rounded-md">
         <div className="overflow-hidden">
           <Link href={route("product.show", product.slug)}>
             <img
-              className={`h-[130px] bg-slate-300 sm:h-[150px] md:h-[160px] lg:h-[180px] w-full  transition duration-300 transform hover:-translate-y-1 hover:scale-105 ${
+              className={`w-full h-[130px] sm:h-[150px] md:h-[170px] lg:h-[190px] bg-slate-300 transition duration-300 transform hover:-translate-y-1 hover:scale-105 ${
                 product.image?.toLowerCase().endsWith(".png")
                   ? "object-contain"
                   : "object-cover"
@@ -44,9 +44,8 @@ export default function ProductItem({ product }: Props) {
           <span
             className={`
               absolute top-0 left-0 w-20 -translate-x-5 translate-y-1 -rotate-45
-              text-center text-[12px] font-bold text-white
-              px-2 py-1
-              shadow-lg select-none
+              text-center text-[11px] lg:text-xs font-bold text-white
+              px-2 py-1 shadow-lg select-none
               ${
                 product.highlight === "sale"
                   ? "bg-red-600 animate-pulse"
@@ -58,19 +57,16 @@ export default function ProductItem({ product }: Props) {
               }
             `}
           >
-            {product.highlight.charAt(0).toUpperCase() +
-              product.highlight.slice(1)}
+            {product.highlight.charAt(0).toUpperCase() + product.highlight.slice(1)}
           </span>
         )}
 
         <div className="mt-3 px-3 pb-3">
-          <h5 className="text-sm font-semibold tracking-tight text-slate-900 line-clamp-1">
-            <Link href={route("product.show", product.slug)}>
-              {product.title}
-            </Link>
+          <h5 className="text-sm sm:text-base lg:text-lg font-semibold tracking-tight text-slate-900 line-clamp-1">
+            <Link href={route("product.show", product.slug)}>{product.title}</Link>
           </h5>
 
-          <p className="text-[10px] text-gray-600 line-clamp-2 mt-1">
+          <p className="text-[11px] sm:text-xs lg:text-sm text-gray-600 line-clamp-2 mt-1">
             <Link
               href={route("vendor.profile", product.user?.store_name ?? "")}
               className="hover:underline"
@@ -79,17 +75,14 @@ export default function ProductItem({ product }: Props) {
             </Link>
             &nbsp;in&nbsp;
             <Link
-              href={route(
-                "product.byDepartment",
-                product.department?.slug ?? ""
-              )}
+              href={route("product.byDepartment", product.department?.slug ?? "")}
               className="hover:underline"
             >
               {product.department?.name ?? "Unknown Department"}
             </Link>
           </p>
 
-          <div className="mt-2 mb-3 text-[10px] sm:text-xs">
+          <div className="mt-2 mb-3 text-xs lg:text-sm">
             <ProductRating
               rating={product.average_rating ?? 0}
               reviewsCount={product.reviews_count ?? 0}
@@ -98,41 +91,23 @@ export default function ProductItem({ product }: Props) {
           </div>
 
           <div className="flex items-center justify-between gap-2">
-            <div className="flex flex-col items-start space-y-0.5">
-              <span className="text-sm font-bold text-slate-900">
+            <div className="flex flex-row items-center gap-2">
+              <span className="text-xs lg:text-sm text-slate-400">Starting at</span>
+              <span className="text-sm lg:text-lg font-bold text-slate-900">
                 <CurrencyFormatter
-                  amount={product.price ?? product.price}
+                  amount={product.price ?? 0}
                   currency="AUD"
                 />
               </span>
-              {product.price && (
-                <span className="text-[10px] text-slate-400 line-through">
-                  <CurrencyFormatter amount={product.price} currency="AUD" />
-                </span>
-              )}
             </div>
-
-            <button
+            {/* Optional Add to Cart */}
+            {/* <button
               type="button"
               onClick={addToCart}
               className="flex items-center rounded bg-slate-900 px-2 py-1 text-[10px] text-white hover:bg-gray-700"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="mr-1 h-3 w-3"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
               Add
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

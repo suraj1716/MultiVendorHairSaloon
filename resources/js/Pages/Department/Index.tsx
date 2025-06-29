@@ -103,7 +103,7 @@ export default function Index({
 
       <div className="bg-gray-200 py-10 text-center ">
         <h1 className="text-3xl font-semibold text-gray-800">
-          Products in Department: {department.name}
+          Products in {department.name}
         </h1>
       </div>
 
@@ -195,7 +195,7 @@ export default function Index({
           className="lg:hidden overflow-x-scroll overflow-y-hidden px-4 pb-20 h-10"
           style={{ WebkitOverflowScrolling: "touch" }}
         >
-          <div className="whitespace-nowrap px-4 py-3">
+          <div className="whitespace-nowrap  py-3">
             <div className="flex space-x-3 items-center min-w-max h-[50px]">
               {/* Filter Button */}
               <button
@@ -401,7 +401,7 @@ export default function Index({
               </div>
 
               {/* Products grid */}
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-10 xs:mr-5">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-10 xs:mr-5">
                 {products.data.map((product) => (
                   <ProductItem key={product.id} product={product} />
                 ))}

@@ -37,10 +37,17 @@ class ProductGroupResource extends Resource
                     ->required()
                     ->live(onBlur: true)
                     ->afterStateUpdated(fn($state, callable $set) => $set('slug', Str::slug($state))),
+
                 TextInput::make('slug')->required(),
-                FileUpload::make('image')
+
+                FileUpload::make('images')
                     ->image()
-                    ->directory('product-groups'),
+                    ->multiple()
+                    ->reorderable()
+                    ->directory('product-groups')
+                    ->preserveFilenames()
+                    ->columnSpanFull(),
+
                 Select::make('products')
                     ->multiple()
                     ->relationship('groupedProducts', 'title')
@@ -49,33 +56,34 @@ class ProductGroupResource extends Resource
             ]);
     }
 
-  public static function table(Table $table): Table
-{
-    return $table
-        ->columns([
-            TextColumn::make('name')
-                ->sortable()
-                ->searchable()
-                ->label('Group Name'),
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('name')
+                    ->sortable()
+                    ->searchable()
+                    ->label('Group Name'),
 
-            TextColumn::make('slug')
-                ->sortable()
-                ->searchable(),
+                TextColumn::make('slug')
+                    ->sortable()
+                    ->searchable(),
 
-        ImageColumn::make('image_url')  // <-- Use accessor here
-            ->label('Image')
-            ->square()
-            ->rounded(),
+                ImageColumn::make('image_url')  // <-- Use accessor here
+                    ->label('Image')
+                    ->square()
+                    ->rounded(),
 
-            // For many-to-many relationship display - show related product titles as tags or badges
-            TextColumn::make('groupedProducts')
-                ->label('Products')
-                ->formatStateUsing(fn ($state, $record) =>
-                    $record->groupedProducts->pluck('title')->implode(', ')
-                )
-                ->searchable(),
-        ]);
-}
+                // For many-to-many relationship display - show related product titles as tags or badges
+                TextColumn::make('groupedProducts')
+                    ->label('Products')
+                    ->formatStateUsing(
+                        fn($state, $record) =>
+                        $record->groupedProducts->pluck('title')->implode(', ')
+                    )
+                    ->searchable(),
+            ]);
+    }
 
     public static function getRelations(): array
     {

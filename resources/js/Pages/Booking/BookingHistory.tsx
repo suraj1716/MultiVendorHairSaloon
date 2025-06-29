@@ -4,12 +4,56 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order, OrderItem } from "@/types";
 import BookingWidget from "./BookingWidget";
 
+function ConfirmationModal({
+  open,
+  bookingDate,
+  timeSlot,
+  onSave,
+  onCancel,
+}: {
+  open: boolean;
+  bookingDate: string;
+  timeSlot: string;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+      <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
+        <h3 className="text-lg font-semibold mb-4">Confirm Booking</h3>
+        <p className="mb-2">
+          <strong>Date:</strong> {bookingDate}
+        </p>
+        <p className="mb-4">
+          <strong>Time:</strong> {timeSlot}
+        </p>
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 border rounded hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onSave}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function BookingHistory() {
   const { orders } =
     usePage<PageProps<{ orders: PaginationProps<Order> }>>().props;
 
-  // State for currently editing booking item
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [bookingDate, setBookingDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
@@ -19,36 +63,29 @@ export default function BookingHistory() {
   }>({});
   const today = new Date().toISOString().split("T")[0];
 
-  // Open modal and preload values
   const handleEditBooking = (item: OrderItem) => {
     if (!item.booking) return;
     setEditingItem(item);
     setBookingDate(item.booking.booking_date);
     setTimeSlot(item.booking.time_slot);
     setErrors({});
+    setDialogOpen(true);
   };
 
   const handleCancelBooking = (item: OrderItem, orderStatus: string) => {
-    if (orderStatus !== "draft" && orderStatus !== "paid") {
-      console.warn("Booking can only be cancelled when order is draft.");
-      return;
-    }
-
     if (orderStatus !== "draft" && orderStatus !== "paid") {
       console.warn(
         "Booking can only be cancelled when order is draft or paid."
       );
       return;
     }
-
     if (!item.booking?.id) {
       console.error("Booking ID is missing.");
       return;
     }
-
     if (
-      orderStatus == "draft" ||
-      (orderStatus == "paid" && today < item.booking.booking_date)
+      orderStatus === "draft" ||
+      (orderStatus === "paid" && today < item.booking.booking_date)
     ) {
       if (confirm("Are you sure you want to cancel this booking?")) {
         router.post(
@@ -66,41 +103,38 @@ export default function BookingHistory() {
       }
     }
   };
-  const handleConfirmBooking = (date: string, slot: string) => {
-    if (!editingItem || !editingItem.booking) return;
 
-    router.put(
-      route("bookings.update", editingItem.booking.id),
-      { booking_date: date, time_slot: slot },
-      {
-        onSuccess: () => {
-          setEditingItem(null);
-          setDialogOpen(false);
-        },
-        onError: (errorBag) => {
-          setErrors(errorBag);
-        },
-      }
-    );
-  };
+ const handleConfirmBooking = (date: string, slot: string) => {
+  console.log("Inside handleConfirmBooking");
+  console.log("editingItem:", editingItem);
 
-  const handleSaveBooking = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem || !editingItem.booking) return;
+  if (!editingItem || !editingItem.booking) {
+    console.warn("Missing editingItem or booking");
+    return;
+  }
 
-    router.put(
-      route("bookings.update", editingItem.booking.id),
-      { booking_date: bookingDate, time_slot: timeSlot },
-      {
-        onSuccess: () => {
-          setEditingItem(null);
-        },
-        onError: (errorBag) => {
-          setErrors(errorBag);
-        },
-      }
-    );
-  };
+  console.log(editingItem.booking.id, date, slot);
+  router.put(
+    route("bookings.update", editingItem.booking.id),
+    { booking_date: date, time_slot: slot },
+    {
+      onSuccess: () => {
+        console.log("Booking updated successfully");
+        setEditingItem(null);
+        setConfirmModalOpen(false);
+        setErrors({});
+      },
+      onError: (errorBag) => {
+        console.error("Error updating booking", errorBag);
+        setErrors(errorBag);
+        setConfirmModalOpen(false);
+        setDialogOpen(true);
+      },
+    }
+  );
+};
+
+
   return (
     <AuthenticatedLayout
       header={
@@ -118,7 +152,6 @@ export default function BookingHistory() {
                   key={order.id}
                   className="bg-white shadow rounded-md mb-6 p-4 overflow-auto"
                 >
-                  {/* Order header */}
                   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 border-b border-gray-200 pb-1 text-sm text-gray-700">
                     <div>
                       <span className="font-semibold">Order #</span>
@@ -133,7 +166,6 @@ export default function BookingHistory() {
                     </div>
                   </div>
 
-                  {/* Vendor Info */}
                   <div className="mb-3 text-sm text-gray-600">
                     <div>
                       <span className="font-semibold">Vendor:</span>{" "}
@@ -148,17 +180,11 @@ export default function BookingHistory() {
                       {order.vendor.store_address}
                     </div>
 
-
-
-
-
-
                     {(order.status === "draft" || order.status === "draft") && (
-                      <div className="mt-1 p-1 flex- gap-2">
+                      <div className="mt-1 p-1 flex gap-2">
                         <button
-                          className=" inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
+                          className="inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
                           onClick={() => {
-                            // For example, edit first bookable orderItem that has booking and booking date > today
                             const itemToEdit = order.orderItems.find(
                               (item) =>
                                 item.booking &&
@@ -166,7 +192,6 @@ export default function BookingHistory() {
                             );
                             if (itemToEdit) {
                               handleEditBooking(itemToEdit);
-                              setDialogOpen(true);
                             } else {
                               alert("No editable booking found in this order.");
                             }
@@ -176,7 +201,6 @@ export default function BookingHistory() {
                         </button>
                       </div>
                     )}
-
 
                     {order.status === "paid" || order.status === "draft" ? (
                       (() => {
@@ -201,11 +225,8 @@ export default function BookingHistory() {
                               </button>
                             </div>
                           );
-                        } else {
-                          return (
-                            <span className="text-gray-500">Completed</span>
-                          );
                         }
+                        return <span className="text-gray-500">Completed</span>;
                       })()
                     ) : order.status === "cancelled" ? (
                       <button
@@ -219,28 +240,6 @@ export default function BookingHistory() {
                     )}
                   </div>
 
-
- {/* BookingWidget dialog */}
-                    {editingItem && (
-                      <BookingWidget
-                        bookingDate={bookingDate}
-                        setBookingDate={setBookingDate}
-                        timeSlot={timeSlot}
-                        setTimeSlot={setTimeSlot}
-                        open={dialogOpen}
-                        onOpenChange={setDialogOpen}
-                        vendorId={order.vendor.id}
-                        onSubmit={handleConfirmBooking}
-                      />
-                    )}
-
-
-
-
-
-
-
-                  {/* Items Table */}
                   <table className="w-full text-sm border-collapse table-auto">
                     <thead>
                       <tr className="bg-gray-100">
@@ -274,9 +273,8 @@ export default function BookingHistory() {
                             </Link>
                           </td>
                           <td className="border p-2">
-                            {item.variation_summary &&
-                            item.variation_summary.length > 0
-                              ? item.variation_summary.map((v, i) => (
+                            {(item.variation_summary ?? []).length > 0
+                              ? (item.variation_summary ?? []).map((v, i) => (
                                   <div key={i}>
                                     <span className="font-semibold">
                                       {v.type}:
@@ -300,7 +298,7 @@ export default function BookingHistory() {
                             {(order.status === "paid" ||
                               order.status === "draft") &&
                             item.booking &&
-                            today < item.booking?.booking_date ? (
+                            today < item.booking.booking_date ? (
                               <button
                                 onClick={() =>
                                   handleCancelBooking(item, order.status)
@@ -329,61 +327,48 @@ export default function BookingHistory() {
           )
         )}
 
-        {/* Edit Booking Modal */}
+        {/* BookingWidget modal */}
         {editingItem && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
-            onClick={() => setEditingItem(null)}
-          >
-            <div
-              className="bg-white rounded p-6 w-96"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold mb-4">Edit Booking</h3>
+          <BookingWidget
+            bookingDate={bookingDate}
+            setBookingDate={setBookingDate}
+            timeSlot={timeSlot}
+            setTimeSlot={(slot) => {
+              setTimeSlot(slot);
+              if (slot && bookingDate) {
+                setDialogOpen(false);
+                setConfirmModalOpen(true);
+              }
+            }}
+            open={dialogOpen}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
 
-              {bookingDate && timeSlot && (
-                <div className="text-sm text-gray-700 dark:text-gray-300">
-                  <p>
-                    <strong>Selected Date:</strong> {bookingDate}
-                  </p>
-                  <p>
-                    <strong>Selected Time:</strong> {timeSlot}
-                  </p>
-                </div>
-              )}
-              <form onSubmit={handleSaveBooking}>
-                <div className="mb-4">
-                  {errors.booking_date && (
-                    <p className="text-red-600 text-xs mt-1">
-                      {errors.booking_date}
-                    </p>
-                  )}
-                  {errors.time_slot && (
-                    <p className="text-red-600 text-xs mt-1">
-                      {errors.time_slot}
-                    </p>
-                  )}
-                </div>
-
-                <div className="flex justify-end gap-2 mt-4">
-                  <button
-                    type="button"
-                    className="bg-gray-300 rounded px-4 py-2"
-                    onClick={() => setEditingItem(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
-                  >
-                    Save
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+            }}
+            vendorId={
+              orders?.data.find((order) =>
+                order.orderItems.some((item) => item.id === editingItem.id)
+              )?.vendor.id ?? null
+            }
+            onSubmit={() => {}}
+          />
         )}
+
+        {/* Confirmation modal */}
+        <ConfirmationModal
+          open={confirmModalOpen}
+          bookingDate={bookingDate}
+          timeSlot={timeSlot}
+          onCancel={() => {
+            setConfirmModalOpen(false);
+            setDialogOpen(true);
+          }}
+          onSave={() => {
+            console.log("hit");
+            handleConfirmBooking(bookingDate, timeSlot);
+            setConfirmModalOpen(false);
+          }}
+        />
       </div>
     </AuthenticatedLayout>
   );

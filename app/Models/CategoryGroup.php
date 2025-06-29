@@ -20,8 +20,8 @@ class CategoryGroup extends Model
     return $this->image ? asset('storage/' . $this->image) : null;
 }
 
-public function getRouteKeyName()
-{
-    return 'slug';
-}
+// public function getRouteKeyName()
+// {
+//     return 'slug';
+// }
 }

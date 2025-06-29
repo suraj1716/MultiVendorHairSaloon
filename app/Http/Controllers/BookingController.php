@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\OrderViewResource;
 use App\Models\Booking;
 use App\Models\Order;
+use App\Services\GoogleCalendarService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,6 +15,9 @@ use Inertia\Inertia;
 use Stripe\Stripe;
 use Stripe\Refund;
 
+use App\services\RefundService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class BookingController extends Controller
 {
@@ -42,31 +46,97 @@ class BookingController extends Controller
         ]);
     }
 
+
+
+
+
+
     public function store(Request $request)
     {
-        $hasBooking = $request->input('hasBooking') == '1';
-        $user = Auth::user();
-        if (!$user) {
-            // Handle the unauthenticated case
-            abort(403, 'Unauthorized');
+        Log::info('Inside BookingController@store', $request->all());
+        try {
+
+
+            $hasBooking = $request->input('hasBooking') == '1';
+            $user = Auth::user();
+
+            if (!$user) {
+                dd('User not authenticated'); // Checkpoint
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            if ($hasBooking) {
+                $validated = $request->validate([
+                    'booking_date' => 'required|date',
+                    'time_slot' => 'required|string|max:255',
+                ]);
+
+
+
+                $existingBooking = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
+                    ->where('bookings.booking_date', $validated['booking_date'])
+                    ->where('bookings.time_slot', $validated['time_slot'])
+                    ->where('orders.status', '!=', 'cancelled')
+                    ->exists();
+
+                if ($existingBooking) {
+                    dd('Booking already exists'); // Checkpoint
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Selected slot is already booked. Please choose a different time.'
+                    ], 409);
+                }
+
+                $booking = Booking::create([
+                    'user_id' => $user->id,
+                    'booking_date' => $validated['booking_date'],
+                    'time_slot' => $validated['time_slot'],
+                ]);
+
+
+
+                if ($user->google_token) {
+                    $googleService = new GoogleCalendarService(
+                        $user->google_token,
+                        $user->google_refresh_token
+                    );
+
+                    $startDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[0]))->format(\DateTime::RFC3339);
+                    $endDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[1]))->format(\DateTime::RFC3339);
+
+                    $googleService->createEvent(
+                        'Booking Appointment',
+                        "Booking ID: {$booking->id}",
+                        $startDateTime,
+                        $endDateTime,
+                        'Australia/Sydney',
+                        null
+                    );
+                }
+            }
+
+
+
+            return response()->json(['success' => true, 'message' => 'Booking created successfully']);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            dd('Validation error caught', $e->errors()); // Catch validation
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            dd('General exception caught', $e->getMessage()); // Catch all other errors
+            Log::error('Booking store failed: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred. Please try again later.'
+            ], 500);
         }
-        if ($hasBooking) {
-
-            $validated = $request->validate([
-                'booking_date' => 'required|date',
-                'time_slot' => 'required|string|max:255',
-            ]);
-
-            $booking = Booking::create([
-                'user_id' => $user->id, // Ensure this is not null
-                'booking_date' => $validated['booking_date'],
-                'time_slot' => $validated['time_slot'],
-
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Booking created successfully');
     }
+
+
 
     public function getAvailableSlots(Request $request)
     {
@@ -309,19 +379,64 @@ class BookingController extends Controller
             'time_slot' => 'required|string|max:255',
         ]);
 
-        // Optionally check authorization here
+        // Authorization: user must own booking or vendor
         if ($booking->user_id !== Auth::id() && $booking->vendor_id !== Auth::id()) {
             abort(403);
         }
 
+        // Update booking details
         $booking->update([
             'booking_date' => $request->booking_date,
             'time_slot' => $request->time_slot,
         ]);
 
-        return redirect()->back()
-            ->with('success', 'Booking updated successfully.');
+        $user = Auth::user();
+
+        // If user has Google token and booking has an event ID, update Google Calendar
+        if ($user->google_access_token && $booking->google_event_id) {
+            try {
+                $googleService = new \App\Services\GoogleCalendarService([
+                    'access_token' => $user->google_access_token,
+                    'refresh_token' => $user->google_refresh_token,
+                ]);
+
+                $startTime = explode(' - ', $booking->time_slot)[0];
+                $endTime = explode(' - ', $booking->time_slot)[1];
+                $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
+                $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
+
+                $googleService->updateEvent(
+                    $booking->google_event_id,
+                    'Booking Appointment',
+                    "Updated Booking ID: {$booking->id}",
+                    $startDateTime,
+                    $endDateTime,
+                    'Australia/Sydney'
+                );
+
+                // Save new access token if refreshed
+                if ($googleService->newAccessToken) {
+                    $user->google_access_token = $googleService->newAccessToken;
+                    $user->save();
+                }
+            } catch (\Exception $e) {
+                Log::error('Google Calendar update failed: ' . $e->getMessage());
+                // Optional: notify user/admin or continue silently
+            }
+        }
+
+        // Return JSON response if AJAX (Inertia) request
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Booking updated successfully.',
+                'booking' => $booking->fresh(), // send updated booking
+            ]);
+        }
+
+        // Fallback redirect (for non-AJAX)
+        return redirect()->back()->with('success', 'Booking updated successfully.');
     }
+
 
 
 
@@ -360,56 +475,60 @@ class BookingController extends Controller
 
 
 
-    public function cancel(Booking $booking)
-    {
-        if ($booking->user_id !== Auth::id() && $booking->vendor_id !== Auth::id()) {
-            abort(403);
+
+   public function cancel(Booking $booking, RefundService $refundService)
+{
+    $user = Auth::user();
+
+    if ($booking->user_id !== $user->id && $booking->vendor_id !== $user->id) {
+        abort(403, 'Unauthorized');
+    }
+
+    $order = $booking->order;
+
+    if (!$order || $order->status === 'cancelled') {
+        return redirect()->back()->with('error', 'Invalid order for cancellation.');
+    }
+
+    if (now()->gt($booking->booking_date)) {
+        return redirect()->back()->with('error', 'Past bookings cannot be cancelled.');
+    }
+
+    // Cancel Google Calendar
+    if ($booking->google_event_id && $user->google_access_token) {
+        try {
+            $googleService = new GoogleCalendarService(
+                ['access_token' => $user->google_access_token],
+                $user->google_refresh_token
+            );
+
+            $googleService->deleteEvent($booking->google_event_id);
+
+            if ($googleService->newAccessToken) {
+                $user->google_access_token = $googleService->newAccessToken;
+                $user->save();
+            }
+        } catch (\Exception $e) {
+            Log::error('Failed to delete Google Calendar event: ' . $e->getMessage());
         }
+    }
 
-        $order = $booking->order;
+    // Refund booking fee
+    try {
+        $refundAmount = $refundService->refundBookingFee($order);
 
-        if (!$order || ($order->status === 'cancelled' && now() < $booking->booking_date)) {
-            return redirect()->back()->with('error', 'Invalid order for cancellation.');
-        }
+    } catch (\Exception $e) {
+        Log::error('RefundService error: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Booking cancelled but refund failed.');
+    }
 
+    // Optionally mark status as cancelled
+    if ($refundAmount >= 0) {
         $order->status = 'cancelled';
         $order->save();
-
-        if ($order->payment_intent && !$order->refunded_at) {
-            try {
-                Stripe::setApiKey(config('app.stripe_secret_key'));
-
-                // Calculate refund amount
-                $now = Carbon::now();
-                $bookingDate = Carbon::parse($booking->booking_date); // make sure booking_date is a proper datetime
-
-                $daysDiff = $now->diffInDays($bookingDate, false); // false = signed difference
-
-                if ($daysDiff < 2) {
-                    $refundAmount = $order->total_price * 0.5; // 50%
-                } else {
-                    $refundAmount = $order->total_price; // 100%
-                }
-
-                // Create refund
-                $refund = Refund::create([
-                    'payment_intent' => $order->payment_intent,
-                    'amount' => intval($refundAmount * 100), // Stripe uses cents
-                ]);
-
-                $order->refunded_at = now();
-                $order->refund_id = $refund->id;
-                $order->refund_amount = $refundAmount;
-                $order->refund_reason = $daysDiff < 2 ? 'Late cancellation (50%)' : 'Full refund';
-
-
-                $order->save();
-            } catch (\Exception $e) {
-                Log::error('Stripe refund failed: ' . $e->getMessage());
-                return redirect()->back()->with('error', 'Booking cancelled but refund failed.');
-            }
-        }
-        $booking->delete();
-        return redirect()->back()->with('success', 'Booking cancelled and conditional refund processed.');
     }
+
+    return redirect()->back()->with('success', 'Booking cancelled and refund processed if applicable.');
+}
+
 }

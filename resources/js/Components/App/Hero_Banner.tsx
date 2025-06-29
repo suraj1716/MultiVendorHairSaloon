@@ -1,58 +1,65 @@
-import { Link, router } from "@inertiajs/react";
-import { useEffect, useState } from "react";
+import { HeroBannerProps } from "@/types";
+import { router } from "@inertiajs/react";
+import { motion } from "framer-motion";
 
-export default function HeroBanner() {
-  const [offsetY, setOffsetY] = useState(0);
-
-  useEffect(() => {
-    const handleScroll = () => setOffsetY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+export default function HeroBanner({
+  title,
+  subtitle,
+  image_path,
+  button_text = "Explore",
+  button_link = "/shop",
+}: HeroBannerProps) {
   return (
-    <section className="relative min-h-screen overflow-hidden text-white">
-      {/* ----------- Mobile Layout ----------- */}
-      <div className="block z-1 md:hidden relative min-h-screen">
-        <img
-          src="/storage/pullup-banner-web-01.jpg"
-          alt="Mobile Hero Banner - Print Solutions"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/70" />
-
-        <div className=" relative z-1 flex flex-col items-center justify-center text-center min-h-[700px] px-4">
-          <h1 className="text-3xl font-bold drop-shadow-lg">Print Solutions</h1>
-          <p className="mt-2 text-white/80 text-sm">
-            High-quality banners, flyers & custom prints.
-          </p>
-         <button
-  onClick={() => router.visit(route('shop.search'))}
-  className="mt-5 bg-gradient-to-r from-pink-500 to-yellow-400 px-6 py-2 rounded-full font-semibold shadow-md hover:opacity-90"
+    <section
+      className="
+    min-h-screen/2 w-full
+    bg-gradient-to-r from-[#521f48] to-[#a70797]
+    text-white font-montserrat
+    flex flex-col md:flex-row items-center justify-between
+    overflow-hidden
+    px-4  md:px-0 md:py-0
+  "
+    >
+      {/* Content Area */}
+     <motion.div
+  className="w-full md:w-1/2 z-20 px-6 py-10 md:px-20"
+  initial={{ opacity: 0, x: -50 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ duration: 0.8 }}
 >
-  Browse Products
-</button>
-        </div>
-      </div>
-
-      {/* ----------- Desktop Layout ----------- */}
-   <div className="hidden md:flex relative min-h-screen bg-black">
-  {/* Image full screen background */}
-  <img
-    src="/storage/pullup-banner-web-01.jpg"
-    alt="Desktop Hero Banner - Print Solutions"
-    className="absolute inset-0 w-full h-full object-cover"
-  />
-
-  {/* Button overlaid on top of image */}
-  <div className="relative z-1 flex items-start justify-start p-24 min-h-screen">
-    <button  onClick={() => router.visit(route('shop.search'))} className="bg-gradient-to-r mt-[65px] from-pink-500 to-yellow-400 px-8 py-3 rounded-full font-semibold shadow-lg hover:opacity-90">
-      Browse Products
-    </button>
-  </div>
-</div>
+  <h1 className="text-4xl md:text-7xl font-extrabold leading-tight tracking-tight mb-4 max-w-lg md:max-w-xl">
+    {title}
+  </h1>
+  <p className="text-white/80 text-lg md:text-xl leading-relaxed max-w-md md:max-w-lg mb-10">
+    {subtitle}
+  </p>
+  <motion.button
+    onClick={() => router.visit(button_link)}
+    className="bg-white text-black px-8 py-3 rounded-full font-semibold hover:bg-slate-200 transition duration-300"
+    initial={{ opacity: 0, y: 30 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.4, duration: 0.6 }}
+  >
+    {button_text}
+  </motion.button>
+</motion.div>
 
 
+      {/* Image Area */}
+      {image_path && (
+        <motion.div
+          className="w-full md:w-1/2 h-full z-10 flex justify-center md:justify-end"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <img
+            src={image_path}
+            alt={title}
+            className="w-full h-full object-cover"
+          />
+        </motion.div>
+      )}
     </section>
   );
 }

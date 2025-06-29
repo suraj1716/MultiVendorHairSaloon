@@ -15,7 +15,16 @@ use Illuminate\Support\Facades\Auth;
 
 // Add this:
 use App\Filament\Resources\BookingResource\Pages;
+use App\Http\Controllers\BookingController;
+use App\Services\RefundService;
+use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Illuminate\Support\Facades\Log;
+use Filament\Tables\Filters\DateFilter;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Http;
 
 class BookingResource extends Resource
 {
@@ -28,125 +37,246 @@ class BookingResource extends Resource
 
     public static function table(Tables\Table $table): Tables\Table
     {
-
-
-
         return $table
             ->columns([
-
-                Tables\Columns\TextColumn::make('is_read')
-                    ->label('Read Status')
-                    ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'danger')
-                    ->icon(fn($state) => $state ? 'heroicon-m-check' : 'heroicon-m-x-mark')
-                    ->label('Read Status')
-                    ->formatStateUsing(fn($state) => $state ? 'Read' : 'Unread'),
-
-                TextColumn::make('id')
-                    ->sortable()
-                    ->searchable()
-                    ->label('Order ID'),
-TextColumn::make('designer')
-    ->label('Designer')
-    ->getStateUsing(fn(Order $record) => optional($record->orderItems()->first())->designer ? 'Yes' : 'No')
-    ->badge()
-    ->color(fn($state) => $state === 'Yes' ? 'success' : 'gray'),
-
-                TextColumn::make('vendorUser.vendor.user_id')
-                    ->label('Vendor Id'),
-
-                TextColumn::make('vendorUser.vendor.store_name')
-                    ->label('Vendor Store'),
-                TextColumn::make('vendorUser.vendor.vendor_type')
-                    ->label('Vendor Type'),
-                TextColumn::make('total_price')
-                    ->money('AUD')
-                    ->label('Total'),
-
-                TextColumn::make('payment_status')
-                    ->label('Payment Status')
-                    ->getStateUsing(fn($record) => $record->vendor_subtotal ? 'paid' : 'draft')
+                Tables\Columns\TextColumn::make('booking.id')
+                    ->label('Booking ID')
                     ->sortable()
                     ->searchable(),
 
+                Tables\Columns\TextColumn::make('booking.order_id')
+                    ->label('Order ID')
+                    ->sortable()
+                    ->searchable(),
 
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('User')
+                    ->sortable()
+                    ->searchable(),
 
-                TextColumn::make('booking.booking_date')
+                Tables\Columns\TextColumn::make('vendorUser.vendor.store_name')
+                    ->label('Vendor Store')
+                    ->sortable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('booking.booking_date')
                     ->label('Booking Date')
-                    ->date(),
+                    ->date()
+                    ->sortable(),
 
-                TextColumn::make('booking.time_slot')
+                Tables\Columns\TextColumn::make('booking.time_slot')
                     ->label('Time Slot'),
 
-                // TextColumn::make('attachment_path')
-                //     ->label('Attachment')
-                //     ->getStateUsing(fn(Order $record) => optional($record->orderItems()->first())->attachment_path ?? 'No attachment')
-                //     ->url(fn(Order $record) => optional($record->orderItems()->first())->attachment_path ? asset('storage/' . $record->orderItems()->first()->attachment_path) : null)
-                //     ->openUrlInNewTab()
-                //     ->extraAttributes(['style' => 'max-width: 100px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;']),
-
-                Tables\Columns\TextColumn::make('variation_images')
-                    ->label('Variation Images')
-                    ->getStateUsing(function (Order $record) {
-                        $allVariations = [];
-
-                        foreach ($record->orderItems as $item) {
-                            $variationStrings = [];
-                            $variationIds = $item->variation_type_option_ids;
-
-                            if (is_array($variationIds) && count($variationIds)) {
-                                foreach ($variationIds as $optionId) {
-                                    $option = VariationTypeOption::with('variationType', 'media')->find($optionId);
-                                    if ($option) {
-                                        $image = $option->getMedia('images')->first();
-                                        $imageUrl = $image ? $image->getUrl('thumb') : null;
-
-                                        $variationName = $option->variationType->name ?? 'N/A';
-                                        $optionName = $option->name ?? 'N/A';
-
-                                        $imageTag = $imageUrl
-                                            ? "<img src='{$imageUrl}' alt='{$optionName}' style='width:30px; height:30px; object-fit:contain; margin-right:8px; border:1px solid #ccc; border-radius:4px;' />"
-                                            : '';
-
-                                        $variationStrings[] = "<div style='display:flex; align-items:center; margin-bottom:4px;'>{$imageTag}<span>{$variationName}: {$optionName}</span></div>";
-                                    }
-                                }
-                            }
-
-                            $allVariations[] = implode('', $variationStrings);
-                        }
-
-                        return implode('<hr style="margin:8px 0;">', $allVariations);
-                    })
-                    ->html()
-                    ->extraAttributes([
-                        'style' => 'max-height:150px; overflow-y:auto; white-space:normal;'
-                    ]),
-
-
-                SelectColumn::make('status')
-                    ->label('Status')
-                    ->options(
-                        collect(OrderStatusEnum::cases())
-                            ->filter(fn($case) => in_array($case->value, ['shipped', 'delivered', 'cancelled']))
-                            ->mapWithKeys(fn($case) => [$case->value => $case->name])
-                            ->toArray()
-                    )
-                    ->rules(['required'])
-                    ->searchable()
-                    ->afterStateUpdated(function ($record, $state) {
-                        $record->status = $state;
-                        $record->save();
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Booking Status')
+                    ->badge()
+                    ->color(fn(string $state) => match ($state) {
+                        'active' => 'success',
+                        'inactive' => 'danger',
+                        default => 'gray',
                     }),
 
-                TextColumn::make('created_at')
+                Tables\Columns\TextColumn::make('booking.booking_fee_refund_amount')
+                    ->label('Booking Fee Refund')
+                    ->money('AUD')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('total_price')
+                    ->label('Order Total')
+                    ->money('AUD')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('booking.order.booking_fee')
+                    ->label('Booking Fee (Order)')
+                    ->money('AUD'),
+
+                Tables\Columns\TextColumn::make('booking.order.status')
+                    ->label('Order Status')
+                    ->badge()
+                    ->color(fn(string $state) => match ($state) {
+                        'pending' => 'warning',
+                        'shipped' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn($state) => \App\Enums\OrderStatusEnum::tryFrom($state)?->name ?? 'Unknown'),
+
+                Tables\Columns\TextColumn::make('booking.order.payment_intent')
+                    ->label('Payment Intent')
+                    ->toggleable()
+                    ->limit(20)
+                    ->tooltip(fn($state) => $state),
+
+                Tables\Columns\TextColumn::make('refund_amount')
+                    ->label('Refunded Amount')
+                    ->money('AUD'),
+
+                Tables\Columns\TextColumn::make('booking.order.refund_reason')
+                    ->label('Refund Reason')
+                    ->limit(30)
+                    ->tooltip(fn($state) => $state),
+
+                IconColumn::make('booking.order.refunded_at')
+                    ->label('Refunded')
+                    ->boolean()
+                    ->color(fn($state) => $state ? 'success' : 'secondary')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Booking Created')
                     ->dateTime('Y-m-d H:i')
-                    ->label('Date'),
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('updated_at')
+                    ->label('Last Updated')
+                    ->dateTime('Y-m-d H:i')
+                    ->sortable(),
+
+                IconColumn::make('is_read')
+                    ->label('Read Status')
+                    ->boolean()
+                    ->color(fn($state) => $state ? 'success' : 'danger')
+                    ->sortable(),
+            ])
+            ->filters([
+                SelectFilter::make('order.status')
+                    ->label('Order Status')
+                    ->options([
+                        'draft' => 'Draft',
+                        'paid' => 'Paid',
+                        'cancelled' => 'Cancelled',
+                        'shipped' => 'Shipped',
+                        'delivered' => 'Delivered',
+                    ]),
+
+                Tables\Filters\Filter::make('booking_fee_refunded')
+                    ->label('Booking Fee Refunded')
+                    ->query(function ($query) {
+                        $query->whereHas('booking', function ($q) {
+                            $q->where('booking_fee_refunded', true);
+                        });
+                    }),
+
+                Filter::make('is_read')
+                    ->label('Read Status')
+                    ->query(fn($query) => $query->where('is_read', true)),
+
+                Tables\Filters\Filter::make('booking_date')
+                    ->form([
+                        \Filament\Forms\Components\DatePicker::make('start_date')->label('Start Date'),
+                        \Filament\Forms\Components\DatePicker::make('end_date')->label('End Date'),
+                    ])
+                    ->query(function ($query, array $data) {
+                        $query->whereHas('booking', function ($q) use ($data) {
+                            if (!empty($data['start_date']) && !empty($data['end_date'])) {
+                                $q->whereBetween('booking_date', [$data['start_date'], $data['end_date']]);
+                            } elseif (!empty($data['start_date'])) {
+                                $q->where('booking_date', '>=', $data['start_date']);
+                            } elseif (!empty($data['end_date'])) {
+                                $q->where('booking_date', '<=', $data['end_date']);
+                            }
+                        });
+                    })
+
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),
+
+                Tables\Actions\Action::make('cancelBooking')
+                    ->label('Cancel Booking')
+                    ->color('warning')
+                    ->icon('heroicon-o-x-circle')
+                    ->requiresConfirmation()
+                    ->visible(
+                        fn(Order $record) =>
+                        $record->booking &&
+                            $record->booking->booking_date &&
+                            now()->lt($record->booking->booking_date) &&
+                            !$record->booking->booking_fee_refunded
+                    )
+                    ->action(function (Order $record) {
+                        $booking = $record->booking;
+
+                        if (!$booking || now()->gt($booking->booking_date)) {
+                            Notification::make()
+                                ->title('Booking already occurred or not found')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        try {
+                            // Manually inject controller and dependencies
+                            $controller = App::make(BookingController::class);
+                            $refundService = App::make(RefundService::class);
+
+                            // Call the cancel method directly (as it's not a real HTTP request)
+                            $controller->cancel($booking, $refundService);
+
+                            $record->refresh(); // Refresh to get updated status
+
+                            Notification::make()
+                                ->title('Booking cancelled and refund processed if applicable')
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Log::error('Cancel booking error: ' . $e->getMessage());
+
+                            Notification::make()
+                                ->title('Failed to cancel booking')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                Tables\Actions\Action::make('refund')
+                    ->label('Refund')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->visible(function ($record) {
+                        $booking = $record->booking;
+                        $order = $booking?->order;
+
+                        return $record->payment_intent &&
+                            // !$record->refunded_at &&
+                            $order &&
+                            $order->total_price > 0;
+                    })
+                    ->action(function ($record) {
+                        $refundService = app(\App\Services\RefundService::class);
+
+
+                        try {
+                            $refundedAmount = $record->booking
+                                ? $refundService->refundBookingAndOrder($record)
+                                : $refundService->refundOrder($record);
+
+                            if ($refundedAmount <= 0) {
+                                Notification::make()
+                                    ->title('No refundable amount left')
+                                    ->warning()
+                                    ->send();
+                                return;
+                            }
+
+                            Notification::make()
+                                ->title("Refunded \${$refundedAmount}")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Log::error('Refund error: ' . $e->getMessage());
+
+                            Notification::make()
+                                ->title('Refund failed')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
             ]);
     }
+
 
     public static function getPages(): array
     {

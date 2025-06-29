@@ -40,7 +40,7 @@ export default function Carousel({ images, index, onIndexChange }: CarouselProps
         <img
           src={images[index]?.large}
           alt={`Selected product image ${index + 1}`}
-          className="h-full w-full object-contain transition-transform duration-500 ease-in-out group-hover:scale-110"
+          className="h-full w-full object-cover transition-transform duration-500 ease-in-out group-hover:scale-110"
           loading="lazy"
           draggable={false}
         />

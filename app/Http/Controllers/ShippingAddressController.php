@@ -1,8 +1,7 @@
 <?php
+namespace App\Http\Controllers;
 
 // app/Http/Controllers/UserShippingAddressController.php
-
-namespace App\Http\Controllers;
 
 use App\Models\ShippingAddress;
 use Illuminate\Http\Request;
@@ -16,22 +15,25 @@ class ShippingAddressController extends Controller
     public function index()
     {
         $user = Auth::user();
-        // dd($user->shippingAddresses()->get());
+        dd($user->shippingAddress()->get());
 
         return Inertia::render('Profile/ShippingAddresses', [
-            'shipping_addresses' => $user->shippingAddress()->get(), // <-- ensure this is called as a method
+            'shipping_addresses' => $user->shippingAddress, // <-- ensure this is called as a method
         ]);
     }
 
     public function store(Request $request)
     {
-        $hasShipping = $request->input('hasShipping') == '1';
+        // $hasShipping = $request->input('hasShipping') == '1';
         $user = Auth::user();
         if (!$user) {
             // Handle the unauthenticated case
             abort(403, 'Unauthorized');
         }
-        if ($hasShipping) {
+
+        // dd($hasShipping);
+
+        // if ($hasShipping) {
             $data = $request->validate([
                 'full_name' => 'required|string',
                 'phone' => 'required|string',
@@ -46,11 +48,11 @@ class ShippingAddressController extends Controller
 
 
             if ($data['is_default']) {
-                Auth::user()->shippingAddress()->update(['is_default' => false]);
+                Auth::user()->shippingAddresses()->update(['is_default' => false]);
             }
 
-            Auth::user()->shippingAddress()->create($data);
-        }
+            Auth::user()->shippingAddresses()->create($data);
+        // }
         return redirect()->back()->with('success', 'Shipping address added.');
     }
 
@@ -73,7 +75,7 @@ class ShippingAddressController extends Controller
 
         // Reset other addresses if this one is set to default
         if ($data['is_default']) {
-            Auth::user()->shippingAddress()->update(['is_default' => false]);
+            Auth::user()->shippingAddresses()->update(['is_default' => false]);
         }
 
         $shippingAddress->update($data);
@@ -105,7 +107,7 @@ class ShippingAddressController extends Controller
         }
 
         // Reset all addresses default flag for this user
-        $user->shippingAddress()->update(['is_default' => false]);
+        $user->shippingAddresses()->update(['is_default' => false]);
 
         // Set this address as default (use integer 1)
         $address->is_default = 1;
