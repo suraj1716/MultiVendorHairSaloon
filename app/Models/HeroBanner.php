@@ -17,4 +17,18 @@ class HeroBanner extends Model
         'image_path',
         'is_active',
     ];
+
+
+    public function getImageUrlAttribute()
+{
+    if (!$this->image_path) {
+        return null;
+    }
+
+    // Remove 'public/' prefix if present
+    $cleanPath = preg_replace('#^public/#', '', $this->image_path);
+
+    // Return full URL to storage file
+    return url("storage/{$cleanPath}");
+}
 }

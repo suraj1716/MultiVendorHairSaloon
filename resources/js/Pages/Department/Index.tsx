@@ -410,7 +410,7 @@ export default function Index({
           )}
 
           {/* Pagination */}
-          <div className="mt-6 flex justify-center space-x-2">
+          {/* <div className="mt-6 flex justify-center space-x-2">
             {products.meta.links.map((link, index) =>
               link.url ? (
                 <a
@@ -431,7 +431,7 @@ export default function Index({
                 />
               )
             )}
-          </div>
+          </div> */}
         </main>
       </div>
     </AuthenticatedLayout>

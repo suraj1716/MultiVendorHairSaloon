@@ -3,6 +3,7 @@ import { Link, router, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order, OrderItem } from "@/types";
 import BookingWidget from "./BookingWidget";
+import { title } from "process";
 
 function ConfirmationModal({
   open,
@@ -18,6 +19,7 @@ function ConfirmationModal({
   onCancel: () => void;
 }) {
   if (!open) return null;
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
@@ -71,7 +73,7 @@ export default function BookingHistory() {
     setErrors({});
     setDialogOpen(true);
   };
-
+console.log('products',orders)
   const handleCancelBooking = (item: OrderItem, orderStatus: string) => {
     if (orderStatus !== "draft" && orderStatus !== "paid") {
       console.warn(
@@ -251,7 +253,7 @@ export default function BookingHistory() {
                         <th className="border p-2 text-left">Booking Time</th>
                         <th className="border p-2 text-left w-12">Qty</th>
                         <th className="border p-2 text-left w-24">Price</th>
-                        <th className="border p-2 text-left w-32">Actions</th>
+                        {/* <th className="border p-2 text-left w-32">Actions</th> */}
                       </tr>
                     </thead>
                     <tbody>
@@ -265,12 +267,12 @@ export default function BookingHistory() {
                               alt={item.product.title}
                               className="w-10 h-10 object-cover rounded"
                             />
-                            <Link
-                              href={`/product/${item.product.id}`}
-                              className="text-gray-800 hover:underline truncate max-w-xs"
-                            >
-                              {item.product.title}
-                            </Link>
+                         <Link
+  href={route("product.show",  { slug: item.product.slug })}  // use slug here and plural products
+  className="text-gray-800 hover:underline truncate max-w-xs"
+>
+  {item.product.title}
+</Link>
                           </td>
                           <td className="border p-2">
                             {(item.variation_summary ?? []).length > 0
@@ -294,7 +296,7 @@ export default function BookingHistory() {
                           <td className="border p-2">
                             ${Number(item.price).toFixed(2)}
                           </td>
-                          <td className="border p-2">
+                          {/* <td className="border p-2">
                             {(order.status === "paid" ||
                               order.status === "draft") &&
                             item.booking &&
@@ -317,7 +319,7 @@ export default function BookingHistory() {
                             ) : (
                               <span className="text-gray-500">Completed</span>
                             )}
-                          </td>
+                          </td> */}
                         </tr>
                       ))}
                     </tbody>

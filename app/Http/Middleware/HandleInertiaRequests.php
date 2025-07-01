@@ -31,12 +31,12 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
-//     public function version(Request $request): ?string
-// {
-//     return md5_file(public_path('build/manifest.json'));
-//     Log::info('Inertia asset version: ' . $version);
-//     return $version;
-// }
+    //     public function version(Request $request): ?string
+    // {
+    //     return md5_file(public_path('build/manifest.json'));
+    //     Log::info('Inertia asset version: ' . $version);
+    //     return $version;
+    // }
     /**
      * Define the props that are shared by default.
      *
@@ -45,15 +45,25 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
 
-        $departments = Department::whereHas('categories', function ($query) {
-            $query->where('active', true)  // Only active categories
-                ->whereHas('products');  // Categories must have products
-        })
-            ->with(['categories' => function ($query) {
-                $query->where('active', true)  // Only active categories
-                    ->with('products');      // eager load products for these categories
-            }])
-            ->get();
+   $departments = Department::whereHas('categories', function ($query) {
+    $query->where('active', true)
+          ->whereHas('products');
+})
+->with(['categories' => function ($query) {
+    $query->where('active', true)
+          ->withCount('products')  // important: load 'products_count' here!
+          ->with('products');      // eager load products for your category too
+}])
+->get()
+->map(function ($dept) {
+    // Sum products_count from each category, check if it exists before sum
+    $dept->productsCount = $dept->categories->sum('products_count') ?? 0;
+    return $dept;
+});
+
+
+
+
 
         $dpts = Department::whereHas('categories.products')
             ->withCount(['products as products_count'])
@@ -88,22 +98,23 @@ class HandleInertiaRequests extends Middleware
                     'id' => $dept->id,
                     'name' => $dept->name,
                     'slug' => $dept->slug,
+                    'image' => $dept->image,
+                    'productsCount' => $dept->categories->sum('products_count'), //
                     'categories' => $dept->categories->map(function ($cat) {
                         return [
                             'id' => $cat->id,
                             'name' => $cat->name,
-                            // You can include products if needed
                             'products' => $cat->products->map(function ($prod) {
                                 return [
                                     'id' => $prod->id,
                                     'name' => $prod->title,
-                                    // other product fields as needed
                                 ];
                             }),
                         ];
                     }),
                 ];
             }),
+
 
             'categoryGroups' => CategoryGroup::all()->map(function ($group) {
                 return [
@@ -127,6 +138,7 @@ class HandleInertiaRequests extends Middleware
                     'slug' => $department->slug,
                     'productsCount' => $department->products_count,
                     'image' => $department->image,
+                    'active' => $department->active,
                 ];
             }),
             'error' => session('error'),

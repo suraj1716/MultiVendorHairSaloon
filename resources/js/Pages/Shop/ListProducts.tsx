@@ -141,7 +141,7 @@ export default function ListProducts({
   //   new Map(displayedProducts.data.map((p) => [p.id, p])).values()
   // );
 
-  console.log("products", products);
+  console.log("productGroups", productGroups);
 
   return (
     <AuthenticatedLayout>

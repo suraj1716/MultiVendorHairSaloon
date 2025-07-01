@@ -22,67 +22,78 @@ class ProductController extends Controller
 
 
 
-    public function home(Request $request)
-    {
+  public function home(Request $request)
+{
+    $banners = HeroBanner::where('is_active', true)
+        ->latest()
+        ->get()
+        ->map(function ($banner) {
+            $banner->image_path = $banner->image_url; // full URL from accessor
+            return $banner;
+        });
 
-           $hero = HeroBanner::where('is_active', true)->latest()->first();
+    $keyword = $request->query('keyword');
 
-        $keyword = $request->query('keyword');
+    // Load category groups with departments
+    $categoryGroups = CategoryGroup::with(['categories.department'])
+        ->where('active', true)
+        ->get()
+        ->map(function ($group) {
+            $group->image_url; // Touch accessor
+            return $group;
+        });
 
-        // Load category groups with departments
-        $categoryGroups = CategoryGroup::with(['categories.department'])
-            ->where('active', true)
-            ->get()
-            ->map(function ($group) {
-                $group->image_url; // Touch accessor
-                return $group;
-            });
+    // Load product groups with nested products and ratings - only published products
+    $productGroups = ProductGroup::where('active', 1)
+        ->with([
+            'groupedProducts' => function ($query) {
+                $query->where('status', 'published')  // <=== filter published products only
+                    ->withAvg('reviews', 'rating')   // average rating per product
+                    ->withCount('reviews')           // review count per product
+                    ->with([
+                        'user.vendor',
+                        'department',
+                        'variationTypes.options.media',
+                        'variations',
+                        'media',
+                        'reviews.user'
+                    ]);
+            }
+        ])
+        ->get();
 
-        // Load product groups with nested products and ratings
-        $productGroups = ProductGroup::where('active', 1)
-            ->with([
-                'groupedProducts' => function ($query) {
-                    $query->withAvg('reviews', 'rating')   // ✅ average rating per product
-                        ->withCount('reviews')           // ✅ review count per product
-                        ->with([
-                            'user.vendor',
-                            'department',
-                            'variationTypes.options.media',
-                            'variations',
-                            'media',
-                            'reviews.user'
-                        ]);
-                }
-            ])
-            ->get();
+    // Convert to resources
+    $productGroupsResource = ProductGroupResource::collection($productGroups);
+    $productGroupsArray = $productGroupsResource->toArray($request);
 
-        // Convert to resources
-        $productGroupsResource = ProductGroupResource::collection($productGroups);
-        $productGroupsArray = $productGroupsResource->toArray($request);
+    // Get departments that have published products (filterApproved presumably means status = published)
+    $departments = Department::whereHas('categories.products', fn($q) => $q->filterApproved())
+        ->with(['categories' => fn($q) => $q->whereHas('products', fn($q) => $q->where('status', 'published'))])
+        ->get();
 
-        // Get departments that have products
-        $departments = Department::whereHas('categories.products', fn($q) => $q->filterApproved())
-            ->with(['categories' => fn($q) => $q->whereHas('products')])
-            ->get();
+    // Product search - only published products
+    $products = ProductSearchService::queryWithKeyword($keyword)
+        ->where('status', 'published')  // <=== filter published
+        ->paginate(12);
 
-        // Product search
-        $products = ProductSearchService::queryWithKeyword($keyword)->paginate(12);
-        $allProducts = Product::with(['department', 'category', 'media', 'variationTypes.options'])->get();
+    // All published products for whatever purpose - optional
+    $allProducts = Product::with(['department', 'category', 'media', 'variationTypes.options'])
+        ->where('status', 'published')
+        ->get();
 
+    // Render home page
+    return Inertia::render('Home', [
+        'banners' => $banners,
+        'products' => ProductResource::collection($products),
+        'keyword' => $keyword,
+        'departments' => $departments,
+        'department' => null,
+        'categoryGroups' => $categoryGroups,
+        'productGroups' => $productGroupsArray,
+        'allproducts' => ProductResource::collection($allProducts),
+    ]);
+}
 
-        // Render home page
-        return Inertia::render('Home', [
-             'hero' => $hero,
-            'products'        => ProductResource::collection($products),
-            'keyword'         => $keyword,
-            'departments'     => $departments,
-            'department'      => null,
-            'categoryGroups'  => $categoryGroups,
-            'productGroups'   => $productGroupsArray,
-            'allproducts' => ProductResource::collection($allProducts),
-
-        ]);
-    }
 
 
 
@@ -281,7 +292,7 @@ class ProductController extends Controller
 
 
 
-    public function search(Request $request)
+  public function search(Request $request)
     {
 
         $products = Product::where('status', 'published')
@@ -412,15 +423,29 @@ class ProductController extends Controller
 
 
 
-    public function showProductGroup(ProductGroup $productGroup)
-    {
-        $productGroup->load(['products.user', 'products.department', 'products.options']);
 
-        $products = $productGroup->products()->latest()->paginate(12); // or get() if you don’t want paginatio
-        // dd('cec', $products, $productGroup);
-        return Inertia::render('showProductGroup/Show', [
-            'productGroup' => $productGroup,
-            'products' => ProductListResource::collection($products),
-        ]);
-    }
+ public function showProductGroup(ProductGroup $productGroup)
+{
+    // Eager load only published products and their relations
+    $productGroup->load([
+        'products' => function ($query) {
+            $query->where('status', 'published');
+        },
+        'products.user',
+        'products.department',
+        'products.options',
+    ]);
+
+    // Get only published products (paginated)
+    $products = $productGroup->products()
+        ->where('status', 'published')
+        ->latest()
+        ->paginate(12);
+
+    return Inertia::render('showProductGroup/Show', [
+        'productGroup' => $productGroup,
+        'products' => ProductListResource::collection($products),
+    ]);
+}
+
 }

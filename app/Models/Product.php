@@ -29,6 +29,18 @@ protected $casts = [
     //     'variations' => 'array'
     // ];
 
+public function scopeForVendorOrPublished(Builder $query): Builder
+{
+    $userId = Auth::id();
+
+    return $query->where(function ($q) use ($userId) {
+        $q->where('created_by', $userId)
+          ->orWhere('status', ['published', 'draft']);
+    });
+}
+
+
+
     public function ScopeForVendor(Builder $query): Builder
     {
           $userId = Auth::id();

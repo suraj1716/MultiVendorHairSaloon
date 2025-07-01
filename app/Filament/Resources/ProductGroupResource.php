@@ -48,11 +48,13 @@ class ProductGroupResource extends Resource
                     ->preserveFilenames()
                     ->columnSpanFull(),
 
-                Select::make('products')
-                    ->multiple()
-                    ->relationship('groupedProducts', 'title')
-                    ->preload()
-                    ->searchable(),
+             Select::make('products')
+    ->multiple()
+    ->relationship('groupedProducts', 'title', function ($query) {
+        $query->where('status', 'published');
+    })
+    ->preload()
+    ->searchable(),
             ]);
     }
 

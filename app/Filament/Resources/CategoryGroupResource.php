@@ -37,11 +37,14 @@ class CategoryGroupResource extends Resource
         FileUpload::make('image')->image()->directory('category-group-images')->nullable(),
         Toggle::make('active')->label('Active')->default(true),
         Select::make('categories')
-            ->multiple()
-            ->relationship('categories', 'name')
-            ->searchable()
-            ->preload()
-            ->label('Select Categories from All Departments'),
+    ->multiple()
+    ->relationship('categories', 'name', function ($query) {
+        $query->where('active', 1);
+    })
+    ->searchable()
+    ->preload()
+    ->label('Select Categories from All Departments'),
+
     ]);
 }
 

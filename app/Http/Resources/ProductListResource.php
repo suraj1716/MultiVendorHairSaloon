@@ -18,7 +18,7 @@ class ProductListResource extends JsonResource
     return [
         'id' => $this->id,
         'highlight'=>$this->highlight,
-
+'status' => $this->status, // Add this line to include the status
         'title' => $this->title,
         'price' => $this->getPriceForFirstOptions(),
         'image' => $this->getFirstImageUrl(),

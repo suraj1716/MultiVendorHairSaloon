@@ -12,6 +12,8 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+   use Filament\Tables\Actions\BulkAction;
+use Illuminate\Support\Collection;
 
 class CategoriesRelationManager extends RelationManager
 {
@@ -19,7 +21,7 @@ class CategoriesRelationManager extends RelationManager
 
     public function form(Form $form): Form
     {
-        $department=$this->getOwnerRecord();
+        $department = $this->getOwnerRecord();
 
         return $form
             ->schema([
@@ -27,67 +29,81 @@ class CategoriesRelationManager extends RelationManager
                     ->required()
                     ->maxLength(255),
 
-                    Forms\Components\Select::make('parent_id')
-                    ->options(function() use ($department){
+                Forms\Components\Select::make('parent_id')
+                    ->options(function () use ($department) {
                         return Category::query()
-                        ->where('department_id', $department->id)
-                        ->pluck('name','id')
-                        ->toArray();
+                            ->where('department_id', $department->id)
+                            ->pluck('name', 'id')
+                            ->toArray();
                     })
                     ->label('Parent Category')
                     ->preload()
                     ->searchable(),
 
-Forms\Components\FileUpload::make('image')
-                ->label('Category Image')
-                ->image()
-                ->directory('category-images') // stored in `storage/app/public/category-images`
-                ->visibility('public') // make accessible via public disk
-                ->imagePreviewHeight('100')
-                ->downloadable()
-                ->openable(),
+                Forms\Components\FileUpload::make('image')
+                    ->label('Category Image')
+                    ->image()
+                    ->directory('category-images') // stored in `storage/app/public/category-images`
+                    ->visibility('public') // make accessible via public disk
+                    ->imagePreviewHeight('100')
+                    ->downloadable()
+                    ->openable(),
 
 
-                    Checkbox::make('active')
+                Checkbox::make('active')
             ]);
     }
 
-    public function table(Table $table): Table
-    {
-        return $table
-            ->recordTitleAttribute('name')
-            ->columns([
-                Tables\Columns\TextColumn::make('name')
+
+
+public function table(Table $table): Table
+{
+    return $table
+        ->recordTitleAttribute('name')
+        ->columns([
+             Tables\Columns\ImageColumn::make('image')
+                ->label('Image')
+                ->disk('public')
+                ->height(60)
+                ->width(60),
+            Tables\Columns\TextColumn::make('name')
                 ->sortable()
                 ->searchable(),
-                Tables\Columns\TextColumn::make('parent.name')
+            Tables\Columns\TextColumn::make('parent.name')
                 ->sortable()
                 ->searchable(),
-    IconColumn::make('active')
-    ->boolean()
-    ->label('Active'),
+            IconColumn::make('active')
+                ->boolean()
+                ->label('Active'),
 
-    Tables\Columns\ImageColumn::make('image')
-        ->label('Image')
-        ->disk('public')
-        ->height(60)
-        ->width(60),
+        ])
+        ->filters([
+            //
+        ])
+        ->headerActions([
+            Tables\Actions\CreateAction::make(),
+        ])
+        ->actions([
+            Tables\Actions\EditAction::make(),
+            Tables\Actions\DeleteAction::make(),
+        ])
+        ->bulkActions([
+            Tables\Actions\BulkActionGroup::make([
+                Tables\Actions\DeleteBulkAction::make(),
 
-])
-            ->filters([
-                //
-            ])
-            ->headerActions([
-                Tables\Actions\CreateAction::make(),
-            ])
-            ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                ]),
-            ]);
-    }
+                // Custom Bulk Action to toggle "active" status
+                BulkAction::make('toggleActive')
+                    ->label('Toggle Active Status')
+                    ->action(function (Collection $records) {
+                        foreach ($records as $record) {
+                            $record->active = !$record->active;
+                            $record->save();
+                        }
+                    })
+                    ->deselectRecordsAfterCompletion()
+                    ->requiresConfirmation(),
+            ]),
+        ]);
+}
+
 }

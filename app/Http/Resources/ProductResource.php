@@ -22,8 +22,9 @@ class ProductResource extends JsonResource
             'highlight'=>$this->highlight,
             'description' => $this->description,
             'price' => $this->price,
-            // 'image' => $this->getFirstMediaUrl('images'),
-            'image' => $this->getMedia('images')->first()?->getUrl('thumb') ?? '',
+'status' => $this->status, // Add this line to include the status
+            'image' => $this->getFirstMediaUrl('images'),
+            // 'image' => $this->getMedia('images')->first()?->getUrl('small') ?? '',
             'slug' => $this->slug,
             'quantity' => $this->quantity,
             // Add this line to the returned array

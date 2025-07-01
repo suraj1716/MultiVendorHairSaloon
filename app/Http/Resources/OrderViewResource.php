@@ -75,6 +75,7 @@ class OrderViewResource extends JsonResource
                         'id' => $item->product->id,
                         'title' => $item->product->title,
                         'image' => $item->product->getImageForOptions($item->variation_type_option_ids ?: []),
+                    'slug' => $item->product->slug,
                     ],
                 ];
             }),

@@ -2,6 +2,7 @@
 
 use App\Enums\RolesEnum;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ContactController;
@@ -147,6 +148,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/booking/available-slots', [BookingController::class, 'getAvailableSlots'])
         ->name('available-slots');
 });
+
+
+Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
+Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
 
 Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');

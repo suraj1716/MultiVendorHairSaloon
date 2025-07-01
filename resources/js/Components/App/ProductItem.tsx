@@ -23,20 +23,25 @@ export default function ProductItem({ product }: Props) {
     });
   };
 
+
+const imageUrl = product.image?.includes('conversions')
+  ? product.image.replace(/\/conversions\/(.+)-thumb\.(jpg|png|webp)/, '/$1.$2')
+  : product.image;
+
   return (
     <div className="w-[170px] sm:w-[200px] md:w-[220px] lg:w-[270px] xl:w-[300px] mx-auto">
       <div className="relative overflow-hidden bg-white border-2 border-slate-100 shadow hover:shadow-md transition-shadow duration-300 rounded-md">
         <div className="overflow-hidden">
           <Link href={route("product.show", product.slug)}>
-            <img
-              className={`w-full h-[130px] sm:h-[150px] md:h-[170px] lg:h-[190px] bg-slate-300 transition duration-300 transform hover:-translate-y-1 hover:scale-105 ${
-                product.image?.toLowerCase().endsWith(".png")
-                  ? "object-contain"
-                  : "object-cover"
-              }`}
-              src={product.image}
-              alt={product.title}
-            />
+    <div className="w-full h-[130px] sm:h-[150px] md:h-[180px] lg:h-[200px] overflow-hidden rounded bg-slate-300">
+  <img
+    src={imageUrl}
+    alt={product.title}
+    onError={(e) => (e.currentTarget.src = '/placeholder.jpg')} // optional fallback
+    className="w-full h-full object-cover transition duration-300 transform hover:-translate-y-1 hover:scale-105"
+  />
+</div>
+
           </Link>
         </div>
 

@@ -301,7 +301,7 @@ function Show({
 
           return (
             <div key={type.id} className="mb-6">
-              <b className="block mb-3 text-lg font-semibold text-gray-800">
+              <b className="block mb-6 text-lg font-semibold text-gray-800">
                 {type.name}
               </b>
 
@@ -354,7 +354,7 @@ function Show({
                     .map((option) => (
                       <label
                         key={option.id}
-                        className="cursor-pointer"
+                        className="cursor-pointer mb-3"
                         aria-pressed={
                           selectedOptions[type.id]?.id === option.id
                             ? "true"

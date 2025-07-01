@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
 use Illuminate\Support\Collection;
 
 class ProductResource extends Resource
@@ -48,19 +50,29 @@ class ProductResource extends Resource
 
 
 
-    public static function getEloquentQuery(): Builder
-    {
-        $query = parent::getEloquentQuery();
+ public static function getEloquentQuery(): Builder
+{
+    $query = parent::getEloquentQuery();
 
-        $user = Filament::auth()->user();
-        logger('Logged in user ID:', ['id' => $user->id ?? null]);
+    $user = Filament::auth()->user();
+    logger('Logged in user ID:', ['id' => $user->id ?? null]);
 
-        if ($user && $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
-            return $query->forVendor();
-        }
+    if ($user?->hasAnyRole([
+    \App\Enums\RolesEnum::Admin->value,
 
-        return $query; // admin sees all
-    }
+])) {
+    return $query->withoutGlobalScopes();
+}
+
+if ($user?->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+    return $query->where('created_by', $user->id);
+}
+
+    // Default fallback (optional)
+    return $query->whereNull('id'); // Return empty if no valid role
+}
+
+
 
     public static function form(Form $form): Form
     {
@@ -160,6 +172,16 @@ class ProductResource extends Resource
         return $table
             ->columns([
 
+                  IconColumn::make('status')
+    ->label('Status')
+    ->icons([
+        'heroicon-o-check-circle' => 'published',
+        'heroicon-o-x-circle' => 'draft',
+    ])
+    ->color(fn($state) => $state === 'published' ? 'success' : 'danger')
+    ->sortable()
+    ->searchable(),
+
                 SpatieMediaLibraryImageColumn::make('images')
                     ->collection('images')
                     ->limit(1)
@@ -169,15 +191,18 @@ class ProductResource extends Resource
                     ->sortable()
                     ->searchable()
                     ->words(10),
+
+
+
+
                 Tables\Columns\TextColumn::make('highlight')
                     ->badge()
                     ->colors(ProductHighlightEnum::colors())
                     ->label('Highlight'),
 
 
-                Tables\Columns\TextColumn::make('status')
-                    ->badge()
-                    ->colors(ProductStatusEnum::colors()),
+
+
 
                 Tables\Columns\TextColumn::make('department.name'),
                 Tables\Columns\TextColumn::make('category.name'),
@@ -204,39 +229,51 @@ class ProductResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
 
-                     // ✅ Add Duplicate Bulk Action
-                BulkAction::make('duplicate')
-                    ->label('Duplicate Selected')
+                    // Duplicate Bulk Action
+                    BulkAction::make('duplicate')
+                        ->label('Duplicate Selected')
+                        ->action(function (Collection $records) {
+                            foreach ($records as $record) {
+                                $newProduct = $record->replicate();
+                                $newProduct->title = $record->title . ' (Copy)';
+                                $newProduct->slug = \Illuminate\Support\Str::slug($newProduct->title) . '-' . uniqid();
+                                $newProduct->save();
 
-                    ->action(function (Collection $records) {
-                        foreach ($records as $record) {
-                            $newProduct = $record->replicate();
-                            $newProduct->title = $record->title . ' (Copy)';
-                            $newProduct->slug = \Illuminate\Support\Str::slug($newProduct->title) . '-' . uniqid();
-                            $newProduct->save();
+                                // Clone variation types & options
+                                $record->variationTypes->each(function ($variationType) use ($newProduct) {
+                                    $newVariationType = $variationType->replicate();
+                                    $newVariationType->product_id = $newProduct->id;
+                                    $newVariationType->save();
 
-                            // Clone variation types & options
-                            $record->variationTypes->each(function ($variationType) use ($newProduct) {
-                                $newVariationType = $variationType->replicate();
-                                $newVariationType->product_id = $newProduct->id;
-                                $newVariationType->save();
-
-                                $variationType->options->each(function ($option) use ($newVariationType) {
-                                    $newOption = $option->replicate();
-                                    $newOption->variation_type_id = $newVariationType->id;
-                                    $newOption->save();
+                                    $variationType->options->each(function ($option) use ($newVariationType) {
+                                        $newOption = $option->replicate();
+                                        $newOption->variation_type_id = $newVariationType->id;
+                                        $newOption->save();
+                                    });
                                 });
-                            });
 
-                            // Clone media
-                            foreach ($record->getMedia('images') as $media) {
-                                $media->copy($newProduct, 'images');
+                                // Clone media
+                                foreach ($record->getMedia('images') as $media) {
+                                    $media->copy($newProduct, 'images');
+                                }
                             }
-                        }
-                    })
-                    ->requiresConfirmation()
-                    ->color('secondary'),
+                        })
+                        ->requiresConfirmation()
+                        ->color('secondary'),
 
+                    // Mark as Published
+                    BulkAction::make('mark_as_published')
+                        ->label('Mark as Published')
+                        ->action(fn(Collection $records) => $records->each->update(['status' => 'published']))
+                        ->requiresConfirmation()
+                        ->color('success'),
+
+                    // Mark as Draft
+                    BulkAction::make('mark_as_draft')
+                        ->label('Mark as Draft')
+                        ->action(fn(Collection $records) => $records->each->update(['status' => 'draft']))
+                        ->requiresConfirmation()
+                        ->color('gray'),
                 ]),
             ]);
     }
@@ -245,43 +282,43 @@ class ProductResource extends Resource
 
 
 
-public static function getActions(): array
-{
-    return [
-        Action::make('duplicate')
-            ->label('Duplicate')
-            ->icon('heroicon-o-duplicate')
-            ->action(function (Model $record, $livewire) {
-                $newProduct = $record->replicate(); // clone the main product data
-                $newProduct->name = $record->name . ' (Copy)'; // optional rename
-                $newProduct->save();
+    public static function getActions(): array
+    {
+        return [
+            Action::make('duplicate')
+                ->label('Duplicate')
+                ->icon('heroicon-o-duplicate')
+                ->action(function (Model $record, $livewire) {
+                    $newProduct = $record->replicate(); // clone the main product data
+                    $newProduct->name = $record->name . ' (Copy)'; // optional rename
+                    $newProduct->save();
 
-                // If you want to clone relations like variationTypes, images, etc:
-                $record->variationTypes->each(function ($variationType) use ($newProduct) {
-                    $newVariationType = $variationType->replicate();
-                    $newVariationType->product_id = $newProduct->id;
-                    $newVariationType->save();
+                    // If you want to clone relations like variationTypes, images, etc:
+                    $record->variationTypes->each(function ($variationType) use ($newProduct) {
+                        $newVariationType = $variationType->replicate();
+                        $newVariationType->product_id = $newProduct->id;
+                        $newVariationType->save();
 
-                    // Also clone options if you have them
-                    $variationType->options->each(function ($option) use ($newVariationType) {
-                        $newOption = $option->replicate();
-                        $newOption->variation_type_id = $newVariationType->id;
-                        $newOption->save();
+                        // Also clone options if you have them
+                        $variationType->options->each(function ($option) use ($newVariationType) {
+                            $newOption = $option->replicate();
+                            $newOption->variation_type_id = $newVariationType->id;
+                            $newOption->save();
+                        });
                     });
-                });
 
-                // Clone media/images if using spatie media library
-                foreach ($record->getMedia('images') as $media) {
-                    $media->copy($newProduct, 'images');
-                }
+                    // Clone media/images if using spatie media library
+                    foreach ($record->getMedia('images') as $media) {
+                        $media->copy($newProduct, 'images');
+                    }
 
-                $livewire->notify('success', 'Product duplicated successfully!');
-                $livewire->redirect(route('filament.resources.products.edit', $newProduct));
-            })
-            ->requiresConfirmation()
-            ->color('secondary'),
-    ];
-}
+                    $livewire->notify('success', 'Product duplicated successfully!');
+                    $livewire->redirect(route('filament.resources.products.edit', $newProduct));
+                })
+                ->requiresConfirmation()
+                ->color('secondary'),
+        ];
+    }
 
 
     public static function getRelations(): array

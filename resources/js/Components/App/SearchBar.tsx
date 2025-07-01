@@ -73,10 +73,10 @@ export default function SearchBar({ keyword = "" }: SearchBarProps) {
             {/* Button to open search popup */}
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-4 py-2 border rounded-full hover:bg-gray-100"
+        className="flex items-center gap-2 px-4 rounded-full"
         aria-label="Open search"
       >
-        <Search size={18} />
+        <Search size={28} />
         <span className="hidden sm:inline">Search</span>
       </button>
 

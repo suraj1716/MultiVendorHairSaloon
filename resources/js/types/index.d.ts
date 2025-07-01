@@ -62,6 +62,7 @@ export type Product = {
   title: string;
   highlight:string;
   slug: string;
+  status: string;
   price: number;
   image: string;
   images: Image[];
@@ -240,6 +241,7 @@ export type OrderItem = {
     id: number;
     title: string;
     image?: string;
+    slug?: string;
     variationTypes: {
       id: number;
       name: string;
@@ -254,6 +256,9 @@ export type OrderItem = {
 
   designer?: boolean; // <-- Add this line
 };
+
+
+
 
 export type Order = {
   id: number;
@@ -275,6 +280,7 @@ export type Vendor = {
 export type Category = {
   id: number;
   name: string;
+   products: Product[];
   products_count: number;
     image?:string;
     department: Department; // <---- important
@@ -290,6 +296,7 @@ export type Department = {
   meta_description: string;
   categories: Category[];
   productsCount: number;
+  active: boolean;
 };
 
 export type dpts = {

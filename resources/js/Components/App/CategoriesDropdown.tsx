@@ -23,7 +23,7 @@ export default function CategoriesDropdown({ departments }: CategoriesDropdownPr
 
   if (departments.length === 0) {
     return (
-      <div className="px-4 py-3 text-center text-sm text-gray-500">No departments found.</div>
+      <div className="px-4 py-3 text-center text-lg text-gray-500">No departments found.</div>
     );
   }
 
@@ -36,7 +36,7 @@ export default function CategoriesDropdown({ departments }: CategoriesDropdownPr
           <button
             key={dept.id}
             onClick={() => setExpandedDeptId(dept.id)}
-            className="w-full text-left px-4 py-3 text-gray-900  hover:bg-gray-100 flex justify-between items-center border-b border-gray-300"
+            className="text-lg w-full text-left px-4 py-1 text-gray-900  hover:bg-gray-100 flex justify-between items-center border-b border-gray-300"
             aria-expanded={expandedDeptId === dept.id}
           >
             <span className="text-left w-full px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-gray-700 transition-colors"
@@ -62,9 +62,9 @@ export default function CategoriesDropdown({ departments }: CategoriesDropdownPr
       {/* Sliding Panel */}
       <div
         className={`bg-white shadow-lg overflow-auto transition-all duration-300 ease-in-out ${
-          expandedDeptId !== null ? "max-w-[320px] opacity-100" : "max-w-0 opacity-0"
+          expandedDeptId !== null ? "max-w-[420px] opacity-100" : "max-w-0 opacity-0"
         }`}
-        style={{ width: expandedDeptId !== null ? "320px" : "0px" }}
+        style={{ width: expandedDeptId !== null ? "420px" : "0px" }}
       >
         {showPanel && (
           <div className="px-6 py-4 flex flex-col h-full">

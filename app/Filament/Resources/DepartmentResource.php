@@ -15,6 +15,8 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -56,6 +58,11 @@ protected static ?bool $navigationGroupCollapsible = true;
 {
     return $table
         ->columns([
+                        IconColumn::make('active')
+    ->boolean() // Automatically shows check or cross icons for boolean
+    ->label('Active')
+    ->sortable()
+    ->searchable(),
             ImageColumn::make('image')
                 ->circular()
                 ->defaultImageUrl(asset('images/department-placeholder.png')),
@@ -64,15 +71,21 @@ protected static ?bool $navigationGroupCollapsible = true;
                 ->sortable()
                 ->searchable(),
 
+
+
             // ✅ Related Categories Column correctly placed
-            TextColumn::make('categories.name')
-                ->label('Categories')
-                ->limit(50)
-                ->toggleable()
-                ->wrap()
-                ->formatStateUsing(function ($state, $record) {
-                    return $record->categories->pluck('name')->implode(', ');
-                }),
+          TextColumn::make('categories.name')
+    ->label('Categories')
+    ->limit(50)
+    ->toggleable()
+    ->wrap()
+    ->formatStateUsing(function ($state, $record) {
+        // Filter categories that are active
+        $activeCategories = $record->categories->filter(fn($category) => $category->active);
+        // Return the comma-separated names of active categories
+        return $activeCategories->pluck('name')->implode(', ');
+    }),
+
         ])
         ->defaultSort('created_at', 'desc')
         ->filters([])
@@ -83,6 +96,22 @@ protected static ?bool $navigationGroupCollapsible = true;
         ->bulkActions([
             Tables\Actions\BulkActionGroup::make([
                 Tables\Actions\DeleteBulkAction::make(),
+BulkAction::make('Activate')
+            ->label('Mark as Active')
+            ->action(fn ($records) => $records->each->update(['active' => true]))
+            ->requiresConfirmation()
+            ->color('success')
+            ->icon('heroicon-o-check'),
+
+        BulkAction::make('Deactivate')
+            ->label('Mark as Inactive')
+            ->action(fn ($records) => $records->each->update(['active' => false]))
+            ->requiresConfirmation()
+            ->color('danger')
+            ->icon('heroicon-o-x-mark'),
+
+
+
             ]),
         ]);
 }
