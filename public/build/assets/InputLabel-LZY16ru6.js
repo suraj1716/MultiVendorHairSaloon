@@ -1,0 +1,1 @@
+import{j as e}from"./app-D41UR1Nu.js";function r({value:s,className:a="",children:l,...t}){return e.jsx("label",{...t,className:"label "+a,children:e.jsxs("span",{className:"label-text",children:["    ",s||l," "]})})}export{r as I};
