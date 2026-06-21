@@ -142,8 +142,8 @@ All these render hooks [can be scoped](#scoping-render-hooks) to any table Livew
     use Filament\Widgets\View\WidgetsRenderHook;
 ```
 
-- `WidgetsRenderHook::TABLE_WIDGET_END` - End of the [table widget](../panels/dashboard#table-widgets), after the table itself, also [can be scoped](#scoping-render-hooks) to the table widget class
-- `WidgetsRenderHook::TABLE_WIDGET_START` - Start of the [table widget](../panels/dashboard#table-widgets), before the table itself, also [can be scoped](#scoping-render-hooks) to the table widget class
+- `WidgetsRenderHook::TABLE_WIDGET_END` - End of the [table widget](../panels/home#table-widgets), after the table itself, also [can be scoped](#scoping-render-hooks) to the table widget class
+- `WidgetsRenderHook::TABLE_WIDGET_START` - Start of the [table widget](../panels/home#table-widgets), before the table itself, also [can be scoped](#scoping-render-hooks) to the table widget class
 
 
 ## Scoping render hooks

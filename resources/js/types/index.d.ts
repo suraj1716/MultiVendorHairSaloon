@@ -18,6 +18,7 @@ id: number;
 }
 
 export interface User {
+  phone: ReactNode;
   id: number;
   name: string;
   email: string;
@@ -144,6 +145,7 @@ export interface Booking {
   notes: string;
 }
 export type CartItem = {
+  is_gift_card: any;
   id: number;
   product_id: number;
   title: string;

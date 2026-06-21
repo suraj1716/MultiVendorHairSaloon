@@ -8,11 +8,11 @@ By default, the configuration file is located at `app/Providers/Filament/AdminPa
 
 ## Introducing panels
 
-By default, when you install the package, there is one panel that has been set up for you - and it lives on `/admin`. All the [resources](resources/getting-started), [custom pages](pages), and [dashboard widgets](dashboard) you create get registered to this panel.
+By default, when you install the package, there is one panel that has been set up for you - and it lives on `/admin`. All the [resources](resources/getting-started), [custom pages](pages), and [home widgets](home) you create get registered to this panel.
 
 However, you can create as many panels as you want, and each can have its own set of resources, pages and widgets.
 
-For example, you could build a panel where users can log in at `/app` and access their dashboard, and admins can log in at `/admin` and manage the app. The `/app` panel and the `/admin` panel have their own resources, since each group of users has different requirements. Filament allows you to do that by providing you with the ability to create multiple panels.
+For example, you could build a panel where users can log in at `/app` and access their home, and admins can log in at `/admin` and manage the app. The `/app` panel and the `/admin` panel have their own resources, since each group of users has different requirements. Filament allows you to do that by providing you with the ability to create multiple panels.
 
 ### The default admin panel
 

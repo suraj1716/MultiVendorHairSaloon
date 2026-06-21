@@ -1,156 +1,478 @@
-import { useRef } from 'react';
-import { createPortal } from 'react-dom';
-import Checkbox from '@/Components/Core/Checkbox';
-import InputError from '@/Components/Core/InputError';
-import PrimaryButton from '@/Components/Core/PrimaryButton';
-import { Head, Link, useForm } from '@inertiajs/react';
-import type { FormEventHandler } from 'react';
-import GoogleLoginButton from '@/Components/Core/GoogleLoginButton';
+import { useRef, useState } from "react";
+import InputError from "@/Components/Core/InputError";
+import { Link } from "@inertiajs/react";
+import type { FormEventHandler } from "react";
+import GoogleLoginButton from "@/Components/Core/GoogleLoginButton";
+
+type LoginClientErrors = {
+    email?: string;
+    password?: string;
+};
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getCsrfToken(): string {
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[1]) : "";
+}
 
 export default function LoginModal({
     isOpen,
     onClose,
     status,
     canResetPassword = true,
+    onSwitchToRegister,
 }: {
     isOpen: boolean;
     onClose: () => void;
     status?: string;
     canResetPassword?: boolean;
+    onSwitchToRegister?: () => void;
 }) {
-    const { data, setData, post, processing, errors, reset } = useForm<{
-        email: string;
-        password: string;
-        remember: boolean;
-    }>({
-        email: '',
-        password: '',
-        remember: false,
-    });
-
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [remember, setRemember] = useState(false);
+    const [clientErrors, setClientErrors] = useState<LoginClientErrors>({});
+    const [serverError, setServerError] = useState<string | null>(null);
+    const [processing, setProcessing] = useState(false);
     const modalRef = useRef<HTMLDivElement>(null);
+
+    const validate = () => {
+        const next: LoginClientErrors = {};
+        if (!email.trim()) {
+            next.email = "Email is required.";
+        } else if (!EMAIL_REGEX.test(email)) {
+            next.email = "Enter a valid email address.";
+        }
+        if (!password) {
+            next.password = "Password is required.";
+        }
+        setClientErrors(next);
+        return Object.keys(next).length === 0;
+    };
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
+        setServerError(null);
+        if (!validate()) return;
 
-        post(route('login'), {
-            onFinish: () => {
-                reset('password');
-                onClose();
+        setProcessing(true);
+
+        fetch(route("login"), {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-XSRF-TOKEN": getCsrfToken(),
+                Accept: "application/json",
             },
-        });
+            body: JSON.stringify({ email, password, remember }),
+        })
+            .then(async (res) => {
+                if (res.ok) {
+                    window.location.reload();
+                } else {
+                    const json = await res.json();
+                    const msg =
+                        json.errors?.email?.[0] ??
+                        json.message ??
+                        "Invalid credentials.";
+                    setServerError(msg);
+                    setClientErrors((prev) => ({ ...prev, password: " " }));
+                    setPassword("");
+                }
+            })
+            .catch(() => {
+                setServerError("Something went wrong. Please try again.");
+            })
+            .finally(() => setProcessing(false));
     };
 
     if (!isOpen) return null;
 
     const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        // Close modal only if click outside modal content
         if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
             onClose();
         }
     };
 
-    const modalContent = (
+    const emailError = clientErrors.email;
+    const passwordError = clientErrors.password;
+
+    return (
         <div
             onClick={handleOverlayClick}
-            className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-sm flex items-center justify-center px-4"
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 99999,
+                background: "rgba(10, 9, 8, 0.72)",
+                backdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "1rem",
+            }}
         >
             <div
                 ref={modalRef}
-                onClick={(e) => e.stopPropagation()} // Prevent closing on modal click
-                className="relative bg-white shadow-xl rounded-2xl max-w-md w-full p-8"
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    position: "relative",
+                    background: "rgb(28, 26, 23)",
+                    border: "1px solid rgba(212, 175, 90, 0.2)",
+                    borderRadius: "2px",
+                    width: "100%",
+                    maxWidth: "420px",
+                    padding: "3rem 2.5rem",
+                    boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+                }}
             >
+                {/* Close */}
                 <button
                     onClick={onClose}
-                    className="absolute top-3 right-3 text-gray-500 hover:text-black text-xl font-bold"
-                    aria-label="Close modal"
+                    aria-label="Close"
+                    style={{
+                        position: "absolute",
+                        top: "1.25rem",
+                        right: "1.25rem",
+                        background: "none",
+                        border: "none",
+                        color: "rgba(255,255,255,0.35)",
+                        fontSize: "1.25rem",
+                        lineHeight: 1,
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.color =
+                            "rgba(212,175,90,0.9)")
+                    }
+                    onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.color =
+                            "rgba(255,255,255,0.35)")
+                    }
                 >
-                    &times;
+                    ✕
                 </button>
 
-                <Head title="Log in" />
-
-                <h2 className="text-2xl font-semibold text-center mb-4">Login</h2>
+                {/* Header */}
+                <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
+                    <p
+                        style={{
+                            fontFamily: "Cormorant Garamond, Georgia, serif",
+                            fontSize: "0.65rem",
+                            letterSpacing: "0.25em",
+                            textTransform: "uppercase",
+                            color: "rgba(212,175,90,0.75)",
+                            marginBottom: "0.6rem",
+                        }}
+                    >
+                        Welcome back
+                    </p>
+                    <h2
+                        style={{
+                            fontFamily: "Cormorant Garamond, Georgia, serif",
+                            fontSize: "2rem",
+                            fontWeight: 300,
+                            color: "rgba(255,255,255,0.92)",
+                            letterSpacing: "0.04em",
+                            margin: 0,
+                        }}
+                    >
+                        Sign In
+                    </h2>
+                    <div
+                        style={{
+                            width: "2rem",
+                            height: "1px",
+                            background: "rgba(212,175,90,0.45)",
+                            margin: "0.85rem auto 0",
+                        }}
+                    />
+                </div>
 
                 {status && (
-                    <div className="mb-4 text-sm font-medium text-green-600">
+                    <div
+                        style={{
+                            marginBottom: "1.25rem",
+                            padding: "0.65rem 1rem",
+                            background: "rgba(74,163,105,0.12)",
+                            border: "1px solid rgba(74,163,105,0.3)",
+                            borderRadius: "2px",
+                            color: "rgba(120,210,140,0.9)",
+                            fontSize: "0.8rem",
+                            letterSpacing: "0.02em",
+                        }}
+                    >
                         {status}
                     </div>
                 )}
 
-                <form onSubmit={submit} className="space-y-5">
-                    <div className="relative">
+                <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+                    {/* Email */}
+                    <Field label="Email Address" error={emailError}>
                         <input
                             autoComplete="username"
-                            onChange={(e) => setData('email', e.target.value)}
-                            value={data.email}
-                            id="email"
-                            name="email"
                             type="text"
-                            className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-cyan-600"
-                            placeholder="Email address"
+                            value={email}
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (clientErrors.email)
+                                    setClientErrors((p) => ({ ...p, email: undefined }));
+                            }}
+                            placeholder="your@email.com"
+                            style={inputStyle(!!emailError)}
                         />
-                        <label
-                            htmlFor="email"
-                            className="absolute left-0 -top-3.5 text-gray-600 text-sm peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-2 transition-all peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-gray-600"
-                        >
-                            Email Address
-                        </label>
-                        <InputError message={errors.email} className="mt-1" />
-                    </div>
+                    </Field>
 
-                    <div className="relative">
+                    {/* Password */}
+                    <Field label="Password" error={passwordError}>
                         <input
                             autoComplete="current-password"
-                            onChange={(e) => setData('password', e.target.value)}
-                            value={data.password}
-                            id="password"
-                            name="password"
                             type="password"
-                            className="peer placeholder-transparent h-10 w-full border-b-2 border-gray-300 text-gray-900 focus:outline-none focus:border-cyan-600"
-                            placeholder="Password"
-                        />
-                        <label
-                            htmlFor="password"
-                            className="absolute left-0 -top-3.5 text-gray-600 text-sm peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-2 transition-all peer-focus:-top-3.5 peer-focus:text-sm peer-focus:text-gray-600"
-                        >
-                            Password
-                        </label>
-                        <InputError message={errors.password} className="mt-1" />
-                    </div>
-
-                    <div className="block">
-                        <label className="flex items-center">
-                            <Checkbox
-                                name="remember"
-                                checked={data.remember}
-                                onChange={(e) =>
-                                    setData('remember', e.target.checked)
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                if (clientErrors.password) {
+                                    setClientErrors((p) => ({ ...p, password: undefined }));
+                                    setServerError(null);
                                 }
-                            />
-                            <span className="ml-2 text-sm text-gray-600">Remember me</span>
-                        </label>
-                    </div>
+                            }}
+                            placeholder="••••••••"
+                            style={inputStyle(!!passwordError)}
+                        />
+                    </Field>
 
-                    <div className="flex items-center justify-between">
+                    {/* Remember + Forgot */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            marginTop: "-0.5rem",
+                        }}
+                    >
+                        <label
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.5rem",
+                                cursor: "pointer",
+                                color: "rgba(255,255,255,0.45)",
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.04em",
+                            }}
+                        >
+                            <input
+                                type="checkbox"
+                                checked={remember}
+                                onChange={(e) => setRemember(e.target.checked)}
+                                style={{ accentColor: "rgb(212,175,90)" }}
+                            />
+                            Remember me
+                        </label>
+
                         {canResetPassword && (
                             <Link
-                                href={route('password.request')}
-                                className="text-sm text-cyan-600 hover:underline"
+                                href={route("password.request")}
+                                style={{
+                                    fontSize: "0.75rem",
+                                    letterSpacing: "0.04em",
+                                    color: "rgba(212,175,90,0.65)",
+                                    textDecoration: "none",
+                                    transition: "color 0.2s",
+                                }}
+                                onMouseEnter={(e) =>
+                                    ((e.currentTarget as HTMLAnchorElement).style.color =
+                                        "rgba(212,175,90,1)")
+                                }
+                                onMouseLeave={(e) =>
+                                    ((e.currentTarget as HTMLAnchorElement).style.color =
+                                        "rgba(212,175,90,0.65)")
+                                }
                             >
-                                Forgot your password?
+                                Forgot password?
                             </Link>
                         )}
                     </div>
 
-                    <PrimaryButton className="w-full" disabled={processing}>
-                        Log in
-                    </PrimaryButton>
-                    <GoogleLoginButton className='w-full'/>
+                    {/* Server error banner */}
+                    {serverError && (
+                        <div
+                            style={{
+                                padding: "0.65rem 1rem",
+                                background: "rgba(220,60,60,0.1)",
+                                border: "1px solid rgba(220,60,60,0.3)",
+                                borderRadius: "2px",
+                                color: "rgba(255,110,110,0.9)",
+                                fontSize: "0.8rem",
+                                letterSpacing: "0.02em",
+                                textAlign: "center",
+                            }}
+                        >
+                            {serverError}
+                        </div>
+                    )}
+
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        style={{
+                            width: "100%",
+                            padding: "0.85rem",
+                            background: processing
+                                ? "rgba(212,175,90,0.4)"
+                                : "rgba(212,175,90,0.9)",
+                            border: "none",
+                            borderRadius: "2px",
+                            color: "rgb(28,26,23)",
+                            fontFamily: "Jost, sans-serif",
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            letterSpacing: "0.18em",
+                            textTransform: "uppercase",
+                            cursor: processing ? "not-allowed" : "pointer",
+                            transition: "background 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!processing)
+                                (e.currentTarget as HTMLButtonElement).style.background =
+                                    "rgba(212,175,90,1)";
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!processing)
+                                (e.currentTarget as HTMLButtonElement).style.background =
+                                    "rgba(212,175,90,0.9)";
+                        }}
+                    >
+                        {processing ? "Signing in…" : "Sign In"}
+                    </button>
+
+                    {/* Divider */}
+                    <div
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.75rem",
+                        }}
+                    >
+                        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+                        <span
+                            style={{
+                                color: "rgba(255,255,255,0.25)",
+                                fontSize: "0.7rem",
+                                letterSpacing: "0.1em",
+                                textTransform: "uppercase",
+                            }}
+                        >
+                            or
+                        </span>
+                        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+                    </div>
+
+                    <GoogleLoginButton className="w-full" />
+
+                    {/* Switch to register */}
+                    <p
+                        style={{
+                            textAlign: "center",
+                            fontSize: "0.75rem",
+                            letterSpacing: "0.04em",
+                            color: "rgba(255,255,255,0.35)",
+                            margin: 0,
+                        }}
+                    >
+                        New to Dhurva?{" "}
+                        <button
+                            type="button"
+                            onClick={onSwitchToRegister}
+                            style={{
+                                background: "none",
+                                border: "none",
+                                padding: 0,
+                                color: "rgba(212,175,90,0.75)",
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.04em",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                textUnderlineOffset: "3px",
+                                transition: "color 0.2s",
+                            }}
+                            onMouseEnter={(e) =>
+                                ((e.currentTarget as HTMLButtonElement).style.color =
+                                    "rgba(212,175,90,1)")
+                            }
+                            onMouseLeave={(e) =>
+                                ((e.currentTarget as HTMLButtonElement).style.color =
+                                    "rgba(212,175,90,0.75)")
+                            }
+                        >
+                            Create an account
+                        </button>
+                    </p>
                 </form>
             </div>
         </div>
     );
+}
 
-    return createPortal(modalContent, document.body);
+// ── Helpers ──────────────────────────────────────────────────
+
+function inputStyle(hasError: boolean): React.CSSProperties {
+    return {
+        width: "100%",
+        background: "rgba(255,255,255,0.04)",
+        border: `1px solid ${hasError ? "rgba(220,60,60,0.6)" : "rgba(255,255,255,0.1)"}`,
+        borderRadius: "2px",
+        padding: "0.75rem 1rem",
+        color: "rgba(255,255,255,0.88)",
+        fontFamily: "Jost, sans-serif",
+        fontSize: "0.875rem",
+        letterSpacing: "0.02em",
+        outline: "none",
+        transition: "border-color 0.2s",
+        boxSizing: "border-box",
+    };
+}
+
+function Field({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    return (
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            <label
+                style={{
+                    fontFamily: "Jost, sans-serif",
+                    fontSize: "0.68rem",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.4)",
+                }}
+            >
+                {label}
+            </label>
+            {children}
+            {error && error.trim() && (
+                <span
+                    style={{
+                        fontSize: "0.72rem",
+                        color: "rgba(255,110,110,0.85)",
+                        letterSpacing: "0.02em",
+                    }}
+                >
+                    {error}
+                </span>
+            )}
+        </div>
+    );
 }

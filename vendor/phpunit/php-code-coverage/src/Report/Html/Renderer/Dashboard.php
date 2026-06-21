@@ -32,7 +32,7 @@ final class Dashboard extends Renderer
     public function render(DirectoryNode $node, string $file): void
     {
         $classes      = $node->classesAndTraits();
-        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'dashboard_branch.html' : 'dashboard.html');
+        $templateName = $this->templatePath . ($this->hasBranchCoverage ? 'dashboard_branch.html' : 'home.html');
         $template     = new Template(
             $templateName,
             '{{',

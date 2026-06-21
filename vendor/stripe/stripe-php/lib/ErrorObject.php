@@ -27,7 +27,7 @@ namespace Stripe;
  *    of payment method, the payment method type that had a problem. This
  *    field is only populated for invoice-related errors.
  * @property string $request_log_url A URL to the request log entry in your
- *    dashboard.
+ *    home.
  * @property SetupIntent $setup_intent The SetupIntent object for errors
  *    returned on a request involving a SetupIntent.
  * @property StripeObject $source The source object for errors returned on a

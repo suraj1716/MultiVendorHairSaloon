@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\ProductGroup;
 use App\services\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -42,24 +43,26 @@ class HandleInertiaRequests extends Middleware
      *
      * @return array<string, mixed>
      */
+
+
     public function share(Request $request): array
     {
 
-   $departments = Department::whereHas('categories', function ($query) {
-    $query->where('active', true)
-          ->whereHas('products');
-})
-->with(['categories' => function ($query) {
-    $query->where('active', true)
-          ->withCount('products')  // important: load 'products_count' here!
-          ->with('products');      // eager load products for your category too
-}])
-->get()
-->map(function ($dept) {
-    // Sum products_count from each category, check if it exists before sum
-    $dept->productsCount = $dept->categories->sum('products_count') ?? 0;
-    return $dept;
-});
+        $departments = Department::whereHas('categories', function ($query) {
+            $query->where('active', true)
+                ->whereHas('products');
+        })
+            ->with(['categories' => function ($query) {
+                $query->where('active', true)
+                    ->withCount('products')  // important: load 'products_count' here!
+                    ->with('products');      // eager load products for your category too
+            }])
+            ->get()
+            ->map(function ($dept) {
+                // Sum products_count from each category, check if it exists before sum
+                $dept->productsCount = $dept->categories->sum('products_count') ?? 0;
+                return $dept;
+            });
 
 
 
@@ -76,11 +79,10 @@ class HandleInertiaRequests extends Middleware
         $cartItems = $cartService->getCartItems();
 
         return array_merge(parent::share($request), [
+
             'appName' => config('app.name'),
             'csrf_token' => csrf_token(),
-            'auth' => [
-                'user' => $request->user() ? new AuthUserResource($request->user()) : null,
-            ],
+
             'ziggy' => fn() => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
@@ -116,13 +118,13 @@ class HandleInertiaRequests extends Middleware
             }),
 
 
-            'categoryGroups' => CategoryGroup::all()->map(function ($group) {
-                return [
-                    'id' => $group->id,
-                    'name' => $group->name,
-                    'active' => $group->active,
-                ];
-            }),
+            'categoryGroups' => CategoryGroup::with(['categories.department'])
+                ->where('active', true)
+                ->get()
+                ->map(function ($group) {
+                    $group->image_url;
+                    return $group;
+                }),
             'productGroups' => ProductGroup::all()->map(function ($group) {
                 return [
                     'id' => $group->id,
@@ -141,7 +143,17 @@ class HandleInertiaRequests extends Middleware
                     'active' => $department->active,
                 ];
             }),
-            'error' => session('error'),
+
+
+            'adminCounts' => function () {
+                $counts = [
+                    'contacts' => \App\Models\Contact::where('is_read', false)->count(),
+                    'orders'   => \App\Models\Order::where('is_read', false)->count(),
+                    'bookings' => \App\Models\Booking::where('is_read', false)->count(),
+                ];
+                \Illuminate\Support\Facades\Log::info('adminCounts', $counts);
+                return $counts;
+            },
 
         ]);
     }

@@ -9,7 +9,7 @@ namespace Stripe;
  * notified about events that happen in your Stripe account or connected
  * accounts.
  *
- * Most users configure webhooks from <a href="https://dashboard.stripe.com/webhooks">the dashboard</a>, which provides a user interface for registering and testing your webhook endpoints.
+ * Most users configure webhooks from <a href="https://home.stripe.com/webhooks">the home</a>, which provides a user interface for registering and testing your webhook endpoints.
  *
  * Related guide: <a href="https://docs.stripe.com/webhooks/configure">Setting up webhooks</a>
  *
@@ -40,7 +40,7 @@ class WebhookEndpoint extends ApiResource
      * accounts is created; otherwise an account webhook endpoint that notifies the
      * specified <code>url</code> only about events from your account is created. You
      * can also create webhook endpoints in the <a
-     * href="https://dashboard.stripe.com/account/webhooks">webhooks settings</a>
+     * href="https://home.stripe.com/account/webhooks">webhooks settings</a>
      * section of the Dashboard.
      *
      * @param null|array{api_version?: string, connect?: bool, description?: null|string, enabled_events: string[], expand?: string[], metadata?: null|StripeObject, url: string} $params
@@ -64,8 +64,8 @@ class WebhookEndpoint extends ApiResource
 
     /**
      * You can also delete webhook endpoints via the <a
-     * href="https://dashboard.stripe.com/account/webhooks">webhook endpoint
-     * management</a> page of the Stripe dashboard.
+     * href="https://home.stripe.com/account/webhooks">webhook endpoint
+     * management</a> page of the Stripe home.
      *
      * @param null|array $params
      * @param null|array|string $opts

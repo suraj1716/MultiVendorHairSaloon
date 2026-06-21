@@ -10,119 +10,276 @@ export default function OrdersHistory() {
   return (
     <AuthenticatedLayout
       header={
-        <h2 className="text-lg font-semibold text-gray-800">Order History</h2>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            color: "var(--color-text)",
+            fontSize: "var(--text-2xl)",
+            fontWeight: 600,
+          }}
+        >
+          Order History
+        </h2>
       }
     >
-     <div className="max-w-4xl mx-auto p-4">
-  {orders?.data?.length === 0 ? (
-    <p className="text-gray-600 text-sm">You have no orders yet.</p>
-  ) : (
-    orders.data.map((order) =>
-      order.vendor.vendor_type === "ecommerce" && (
-        <div key={order.id} className="bg-white shadow rounded-md mb-6 p-4 overflow-x-auto">
-          {/* Order header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 border-b border-gray-200 pb-1 text-sm text-gray-700">
-            <div>
-              <span className="font-semibold">Order #</span>
-              {order.id} | <span className="font-semibold">Status:</span>{" "}
-              <span className="capitalize">{order.status}</span> |{" "}
-              <span className="font-semibold">Date:</span>{" "}
-              {new Date(order.created_at).toLocaleDateString()}
-            </div>
-            <div className="font-semibold text-gray-900">
-              ${Number(order.total_price).toFixed(2)}
-            </div>
-          </div>
+      <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
+        <div className="max-w-4xl mx-auto px-4 py-10">
+          {orders?.data?.length === 0 ? (
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                color: "var(--color-text-muted)",
+                fontSize: "var(--text-sm)",
+              }}
+            >
+              You have no orders yet.
+            </p>
+          ) : (
+            orders.data.map((order) => (
+              <div
+                key={order.id}
+                className="mb-6 p-6 overflow-x-auto"
+                style={{
+                  backgroundColor: "var(--color-surface)",
+                  borderRadius: "var(--radius-lg)",
+                  boxShadow: "var(--shadow-sm)",
+                  border: "1px solid var(--color-border)",
+                }}
+              >
+                {/* Order header */}
+                <div
+                  className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 pb-3"
+                  style={{
+                    borderBottom: "1px solid var(--color-border)",
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  <div style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)" }}>
+                    <span style={{ color: "var(--color-text)", fontWeight: 600 }}>
+                      Order #{order.id}
+                    </span>
+                    {" · "}
+                    <span className="capitalize">{order.status}</span>
+                    {" · "}
+                    {new Date(order.created_at).toLocaleDateString()}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      color: "var(--color-accent-dark)",
+                      fontSize: "var(--text-lg)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ${Number(order.total_price).toFixed(2)}
+                  </div>
+                </div>
 
-          {/* Vendor Info */}
-          <div className="mb-3 text-sm text-gray-600">
-            <div>
-              <span className="font-semibold">Vendor:</span> {order.vendor.store_name}
-            </div>
-            <div>
-              <span className="font-semibold">Store:</span> {order.vendor.store_name}
-            </div>
-            <div>
-              <span className="font-semibold">Address:</span> {order.vendor.store_address}
-            </div>
-          </div>
+                {/* Vendor / Salon Info */}
+                <div
+                  className="mb-4"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "var(--color-text)", fontWeight: 500 }}>
+                      Salon:
+                    </span>{" "}
+                    {order.vendor.store_name}
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--color-text)", fontWeight: 500 }}>
+                      Address:
+                    </span>{" "}
+                    {order.vendor.store_address}
+                  </div>
+                  {order.payment_method && (
+                    <div>
+                      <span style={{ color: "var(--color-text)", fontWeight: 500 }}>
+                        Payment:
+                      </span>{" "}
+                      <span className="capitalize">{order.payment_method}</span>
+                    </div>
+                  )}
+                </div>
 
-          {/* Items Table */}
-          <table className="w-full text-sm border-collapse table-auto">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2 text-left">Product</th>
-                <th className="border p-2 text-left">Product Variation</th>
-                <th className="border p-2 text-left">Attach</th>
-                <th className="border p-2 text-left w-12">Qty</th>
-                <th className="border p-2 text-left w-24">Price</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.orderItems.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="border p-2 flex items-center gap-2">
-                    <img
-                      src={item.product.image || "/images/placeholder.png"}
-                      alt={item.product.title}
-                      className="w-10 h-10 object-cover rounded"
-                    />
-                    <Link
-                      href={`/product/${item.product.id}`}
-                      className="text-gray-800 hover:underline truncate max-w-xs"
-                    >
-                      {item.product.title}
-                    </Link>
-                  </td>
+                {/* Booking info, shown for appointment-type vendors */}
+                {order.vendor.vendor_type === "appointment" && order.booking_date && (
+                  <div
+                    className="mb-4 p-3"
+                    style={{
+                      backgroundColor: "var(--color-bg-alt)",
+                      borderRadius: "var(--radius-md)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--text-sm)",
+                      color: "var(--color-text)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>Appointment:</span>{" "}
+                    {new Date(order.booking_date).toLocaleDateString()} · {order.time_slot}
+                  </div>
+                )}
 
-                  <td className="border p-2">
-                    {item.variation_summary && item.variation_summary.length > 0
-                      ? item.variation_summary.map((v, i) => (
-                          <div key={i}>
-                            <span className="font-semibold">{v.type}:</span> {v.option}
+                {/* Items Table */}
+                <table
+                  className="w-full table-auto border-collapse"
+                  style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)" }}
+                >
+                  <thead>
+                    <tr style={{ backgroundColor: "var(--color-bg-alt)" }}>
+                      <th
+                        className="text-left p-2"
+                        style={{ color: "var(--color-text-muted)", fontWeight: 500 }}
+                      >
+                        Product
+                      </th>
+                      <th
+                        className="text-left p-2"
+                        style={{ color: "var(--color-text-muted)", fontWeight: 500 }}
+                      >
+                        Variation
+                      </th>
+                      <th
+                        className="text-left p-2"
+                        style={{ color: "var(--color-text-muted)", fontWeight: 500 }}
+                      >
+                        Attachment
+                      </th>
+                      <th
+                        className="text-left p-2 w-12"
+                        style={{ color: "var(--color-text-muted)", fontWeight: 500 }}
+                      >
+                        Qty
+                      </th>
+                      <th
+                        className="text-left p-2 w-24"
+                        style={{ color: "var(--color-text-muted)", fontWeight: 500 }}
+                      >
+                        Price
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {order.orderItems.map((item) => (
+                      <tr
+                        key={item.id}
+                        style={{ borderBottom: "1px solid var(--color-border)" }}
+                      >
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            {item.product?.image && (
+                              <img
+                                src={item.product.image}
+                                alt={item.product.title}
+                                className="w-10 h-10 object-cover"
+                                style={{ borderRadius: "var(--radius-sm)" }}
+                              />
+                            )}
+                            {item.product ? (
+                              <Link
+                                href={`/product/${item.product.id}`}
+                                className="hover:underline truncate max-w-xs"
+                                style={{ color: "var(--color-text)" }}
+                              >
+                                {item.product.title}
+                              </Link>
+                            ) : (
+                              <span style={{ color: "var(--color-text)" }}>
+                                Booking Fee
+                              </span>
+                            )}
                           </div>
-                        ))
-                      : "—"}
-                  </td>
+                        </td>
 
-                  <td className="border p-2">
-                    {item.attachment_path ? (
-                      /\.(jpe?g|png|gif|bmp|webp)(\?.*)?$/i.test(item.attachment_path) ? (
-                        <img
-                          src={`/storage/${item.attachment_path}`}
-                          alt={item.attachment_name || "Attachment preview"}
-                          className="w-16 h-16 object-cover rounded border"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <a
-                          href={`/storage/${item.attachment_path}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          {item.attachment_name || "Download Attachment"}
-                        </a>
-                      )
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
+                        <td className="p-2" style={{ color: "var(--color-text-muted)" }}>
+                          {item.variation_summary && item.variation_summary.length > 0
+                            ? item.variation_summary.map((v, i) => (
+                                <div key={i}>
+                                  <span style={{ color: "var(--color-text)", fontWeight: 500 }}>
+                                    {v.type}:
+                                  </span>{" "}
+                                  {v.option}
+                                </div>
+                              ))
+                            : "—"}
+                        </td>
 
-                  <td className="border p-2">{item.quantity}</td>
-                  <td className="border p-2">${Number(item.price).toFixed(2)}</td>
-                </tr>
+                        <td className="p-2">
+                          {item.attachment_path ? (
+                            /\.(jpe?g|png|gif|bmp|webp)(\?.*)?$/i.test(item.attachment_path) ? (
+                              <img
+                                src={`/storage/${item.attachment_path}`}
+                                alt={item.attachment_name || "Attachment preview"}
+                                className="w-16 h-16 object-cover"
+                                style={{
+                                  borderRadius: "var(--radius-sm)",
+                                  border: "1px solid var(--color-border)",
+                                }}
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ) : (
+
+                              <a  href={`/storage/${item.attachment_path}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "var(--color-info)" }}
+                                className="hover:underline"
+                              >
+                                {item.attachment_name || "Download Attachment"}
+                              </a>
+                            )
+                          ) : (
+                            <span style={{ color: "var(--color-text-light)" }}>—</span>
+                          )}
+                        </td>
+
+                        <td className="p-2" style={{ color: "var(--color-text)" }}>
+                          {item.quantity}
+                        </td>
+                        <td className="p-2" style={{ color: "var(--color-text)" }}>
+                          ${Number(item.price).toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))
+          )}
+
+          {/* Pagination links */}
+          {orders?.links && orders.links.length > 3 && (
+            <div className="flex justify-center gap-2 mt-6 flex-wrap">
+              {orders.links.map((link, i) => (
+                <Link
+                  key={i}
+                  href={link.url || "#"}
+                  dangerouslySetInnerHTML={{ __html: link.label }}
+                  className="px-3 py-1.5 text-sm"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    borderRadius: "var(--radius-sm)",
+                    backgroundColor: link.active
+                      ? "var(--color-primary)"
+                      : "var(--color-surface)",
+                    color: link.active
+                      ? "var(--color-text-inverse)"
+                      : "var(--color-text-muted)",
+                    border: "1px solid var(--color-border)",
+                    pointerEvents: link.url ? "auto" : "none",
+                    opacity: link.url ? 1 : 0.5,
+                  }}
+                />
               ))}
-            </tbody>
-          </table>
+            </div>
+          )}
         </div>
-      )
-    )
-  )}
-</div>
-
+      </div>
     </AuthenticatedLayout>
   );
 }

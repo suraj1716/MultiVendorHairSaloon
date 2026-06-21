@@ -35,7 +35,7 @@ namespace Stripe;
  * @property null|((object{adjustable_quantity: null|(object{enabled: bool, maximum: null|int, minimum: null|int}&StripeObject), price: string, quantity: int}&StripeObject))[] $optional_items The optional items presented to the customer at checkout.
  * @property null|(object{capture_method: null|string, description: null|string, metadata: StripeObject, setup_future_usage: null|string, statement_descriptor: null|string, statement_descriptor_suffix: null|string, transfer_group: null|string}&StripeObject) $payment_intent_data Indicates the parameters to be passed to PaymentIntent creation during checkout.
  * @property string $payment_method_collection Configuration for collecting a payment method during checkout. Defaults to <code>always</code>.
- * @property null|string[] $payment_method_types The list of payment method types that customers can use. When <code>null</code>, Stripe will dynamically show relevant payment methods you've enabled in your <a href="https://dashboard.stripe.com/settings/payment_methods">payment method settings</a>.
+ * @property null|string[] $payment_method_types The list of payment method types that customers can use. When <code>null</code>, Stripe will dynamically show relevant payment methods you've enabled in your <a href="https://home.stripe.com/settings/payment_methods">payment method settings</a>.
  * @property (object{enabled: bool}&StripeObject) $phone_number_collection
  * @property null|(object{completed_sessions: (object{count: int, limit: int}&StripeObject)}&StripeObject) $restrictions Settings that restrict the usage of a payment link.
  * @property null|(object{allowed_countries: string[]}&StripeObject) $shipping_address_collection Configuration for collecting the customer's shipping address.

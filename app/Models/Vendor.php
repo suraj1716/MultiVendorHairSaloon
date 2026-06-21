@@ -59,7 +59,7 @@ public function products()
 }
 public function getRouteKeyName()
 {
-    return 'store_name';
+    return 'user_id';
 }
 
 public function departments()

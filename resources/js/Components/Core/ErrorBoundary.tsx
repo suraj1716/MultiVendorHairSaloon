@@ -1,51 +1,56 @@
-import React from "react";
+import React, { Component, ErrorInfo, ReactNode } from "react";
 import ErrorPage from "@/Pages/ErrorPage";
+import { router } from "@inertiajs/react";
 
-
-
+interface Props {
+    children: ReactNode;
+}
 interface State {
-  hasError: boolean;
-  error?: Error;
-  componentStack?: string;
+    hasError: boolean;
+    error: Error | null;
+    errorInfo: ErrorInfo | null;
 }
 
+export default class ErrorBoundary extends Component<Props, State> {
+    private unsubscribe: (() => void) | null = null;
 
+    constructor(props: Props) {
+        super(props);
+        this.state = { hasError: false, error: null, errorInfo: null };
+    }
 
-export class ErrorBoundary extends React.Component<React.PropsWithChildren<{}>, State> {
-  constructor(props: React.PropsWithChildren<{}>) {
-    super(props);
-    this.state = { hasError: false };
-  }
+    componentDidMount() {
+        // Reset error state on every Inertia navigation
+        this.unsubscribe = router.on('start', () => {
+            if (this.state.hasError) {
+                this.setState({ hasError: false, error: null, errorInfo: null });
+            }
+        });
+    }
 
-componentDidCatch(error: Error & { componentStack?: string }, errorInfo: React.ErrorInfo) {
-  console.error("React error caught by ErrorBoundary:", error, errorInfo);
+    componentWillUnmount() {
+        if (this.unsubscribe) this.unsubscribe();
+    }
 
-  // Grab stack from errorInfo OR error (depending on where it's available)
-  const stack = errorInfo.componentStack || (error as any).componentStack || "No component stack available";
+    static getDerivedStateFromError(error: Error): Partial<State> {
+        return { hasError: true, error };
+    }
 
-  this.setState({
-    hasError: true,
-    error,
-    componentStack: stack,
-  });
-}
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        this.setState({ errorInfo });
+        console.error("ErrorBoundary caught:", error, errorInfo);
+    }
 
-
-
-
-render() {
-  if (this.state.hasError) {
-    return (
-      <ErrorPage
-        statusCode={500}
-        message={this.state.error?.message || "Something went wrong."}
-        componentStack={this.state.componentStack}
-      />
-    );
-  }
-
-  return this.props.children;
-}
-
-
+    render() {
+        if (this.state.hasError) {
+            return (
+                <ErrorPage
+                    statusCode={500}
+                    message={this.state.error?.message ?? "An unexpected error occurred."}
+                    componentStack={this.state.errorInfo?.componentStack ?? undefined}
+                />
+            );
+        }
+        return this.props.children;
+    }
 }

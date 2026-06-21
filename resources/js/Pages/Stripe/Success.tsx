@@ -8,67 +8,198 @@ function Success({ orders }: PageProps<{ orders: Order[] }>) {
   return (
     <AuthenticatedLayout>
       <Head title="Payment was Completed" />
-      <div className="max-w-3xl mx-auto min-h-screen flex flex-col justify-center py-8 px-4">
-        <div className="flex flex-col gap-2 items-center mb-8">
-          <div className="text-6xl text-emerald-600">
-            <CheckCircleIcon className="size-24" />
-          </div>
-          <div className="text-3xl font-semibold">Payment was Completed</div>
-        </div>
+     <div
+  className="min-h-screen"
+  style={{ backgroundColor: "var(--color-bg)" }}
+>
+  <div className="max-w-3xl mx-auto flex flex-col justify-center py-16 px-4 min-h-screen">
 
-        <div className="mb-6 text-lg text-center">
-          Thanks for your purchase. Your payment was successful.
+        <div className="flex flex-col gap-3 items-center mb-10">
+          <div
+            className="flex items-center justify-center rounded-full"
+            style={{
+              width: "88px",
+              height: "88px",
+              backgroundColor: "var(--color-primary-light)",
+              opacity: 0.12,
+            }}
+          >
+            <CheckCircleIcon
+              className="size-12"
+              style={{ color: "var(--color-primary)" }}
+            />
+          </div>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              color: "var(--color-text)",
+              fontSize: "var(--text-4xl)",
+              fontWeight: 600,
+            }}
+          >
+            Payment Completed
+          </h1>
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              color: "var(--color-text-muted)",
+              fontSize: "var(--text-base)",
+            }}
+          >
+            Thank you for your booking — your payment was successful.
+          </p>
         </div>
 
         {orders.map((order) => (
           <div
             key={order.id}
-            className="bg-white dark:bg-gray-800 rounded-lg p-6 mb-6 shadow"
+            className="rounded-xl p-8 mb-6"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              boxShadow: "var(--shadow-md)",
+              border: "1px solid var(--color-border)",
+              borderRadius: "var(--radius-lg)",
+            }}
           >
-            <h3 className="text-3xl mb-4 font-bold">Order Summary</h3>
+            <h3
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-2xl)",
+                color: "var(--color-text)",
+                fontWeight: 600,
+                marginBottom: "var(--space-lg)",
+              }}
+            >
+              Order Summary
+            </h3>
 
-            <div className="flex justify-between mb-2 font-bold">
-              <div className="text-gray-400">Seller</div>
-              <div>
-                <Link href="#" className="hover:underline">
+            <div
+              className="flex flex-col"
+              style={{
+                fontFamily: "var(--font-body)",
+                gap: "var(--space-sm)",
+              }}
+            >
+              <SummaryRow label="Salon">
+                <Link
+                  href="#"
+                  className="hover:underline font-medium"
+                  style={{ color: "var(--color-primary)" }}
+                >
                   {order.vendor.store_name}
                 </Link>
-              </div>
-            </div>
+              </SummaryRow>
 
-            <div className="flex justify-between mb-2">
-              <div className="text-gray-400">Order Number</div>
-              <div>
-                <Link href="#" className="hover:underline">
+              <SummaryRow label="Order Number">
+                <Link
+                  href="#"
+                  className="hover:underline"
+                  style={{ color: "var(--color-text)" }}
+                >
                   #{order.id}
                 </Link>
-              </div>
+              </SummaryRow>
+
+              <SummaryRow label="Items">
+                <span style={{ color: "var(--color-text)" }}>
+                  {order.orderItems.length}
+                </span>
+              </SummaryRow>
+
+              {order.payment_method && (
+                <SummaryRow label="Payment Method">
+                  <span
+                    className="capitalize"
+                    style={{ color: "var(--color-text)" }}
+                  >
+                    {order.payment_method}
+                  </span>
+                </SummaryRow>
+              )}
+
+              <div
+                style={{
+                  borderTop: "1px solid var(--color-border)",
+                  margin: "var(--space-sm) 0",
+                }}
+              />
+
+              <SummaryRow label="Total" emphasized>
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--text-xl)",
+                    color: "var(--color-accent-dark)",
+                    fontWeight: 600,
+                  }}
+                >
+                  <CurrencyFormatter amount={order.total_price} currency="AUD" />
+                </span>
+              </SummaryRow>
             </div>
 
-            <div className="flex justify-between mb-3">
-              <div className="text-gray-500">Items</div>
-              <div className="text-gray-500">{order.orderItems.length}</div>
-            </div>
-
-            <div className="flex justify-between mb-4">
-              <div className="text-gray-400">Total</div>
-              <div>
-                <CurrencyFormatter amount={order.total_price} currency="AUD" />
-              </div>
-            </div>
-
-            <div className="flex justify-between">
-              <Link href="#" className="btn btn-primary">
+            <div
+              className="flex justify-between"
+              style={{ marginTop: "var(--space-xl)", gap: "var(--space-md)" }}
+            >
+              <Link
+                 href={route("orders.history")}
+                className="px-5 py-2.5 rounded-md font-medium transition-colors"
+                style={{
+                  backgroundColor: "var(--color-primary)",
+                  color: "var(--color-text-inverse)",
+                  borderRadius: "var(--radius-md)",
+                  fontFamily: "var(--font-body)",
+                  transition: "var(--transition-base)",
+                }}
+              >
                 View Order Details
               </Link>
-              <Link href={route("dashboard")} className="btn">
-                Back to home
+              <Link
+                href={route("home")}
+                className="px-5 py-2.5 rounded-md font-medium transition-colors"
+                style={{
+                  backgroundColor: "transparent",
+                  border: "1px solid var(--color-border-dark)",
+                  color: "var(--color-text)",
+                  borderRadius: "var(--radius-md)",
+                  fontFamily: "var(--font-body)",
+                  transition: "var(--transition-base)",
+                }}
+              >
+                Back to Home
               </Link>
             </div>
           </div>
         ))}
+          </div>
       </div>
     </AuthenticatedLayout>
+  );
+}
+
+function SummaryRow({
+  label,
+  children,
+  emphasized = false,
+}: {
+  label: string;
+  children: React.ReactNode;
+  emphasized?: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-center">
+      <span
+        style={{
+          color: "var(--color-text-muted)",
+          fontSize: emphasized ? "var(--text-lg)" : "var(--text-sm)",
+          fontWeight: emphasized ? 500 : 400,
+        }}
+      >
+        {label}
+      </span>
+      <div>{children}</div>
+    </div>
   );
 }
 

@@ -3,50 +3,67 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
-
-/**
- * @property array|null $variation_type_option_ids
- */
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CartItem extends Model
 {
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $fillable = [
-        'user_id',
-        'product_id',
-        'quantity',
-        'price',
-        'attachment_path',
-        'attachment_name', // <- this MUST be here
-        'variation_type_option_ids',
-        'designer'
-        // other fields...
-    ];
 
+protected $appends = ['item_type'];
+   protected $fillable = [
+    'user_id',
+    'item_type',
+    'product_id',
+    'gift_card_template_id',
+    'quantity',
+    'price',
+    'attachment_path',
+    'attachment_name',
+    'variation_type_option_ids',
+    'designer',
+    'gifted_to_email',
+];
 
-  protected $casts = [
+    protected $casts = [
         'variation_type_option_ids' => 'array',
+        'designer'                  => 'boolean',
     ];
 
-    public function user()
+    // ── Relationships ──────────────────────────────────────────────
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+
+public function getImageUrlAttribute(): ?string
 {
-    return $this->belongsTo(User::class);
+    if ($this->gift_card_template_id) {
+        return $this->giftCardProduct?->image_url;
+    }
+
+    return $this->product?->image_url ?? null;
 }
 
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
 
-public function VariationTypeOption()
-{
-    return $this->belongsToMany(VariationTypeOption::class, 'cart_item_variation_option');
-}
+    public function giftCardProduct(): BelongsTo
+    {
+        return $this->belongsTo(GiftCardTemplate::class, 'gift_card_template_id');
+    }
 
-public function product()
-{
-    return $this->belongsTo(Product::class, 'product_id');
-}
-}
+    public function variationTypeOption()
+    {
+        return $this->belongsToMany(VariationTypeOption::class, 'cart_item_variation_option');
+    }
 
+    // ── Helpers ────────────────────────────────────────────────────
+
+    public function isGiftCard(): bool
+    {
+        return ! is_null($this->gift_card_template_id);
+    }
+}

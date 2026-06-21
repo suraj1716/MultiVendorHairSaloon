@@ -82,7 +82,7 @@ class AccountService extends AbstractService
     /**
      * With <a href="/docs/connect">Connect</a>, you can create Stripe accounts for
      * your users. To do this, you’ll first need to <a
-     * href="https://dashboard.stripe.com/account/applications/settings">register your
+     * href="https://home.stripe.com/account/applications/settings">register your
      * platform</a>.
      *
      * If you’ve already collected information for your connected accounts, you <a
@@ -123,7 +123,7 @@ class AccountService extends AbstractService
      * Creates a login link for a connected account to access the Express Dashboard.
      *
      * <strong>You can only create login links for accounts that use the <a
-     * href="/connect/express-dashboard">Express Dashboard</a> and are connected to
+     * href="/connect/express-home">Express Dashboard</a> and are connected to
      * your platform</strong>.
      *
      * @param string $parentId
@@ -167,7 +167,7 @@ class AccountService extends AbstractService
      * href="/api/balance/balance_object">balances</a> are zero.
      *
      * If you want to delete your own account, use the <a
-     * href="https://dashboard.stripe.com/settings/account">account information tab in
+     * href="https://home.stripe.com/settings/account">account information tab in
      * your account settings</a> instead.
      *
      * @param string $id
@@ -311,7 +311,7 @@ class AccountService extends AbstractService
      * onboarding, after which some properties can no longer be updated.
      *
      * To update your own account, use the <a
-     * href="https://dashboard.stripe.com/settings/account">Dashboard</a>. Refer to our
+     * href="https://home.stripe.com/settings/account">Dashboard</a>. Refer to our
      * <a href="/docs/connect/updating-accounts">Connect</a> documentation to learn
      * more about updating accounts.
      *

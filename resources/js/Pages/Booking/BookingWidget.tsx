@@ -4,11 +4,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog";
 import { DayPicker, Matcher } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import dayjs from "dayjs";
-import {
-  DialogDescription,
-  DialogOverlay,
-  DialogTitle,
-} from "@radix-ui/react-dialog";
+import { DialogDescription, DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
 import AvailableSlots from "../AvailableSlots";
 
 type BookingWidgetProps = {
@@ -18,8 +14,8 @@ type BookingWidgetProps = {
   setTimeSlot: (slot: string) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  vendorId?: number | null; // add here
-  onSubmit: (date: string, slot: string) => void; // ✅ new prop
+  vendorId?: number | null;
+  onSubmit: (date: string, slot: string) => void;
 };
 
 export default function BookingWidget({
@@ -29,20 +25,14 @@ export default function BookingWidget({
   setTimeSlot,
   open,
   onOpenChange,
-  vendorId, // add vendorId here
+  vendorId,
   onSubmit,
-
 }: BookingWidgetProps) {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
-
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // const [open, setOpen] = useState(false);
-
-  // State to hold closed dates from backend
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [recurringClosedDays, setRecurringClosedDays] = useState<number[]>([]);
-  // Convert closedDates (strings) to Date objects for DayPicker
 
   useEffect(() => {
     if (!bookingDate) {
@@ -55,33 +45,18 @@ export default function BookingWidget({
       setLoadingSlots(true);
       setError(null);
       setTimeSlot("");
-
       try {
         const response = await axios.get(`/booking/available-slots`, {
           params: { date: bookingDate, vendorId },
         });
-
-        const { availableSlots, message, closedDates, recurringClosedDays } =
-          response.data;
-
-        setAvailableTimeSlots(
-          Array.isArray(availableSlots) ? availableSlots : []
-        );
-
-        if (closedDates && Array.isArray(closedDates)) {
-          setClosedDates(closedDates);
-        }
-        if (recurringClosedDays && Array.isArray(recurringClosedDays)) {
-          setRecurringClosedDays(recurringClosedDays.map(Number)); // converts ["0", "6"] => [0, 6]
-        }
-
-        // Set error ONLY if message indicates an actual error
-        if (message && message.toLowerCase().includes("error")) {
-          setError(message);
-        } else {
-          setError(null);
-        }
-      } catch (err) {
+        const { availableSlots, message, closedDates, recurringClosedDays } = response.data;
+        setAvailableTimeSlots(Array.isArray(availableSlots) ? availableSlots : []);
+        if (closedDates && Array.isArray(closedDates)) setClosedDates(closedDates);
+        if (recurringClosedDays && Array.isArray(recurringClosedDays))
+          setRecurringClosedDays(recurringClosedDays.map(Number));
+        if (message && message.toLowerCase().includes("error")) setError(message);
+        else setError(null);
+      } catch {
         setError("Failed to load time slots.");
         setAvailableTimeSlots([]);
       } finally {
@@ -93,35 +68,141 @@ export default function BookingWidget({
   }, [bookingDate, vendorId]);
 
   const closedDatesAsDateObjects = closedDates.map((d) => new Date(d));
-
   const disabledDays: Matcher[] = [
     { before: new Date() },
-    ...(recurringClosedDays.length > 0
-      ? [{ dayOfWeek: recurringClosedDays }]
-      : []), // Correct structure
+    ...(recurringClosedDays.length > 0 ? [{ dayOfWeek: recurringClosedDays }] : []),
     ...closedDatesAsDateObjects,
   ];
 
   return (
-    <div className="space-y-2  ">
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        {/* <DialogTrigger asChild>
-          {children || (
-    <button className="btn-primary">Book Appointment</button>
-  )}
-        </DialogTrigger> */}
-        <DialogOverlay className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[9999]" />
-       <DialogContent aria-describedby="booking-description"
-          className="fixed top-1/2 left-1/2 xs:p-7 -translate-x-1/2 -translate-y-1/2
-               z-[9999] bg-white rounded-lg shadow-lg p-6 max-w-lg max-h-[90vh] overflow-y-auto"
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogOverlay
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "var(--color-overlay)",
+          backdropFilter: "blur(4px)",
+          WebkitBackdropFilter: "blur(4px)",
+          zIndex: 9998,
+        }}
+      />
+      <DialogContent
+        aria-describedby="booking-description"
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 9999,
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          boxShadow: "var(--shadow-xl)",
+          padding: 0,
+          maxWidth: "520px",
+          width: "calc(100vw - 32px)",
+          maxHeight: "90vh",
+          overflowY: "auto",
+          borderRadius: 0,
+        }}
+      >
+        {/* Modal Header */}
+        <div
+          style={{
+            padding: "var(--space-xl) var(--space-xl) var(--space-lg)",
+            borderBottom: "1px solid var(--color-border)",
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
         >
-          <DialogTitle className="text-lg font-bold mb-4">
-            Select Booking Details
+          <DialogTitle
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "var(--text-2xl)",
+              fontWeight: 400,
+              color: "var(--color-text)",
+              margin: 0,
+            }}
+          >
+            Book an Appointment
           </DialogTitle>
+          <button
+            onClick={() => onOpenChange(false)}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "var(--color-text-light)",
+              fontSize: "1.2rem",
+              lineHeight: 1,
+              padding: "4px",
+              transition: "color var(--transition-fast)",
+            }}
+            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--color-text)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-light)")}
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
 
-          <div className="w-full max-w-sm sm:max-w-md md:max-w-lg p-6 max-h-[90vh] overflow-y-auto bg-white rounded-lg shadow-lg">
-            <div>
-              <label className="block font-medium mb-2">Select Date:</label>
+        {/* Modal Body */}
+        <div style={{ padding: "var(--space-xl)" }}>
+
+          {/* Date Picker */}
+          <div style={{ marginBottom: "var(--space-xl)" }}>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: "var(--space-md)",
+              }}
+            >
+              Select Date
+            </label>
+            <div
+              style={{
+                border: "1px solid var(--color-border)",
+                background: "var(--color-surface-warm)",
+                display: "inline-block",
+              }}
+            >
+              <style>{`
+                .rdp {
+                  --rdp-accent-color: var(--color-primary) !important;
+                  --rdp-background-color: var(--color-bg-alt) !important;
+                  margin: 0;
+                  padding: 12px;
+                  font-family: var(--font-body);
+                  font-size: 0.85rem;
+                }
+                .rdp-day_selected, .rdp-day_selected:hover {
+                  background: var(--color-primary) !important;
+                  color: var(--color-text-inverse) !important;
+                }
+                .rdp-button:hover:not([disabled]) {
+                  background: var(--color-bg-alt) !important;
+                }
+                .rdp-day_today:not(.rdp-day_selected) {
+                  color: var(--color-accent-dark);
+                  font-weight: 600;
+                }
+                .rdp-caption_label {
+                  font-family: var(--font-display) !important;
+                  font-size: 1rem !important;
+                  font-weight: 400 !important;
+                  color: var(--color-text) !important;
+                }
+                .rdp-nav_button {
+                  border: 1px solid var(--color-border) !important;
+                  border-radius: 0 !important;
+                }
+              `}</style>
               <DayPicker
                 mode="single"
                 selected={bookingDate ? new Date(bookingDate) : undefined}
@@ -131,52 +212,154 @@ export default function BookingWidget({
                 disabled={disabledDays}
               />
             </div>
+          </div>
 
-            <div>
-              <label className="block font-medium mb-2">
-                Select Time Slot:
-              </label>
+          {/* Time Slots */}
+          <div style={{ marginBottom: "var(--space-xl)" }}>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: "var(--space-md)",
+              }}
+            >
+              Select Time Slot
+            </label>
 
-              {loadingSlots ? (
-                <p>Loading available slots...</p>
-              ) : error ? (
-                <p className="text-red-600">{error}</p>
-              ) : availableTimeSlots.length > 0 ? (
-                <AvailableSlots
-                  date={bookingDate}
-                  availableSlots={availableTimeSlots}
-                  selectedSlot={timeSlot}
-                  onSelect={(slot) => {
-                    setTimeSlot(slot); // ✅ Just set, don't submit here
-                    onOpenChange(false);
+            {!bookingDate ? (
+              <p
+                style={{
+                  fontFamily: "var(--font-body)",
+                  fontSize: "var(--text-sm)",
+                  color: "var(--color-text-light)",
+                  fontStyle: "italic",
+                }}
+              >
+                Please select a date first.
+              </p>
+            ) : loadingSlots ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
+                <div
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    border: "2px solid var(--color-border)",
+                    borderTopColor: "var(--color-primary)",
+                    borderRadius: "50%",
+                    animation: "spin 0.8s linear infinite",
                   }}
                 />
-              ) : (
-                <p>No available slots.</p>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <button
-                className="btn-secondary"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn-primary"
-                onClick={() => {
-                  // Submit your booking here
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
+                  Loading available slots…
+                </span>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              </div>
+            ) : error ? (
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-error)" }}>
+                {error}
+              </p>
+            ) : availableTimeSlots.length > 0 ? (
+              <AvailableSlots
+                date={bookingDate}
+                availableSlots={availableTimeSlots}
+                selectedSlot={timeSlot}
+                onSelect={(slot) => {
+                  setTimeSlot(slot);
                   onOpenChange(false);
                 }}
-                disabled={!bookingDate || !timeSlot}
-              >
-                Confirm Booking
-              </button>
-            </div>
+              />
+            ) : (
+              <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-text-light)", fontStyle: "italic" }}>
+                No available slots for this date.
+              </p>
+            )}
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+
+          {/* Selected summary */}
+          {bookingDate && timeSlot && (
+            <div
+              style={{
+                background: "var(--color-surface-warm)",
+                border: "1px solid var(--color-border)",
+                padding: "var(--space-md) var(--space-lg)",
+                marginBottom: "var(--space-xl)",
+                display: "flex",
+                gap: "var(--space-xl)",
+              }}
+            >
+              <div>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-light)", display: "block", marginBottom: "2px" }}>Date</span>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-lg)", color: "var(--color-text)" }}>
+                  {dayjs(bookingDate).format("D MMM YYYY")}
+                </span>
+              </div>
+              <div>
+                <span style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-light)", display: "block", marginBottom: "2px" }}>Time</span>
+                <span style={{ fontFamily: "var(--font-display)", fontSize: "var(--text-lg)", color: "var(--color-text)" }}>
+                  {timeSlot}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Footer Actions */}
+          <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+            <button
+              onClick={() => onOpenChange(false)}
+              style={{
+                flex: 1,
+                background: "transparent",
+                color: "var(--color-text-muted)",
+                border: "1px solid var(--color-border)",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--text-xs)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                padding: "0.75rem",
+                cursor: "pointer",
+                transition: "all var(--transition-fast)",
+              }}
+              onMouseEnter={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.borderColor = "var(--color-border-dark)";
+                b.style.color = "var(--color-text)";
+              }}
+              onMouseLeave={(e) => {
+                const b = e.currentTarget as HTMLButtonElement;
+                b.style.borderColor = "var(--color-border)";
+                b.style.color = "var(--color-text-muted)";
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onOpenChange(false)}
+              disabled={!bookingDate || !timeSlot}
+              style={{
+                flex: 2,
+                background: !bookingDate || !timeSlot ? "var(--color-border)" : "var(--color-primary)",
+                color: !bookingDate || !timeSlot ? "var(--color-text-light)" : "var(--color-text-inverse)",
+                border: "none",
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                padding: "0.75rem",
+                cursor: !bookingDate || !timeSlot ? "not-allowed" : "pointer",
+                transition: "background var(--transition-base)",
+              }}
+            >
+              Confirm Booking
+            </button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

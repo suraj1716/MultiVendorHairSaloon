@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Contracts\Factory as SocialiteFactory;
 
 class GoogleController extends Controller
@@ -22,8 +23,10 @@ class GoogleController extends Controller
                 'email',
                 'https://www.googleapis.com/auth/calendar.events',
             ])
-            ->with([ 'access_type' => 'offline',
-        'prompt' => 'consent'])
+            ->with([
+                'access_type' => 'offline',
+                'prompt' => 'consent'
+            ])
             ->redirect();
     }
 
@@ -63,6 +66,9 @@ class GoogleController extends Controller
 
             return redirect()->intended('/');
         } catch (\Exception $e) {
+            Log::error('Google OAuth callback failed: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
             return redirect('/login')->withErrors('Unable to login with Google.');
         }
     }

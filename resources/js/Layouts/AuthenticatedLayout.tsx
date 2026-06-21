@@ -1,9 +1,6 @@
 import ApplicationLogo from "@/Components/App/ApplicationLogo";
 import Footer from "@/Components/App/Footer";
 import Navbar from "@/Components/App/Navbar";
-import Dropdown from "@/Components/Core/Dropdown";
-import NavLink from "@/Components/Core/NavLink";
-import ResponsiveNavLink from "@/Components/Core/ResponsiveNavLink";
 import useScrollInfo from "@/hooks/useScrollDirection";
 import DepartmentComponent from "@/Components/App/Department";
 import { ChevronUp } from "lucide-react"; // Or any icon library
@@ -17,13 +14,14 @@ import {
   useState,
 } from "react";
 import NavbarBottom from "@/Components/App/NavbarBottom";
+import LoginModal from "@/Pages/Auth/Login";
 
 export default function AuthenticatedLayout({
   header,
   children,
 }: PropsWithChildren<{ header?: ReactNode }>) {
   const props = usePage().props;
-  const user = props.auth.user;
+  const user = props.auth?.user;
 
   const showScrollTop = useScrollInfo(200);
   const showBar = useScrollInfo(0); // show after 100px scroll
@@ -33,6 +31,8 @@ export default function AuthenticatedLayout({
   };
 
   const [visible, setVisible] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   useEffect(() => {
     const timeout = setTimeout(() => setVisible(true), 1000); // delay show
@@ -41,13 +41,13 @@ export default function AuthenticatedLayout({
 
   const [successMessages, setSuccessMessages] = useState<any[]>([]);
   const timeoutRefs = useRef<{ [Key: number]: ReturnType<typeof setTimeout> }>(
-    {}
+    {},
   );
   const [showingNavigationDropdown, setShowingNavigationDropdown] =
     useState(false);
 
   useEffect(() => {
-    if (props.success.message) {
+    if (props?.success?.message) {
       const newMessage = {
         ...props.success,
         id: props.success.time,
@@ -57,7 +57,7 @@ export default function AuthenticatedLayout({
 
       const timeoutId = setTimeout(() => {
         setSuccessMessages((prevMessages) =>
-          prevMessages.filter((msg) => msg.id != newMessage.id)
+          prevMessages.filter((msg) => msg.id != newMessage.id),
         );
         delete timeoutRefs.current[newMessage.id];
       }, 5000);
@@ -66,8 +66,7 @@ export default function AuthenticatedLayout({
     }
   }, [props.success]);
 
-
-const [showBarnav, setShowBarnav] = useState(false);
+  const [showBarnav, setShowBarnav] = useState(false);
   // Trigger bar to show after mount (simulate toggle)
   useEffect(() => {
     const timer = setTimeout(() => setShowBarnav(true), 300);
@@ -79,7 +78,7 @@ const [showBarnav, setShowBarnav] = useState(false);
       <Navbar />
 
       <div
-       className={`
+        className={` md:hidden
           fixed bottom-0 left-0 w-full z-[10] transition-all duration-500 ease-in
           transform bg-white shadow-md
           ${
@@ -89,7 +88,23 @@ const [showBarnav, setShowBarnav] = useState(false);
           }
         `}
       >
-        <NavbarBottom />
+        <div
+          className={`fixed bottom-0 left-0 w-full ${
+            showBar ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <NavbarBottom onLogin={() => setLoginOpen(true)} />
+        </div>
+
+        <LoginModal
+          isOpen={loginOpen}
+          onClose={() => setLoginOpen(false)}
+          canResetPassword
+          onSwitchToRegister={() => {
+            setLoginOpen(false);
+            setRegisterOpen(true);
+          }}
+        />
       </div>
 
       {successMessages.length > 0 && (
@@ -102,9 +117,9 @@ const [showBarnav, setShowBarnav] = useState(false);
         </div>
       )}
 
-      <div
+      {/* <div
         className={`
-          fixed top-0 left-0 w-full z-[10] transition-all duration-500 ease-in
+          fixed top-0 left-0 w-full z-[40] transition-all duration-500 ease-in
           transform bg-white shadow-md
           ${
             showBar
@@ -114,7 +129,7 @@ const [showBarnav, setShowBarnav] = useState(false);
         `}
       >
         <DepartmentComponent />
-      </div>
+      </div> */}
 
       <main>{children}</main>
 
@@ -122,11 +137,16 @@ const [showBarnav, setShowBarnav] = useState(false);
         href="https://m.me/YOUR_PAGE_USERNAME" // 🔁 replace with your Messenger username
         target="_blank"
         rel="noopener noreferrer"
-        className={` xs:mb-20
-        fixed bottom-6 left-6 z-[9999] flex items-center gap-2
+        className={` xs:mb-20 lg:right
+        fixed bottom-5  md:translate-y-12  xs:left-6 z-[9999] flex items-center gap-2
          bg-yellow-400 text-green-950 px-4 py-2 rounded-full shadow-lg
-       hover:bg-yellow-700 transition-all duration-300
-        transform ${visible ? "scale-100 opacity-100" : "scale-0 opacity-0"}
+       hover:bg-yellow-700 transition-all
+          transform duration-500 ease-in-out
+          ${
+            showScrollTop
+              ? "opacity-100 scale-100"
+              : "opacity-0 scale-0 pointer-events-none"
+          }
       `}
       >
         <MessageCircle className="w-5 h-5" />

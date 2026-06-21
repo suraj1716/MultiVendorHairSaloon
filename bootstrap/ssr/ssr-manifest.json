@@ -1,77 +1,60 @@
 {
-  "node_modules/aos/dist/aos.css": [
-    "/build/assets/Home-BfjMRWxx.js",
-    "/build/assets/Home-DvB2Xm2x.css"
-  ],
   "node_modules/laravel-vite-plugin/inertia-helpers/index.js": [],
   "node_modules/react-day-picker/src/style.css": [
-    "/build/assets/BookingWidget-DQ8kKQ_u.js",
+    "/build/assets/BookingWidget-De530pjU.js",
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
-  "node_modules/swiper/modules/autoplay.css": [
-    "/build/assets/Home-BfjMRWxx.js",
-    "/build/assets/Home-DvB2Xm2x.css"
-  ],
-  "node_modules/swiper/modules/navigation.css": [
-    "/build/assets/ProductCarousel-DIhMp4Yv.js",
-    "/build/assets/ProductCarousel-vHIubPVI.css"
-  ],
-  "node_modules/swiper/swiper.css": [
-    "/build/assets/ProductCarousel-DIhMp4Yv.js",
-    "/build/assets/ProductCarousel-vHIubPVI.css"
-  ],
   "resources/js/Components/App/AdvanceProductRating.tsx": [
-    "/build/assets/Show-CtPLef6C.js"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Components/App/ApplicationLogo.tsx": [
     "/build/assets/GuestLayout-Bpsb9b0M.js"
   ],
   "resources/js/Components/App/CartItem.tsx": [
-    "/build/assets/Index-BGTsqhbP.js"
-  ],
-  "resources/js/Components/App/CategoriesDropdown.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
-  ],
-  "resources/js/Components/App/Department.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/Index-LzqMIdjM.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Components/App/Footer.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
   ],
   "resources/js/Components/App/Hero_Banner.tsx": [
-    "/build/assets/Home-BfjMRWxx.js",
-    "/build/assets/Home-DvB2Xm2x.css"
+    "/build/assets/Home-DNZUhqH-.js",
+    "/build/assets/aos-DvB2Xm2x.css",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Components/App/MiniCartDropdown.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
+  ],
+  "resources/js/Components/App/MiniCartDropdownBottom.tsx": [
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
   ],
   "resources/js/Components/App/Navbar.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
+  ],
+  "resources/js/Components/App/NavbarBottom.tsx": [
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
   ],
   "resources/js/Components/App/ProductCarousel.tsx": [
-    "/build/assets/ProductCarousel-DIhMp4Yv.js",
-    "/build/assets/ProductCarousel-vHIubPVI.css"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Components/App/ProductItem.tsx": [
-    "/build/assets/ProductItem-CcFS9y8F.js"
+    "/build/assets/ProductItem-Ds-40BOh.js"
   ],
   "resources/js/Components/App/ProductRating.tsx": [
-    "/build/assets/ProductItem-CcFS9y8F.js"
+    "/build/assets/ProductItem-Ds-40BOh.js"
   ],
   "resources/js/Components/App/ProductReview.tsx": [
-    "/build/assets/Show-CtPLef6C.js"
-  ],
-  "resources/js/Components/App/SearchBar.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
-  ],
-  "resources/js/Components/App/ShippingAddressSelector.tsx": [
-    "/build/assets/Index-BGTsqhbP.js"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Components/Core/Breadcrumbs.tsx": [
     "/build/assets/Breadcrumbs-CH7E_0xj.js"
   ],
   "resources/js/Components/Core/Carousel.tsx": [
-    "/build/assets/Show-CtPLef6C.js"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Components/Core/Checkbox.tsx": [
     "/build/assets/Login-CRSv4mrB.js"
@@ -101,17 +84,105 @@
     "/build/assets/TextInput-kwtITkQ9.js"
   ],
   "resources/js/Components/ui/dialog.tsx": [
-    "/build/assets/BookingWidget-DQ8kKQ_u.js",
+    "/build/assets/BookingWidget-De530pjU.js",
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
   "resources/js/Layouts/AuthenticatedLayout.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
   ],
   "resources/js/Layouts/GuestLayout.tsx": [
     "/build/assets/GuestLayout-Bpsb9b0M.js"
   ],
   "resources/js/Pages/About.tsx": [
-    "/build/assets/About-B0JvKwHW.js"
+    "/build/assets/About-CNE71OZW.js",
+    "/build/assets/aos-DvB2Xm2x.css"
+  ],
+  "resources/js/Pages/Admin/AdminComponents.tsx": [
+    "/build/assets/AdminComponents-CZGW1ffz.js"
+  ],
+  "resources/js/Pages/Admin/AdminLayout.tsx": [
+    "/build/assets/AdminLayout-DH1wNPAk.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Bookings/Create.tsx": [
+    "/build/assets/Create-C8EXKngK.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Bookings/Edit.tsx": [
+    "/build/assets/Edit-FhTfKKYs.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Bookings/Index.tsx": [
+    "/build/assets/Index-DYyyILtN.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Bookings/Show.tsx": [
+    "/build/assets/Show-DeNJz47B.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Dashboard.tsx": [
+    "/build/assets/Dashboard-gzRO5YgF.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Gallery/Create.tsx": [
+    "/build/assets/Create-kyOzp_lV.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Gallery/Edit.tsx": [
+    "/build/assets/Edit-DWyaYf4C.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Gallery/Index.tsx": [
+    "/build/assets/Index-a3CppUty.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Gallery/Show.tsx": [
+    "/build/assets/Show-D186qUmM.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Orders/Create.tsx": [
+    "/build/assets/Create-CskF6sIo.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Orders/Edit.tsx": [
+    "/build/assets/Edit-CdCSv44I.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Orders/Index.tsx": [
+    "/build/assets/Index-BeQNcC4M.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Orders/Show.tsx": [
+    "/build/assets/Show-BscWhkNC.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Products/Form.tsx": [
+    "/build/assets/Form-DQ7-vieR.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Products/Index.tsx": [
+    "/build/assets/Index-BvUq9hXk.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Users/Index.tsx": [
+    "/build/assets/Index-CWafYPpm.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Vendors/Index.tsx": [
+    "/build/assets/Index-C_KLxsqr.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Vouchers/Edit.tsx": [
+    "/build/assets/Edit-HVAenQTQ.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Vouchers/Index.tsx": [
+    "/build/assets/Index-CqrnunbU.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
+  ],
+  "resources/js/Pages/Admin/Vouchers/Show.tsx": [
+    "/build/assets/Show--YyrUCeK.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Auth/ConfirmPassword.tsx": [
     "/build/assets/ConfirmPassword-BZ8CpO7b.js"
@@ -126,7 +197,7 @@
     "/build/assets/LoginPage-C9X5LS3B.js"
   ],
   "resources/js/Pages/Auth/Register.tsx": [
-    "/build/assets/Register-DakqoBGB.js"
+    "/build/assets/Register-BYaCByNQ.js"
   ],
   "resources/js/Pages/Auth/ResetPassword.tsx": [
     "/build/assets/ResetPassword-CMadgUMx.js"
@@ -138,45 +209,57 @@
     "/build/assets/AvailableSlots-BiD8K0YY.js"
   ],
   "resources/js/Pages/Booking/BookingHistory.tsx": [
-    "/build/assets/BookingHistory-CtYFFbEI.js"
+    "/build/assets/BookingHistory-eJzndJjb.js"
   ],
   "resources/js/Pages/Booking/BookingWidget.tsx": [
-    "/build/assets/BookingWidget-DQ8kKQ_u.js",
+    "/build/assets/BookingWidget-De530pjU.js",
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
   "resources/js/Pages/Cart/Index.tsx": [
-    "/build/assets/Index-BGTsqhbP.js"
+    "/build/assets/Index-LzqMIdjM.js",
+    "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Category/Show.tsx": [
-    "/build/assets/Show-BYPuWKso.js"
+    "/build/assets/Show-D_LQIoJh.js"
   ],
   "resources/js/Pages/Contact.tsx": [
-    "/build/assets/Contact-Cz9ElTob.js"
+    "/build/assets/Contact-iee5aQgL.js"
   ],
   "resources/js/Pages/Dashboard.tsx": [
-    "/build/assets/Dashboard-DrIgVvQq.js"
+    "/build/assets/Dashboard-BCAZYFum.js"
   ],
   "resources/js/Pages/Department/Index.tsx": [
-    "/build/assets/Index-CDmPaHF9.js"
+    "/build/assets/Index-BhgmT3G6.js"
   ],
   "resources/js/Pages/ErrorPage.tsx": [
     "/build/assets/ErrorPage-CMUW0uCK.js"
   ],
+  "resources/js/Pages/Gallery/Index.tsx": [
+    "/build/assets/Index-gf5kp05k.js"
+  ],
+  "resources/js/Pages/GiftVoucher/GiftVoucherShop.tsx": [
+    "/build/assets/GiftVoucherShop-xuhTShJg.js"
+  ],
+  "resources/js/Pages/GiftVoucher/GiftVoucherSuccess.tsx": [
+    "/build/assets/GiftVoucherSuccess-BFCOnfJq.js"
+  ],
   "resources/js/Pages/Home.tsx": [
-    "/build/assets/Home-BfjMRWxx.js",
-    "/build/assets/Home-DvB2Xm2x.css"
+    "/build/assets/Home-DNZUhqH-.js",
+    "/build/assets/aos-DvB2Xm2x.css",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Pages/LandingPage.tsx": [
     "/build/assets/LandingPage-BzpW-DMh.js"
   ],
   "resources/js/Pages/Order/OrdersHistory.tsx": [
-    "/build/assets/OrdersHistory-QKIwGD9U.js"
+    "/build/assets/OrdersHistory-UPKQBNMM.js"
   ],
   "resources/js/Pages/Product/Show.tsx": [
-    "/build/assets/Show-CtPLef6C.js"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "resources/js/Pages/Profile/Edit.tsx": [
-    "/build/assets/Edit-BPvIlrVA.js"
+    "/build/assets/Edit-vy6EdZdR.js"
   ],
   "resources/js/Pages/Profile/Partials/DeleteUserForm.tsx": [
     "/build/assets/DeleteUserForm-D20a5Kmq.js"
@@ -191,33 +274,40 @@
     "/build/assets/VendorDetails-CNO2O9Hv.js"
   ],
   "resources/js/Pages/Profile/ShippingAddresses.tsx": [
-    "/build/assets/ShippingAddresses-ROMZPwtm.js"
+    "/build/assets/ShippingAddresses-dEI7Q8tk.js"
   ],
   "resources/js/Pages/Shop/ListProducts.tsx": [
-    "/build/assets/ListProducts-CnoxoeGm.js"
+    "/build/assets/ListProducts-mQV60jPQ.js"
   ],
   "resources/js/Pages/Stripe/Success.tsx": [
-    "/build/assets/Success-Bp7yw0mO.js"
+    "/build/assets/Success-DT-hdD_t.js"
   ],
   "resources/js/Pages/Vendor/Profile.tsx": [
-    "/build/assets/Profile-4FbByvyo.js"
+    "/build/assets/Profile-DtYcrQo9.js"
+  ],
+  "resources/js/Pages/Vouchers/Index.tsx": [
+    "/build/assets/Index-CP_OVCka.js"
   ],
   "resources/js/Pages/showProductGroup/Show.tsx": [
-    "/build/assets/Show-Bi9SgpYk.js"
+    "/build/assets/Show-DGkRPl3W.js"
   ],
   "resources/js/helper.ts": [
-    "/build/assets/Index-BGTsqhbP.js"
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
+  ],
+  "resources/js/hooks/useScrollDirection.ts": [
+    "/build/assets/AuthenticatedLayout-DncDhKKB.js"
   ],
   "resources/js/lib/utils.ts": [
-    "/build/assets/BookingWidget-DQ8kKQ_u.js",
+    "/build/assets/BookingWidget-De530pjU.js",
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
   "resources/js/ssr.tsx": [],
   "resources/js/utils/CurrencyFormatter.tsx": [
-    "/build/assets/AuthenticatedLayout-BxONmVZd.js"
+    "/build/assets/CurrencyFormatter-CayJY2sU.js"
   ],
   "resources/js/utils/helpers.ts": [
-    "/build/assets/Show-CtPLef6C.js"
+    "/build/assets/Show-CWQd7LmG.js",
+    "/build/assets/navigation-vHIubPVI.css"
   ],
   "vendor/tightenco/ziggy/dist/index.js": []
 }

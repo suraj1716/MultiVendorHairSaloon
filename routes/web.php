@@ -25,22 +25,30 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Auth\GoogleController;
 
+use App\Filament\Resources\BookingResource\Pages\CreateBooking;
+use App\Http\Controllers\VoucherController;
 
+// ── Public: storage file serving ────────────────────────────────────────────
+Route::get('/storage/{path}', function (string $path) {
+    $fullPath = storage_path('app/public/' . $path);
 
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/profile/shipping-addresses', [ShippingAddressController::class, 'index'])->name('shipping.index');
-    Route::post('/shipping-addresses', [ShippingAddressController::class, 'store'])->name('shipping-addresses.store');
-    Route::patch('/shipping-addresses/{address}/default', [ShippingAddressController::class, 'setDefault'])->name('shipping-addresses.set-default');
-    Route::put('/shipping-addresses/{shippingAddress}', [ShippingAddressController::class, 'update'])->name('shipping-addresses.update');
-    Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy'])->name('shipping-addresses.destroy');
-});
-Route::get('/', [ProductController::class, 'home'])->name('dashboard');
+    $mimeType = mime_content_type($fullPath);
+
+    return response()->file($fullPath, [
+        'Content-Type' => $mimeType,
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('path', '.*')->name('storage.serve');
+
+// ── Public: home / products / categories / search ───────────────────────────
+Route::get('/', [ProductController::class, 'home'])->name('home');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('product.show');
-
 Route::get('/category/{category}', [CategoryController::class, 'show'])->name('category.show');
 Route::get('/product-groups/{productGroup}', [ProductController::class, 'showProductGroup'])->name('productGroup.show');
-
 
 Route::get('/search-suggestions', function (Request $request) {
     $keyword = $request->query('keyword');
@@ -61,7 +69,6 @@ Route::get('/search-suggestions', function (Request $request) {
     return ProductListResource::collection($products);
 });
 
-
 Route::get('/d/{department:slug}', [ProductController::class, 'byDepartment'])
     ->name('product.byDepartment');
 
@@ -70,7 +77,6 @@ Route::get('/shop', [ProductController::class, 'search'])->name('shop.search');
 Route::get('/seller/{vendor:store_name}', [VendorController::class, 'profile'])
     ->name('vendor.profile');
 
-
 Route::get('/check-auth', function () {
     return [
         'auth_id' => Auth::id(),
@@ -78,16 +84,46 @@ Route::get('/check-auth', function () {
     ];
 });
 
-// Route::controller(CartController::class)->group(function () {
-//     Route::get('/cart', 'index')->name('cart.index');
-//     Route::post('/cart/add/{product}', 'store')->name('cart.store');
-//     Route::put('/cart/{product}', 'update')->name('cart.update');
-//     Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
-// });
+// ── Public: Gift Card Shop (browsing — no auth required) ───────────────────
+Route::get('/gift-vouchers/shop', [VoucherController::class, 'shop'])->name('gift-voucher.shop');
+
+// ── Public: Gallery ──────────────────────────────────────────────────────────
+Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
+Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
+
+// ── Public: Contact ──────────────────────────────────────────────────────────
+Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+// ── Public: About ────────────────────────────────────────────────────────────
+Route::get('/about', function () {
+    return Inertia::render('About');
+})->name('about');
+
+// ── Public: Google auth ──────────────────────────────────────────────────────
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
+Route::get('auth/google-callback', [GoogleController::class, 'handleGoogleCallback']);
+
+// ── Public: validate promo/gift code from cart (no auth required) ──────────
+Route::post('/vouchers/validate', [VoucherController::class, 'validateAndApplyCode'])
+    ->name('vouchers.validate');
+
+// ── Stripe Webhook (public, CSRF excluded) ──────────────────────────────────
+Route::post('/stripe/webhook', [StripeController::class, 'handle'])
+    ->name('stripe.webhook');
 
 
-Route::post('/stripe/webhook', [StripeController::class, 'webhook'])->name('stripe.webhook');
+// ════════════════════════════════════════════════════════════════════════════
+// AUTH-PROTECTED ROUTES
+// ════════════════════════════════════════════════════════════════════════════
 
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/profile/shipping-addresses', [ShippingAddressController::class, 'index'])->name('shipping.index');
+    Route::post('/shipping-addresses', [ShippingAddressController::class, 'store'])->name('shipping-addresses.store');
+    Route::patch('/shipping-addresses/{address}/default', [ShippingAddressController::class, 'setDefault'])->name('shipping-addresses.set-default');
+    Route::put('/shipping-addresses/{shippingAddress}', [ShippingAddressController::class, 'update'])->name('shipping-addresses.update');
+    Route::delete('/shipping-addresses/{id}', [ShippingAddressController::class, 'destroy'])->name('shipping-addresses.destroy');
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -96,15 +132,23 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders-history', [OrderController::class, 'index'])->name('orders.history');
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
+    Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
+        ->name('admin.orders.refund')
+        ->middleware(['auth', 'role:Admin']);
 
+    // ── Gift Card actions (require auth — browsing the shop above does not) ──
+    Route::middleware('auth')->prefix('gift-vouchers')->name('gift-voucher.')->group(function () {
+        Route::post('/add-to-cart', [VoucherController::class, 'addToCart'])->name('add-to-cart');
+        Route::post('/purchase', [VoucherController::class, 'purchase'])->name('purchase');
+        Route::get('/success', [VoucherController::class, 'success'])->name('success');
+    });
 
-Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
-    ->name('admin.orders.refund')
-    ->middleware(['auth', 'role:Admin']); // adjust middleware as needed
-
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::delete('/cart/gift-card/{cartItem}', [CartController::class, 'destroyGiftCard'])
+            ->name('cart.gift-card.destroy');
+    });
 
     Route::middleware(['verified'])->group(function () {
-
         Route::controller(CartController::class)->group(function () {
             Route::get('/cart', 'index')->name('cart.index');
             Route::post('/cart/add/{product}', 'store')->name('cart.store');
@@ -112,28 +156,17 @@ Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
             Route::delete('/cart/{product}', 'destroy')->name('cart.destroy');
         });
         Route::post('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
-
+        Route::post('/cart/voucher/add', [CartController::class, 'addVoucherToCart'])->name('cart.voucher.add');
 
         Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
         Route::get('/stripe/failure', [StripeController::class, 'failure'])->name('stripe.failure');
         Route::post('/become-a-vendor', [VendorController::class, 'store'])->name('vendor.store');
 
-        //    connect from user profile
-        // Route::post('/stripe/connect', [StripeController::class, 'connect'])
-        //     ->name('stripe.connect')
-        //     ->middleware(['role:' . RolesEnum::Vendor->value]);
-
-
-        // connect from admin dash board
-        // In web.php
         Route::get('/stripe/connect/{user?}', [StripeController::class, 'connect'])->name('stripe.connect');
     });
 });
 
-
-
-
-// RESTful resource routes for BookingController (index, store, update, destroy)
+// ── Bookings ─────────────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::get('/booking-history', [BookingController::class, 'history'])->name('bookings.history');
@@ -142,42 +175,25 @@ Route::middleware('auth')->group(function () {
     Route::put('/bookings/{booking}', [BookingController::class, 'update'])->name('bookings.update');
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 
-    // Additional routes for confirm and cancel actions
     Route::post('/bookings/{booking}/confirm', [BookingController::class, 'confirm'])->name('bookings.confirm');
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::get('/booking/available-slots', [BookingController::class, 'getAvailableSlots'])
         ->name('available-slots');
 });
 
-
-Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
-Route::post('/gallery', [GalleryController::class, 'store'])->name('gallery.store');
-
-Route::get('/contact', [ContactController::class, 'index'])->name('contact.index');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
-Route::get('/about', function () {
-    return Inertia::render('About');
-})->name('about');
-
-
-Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('google.login');
-Route::get('auth/google-callback', [GoogleController::class, 'handleGoogleCallback']);
-// Route::get('/auth/google/redirect', [GoogleController::class, 'redirectToGoogle']);
-// Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback']);
-
-
+// ── Reviews ──────────────────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
     Route::post('/products/{product}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
 });
 
+// ── My Vouchers page + code check form ──────────────────────────────────────
+Route::middleware('auth')->group(function () {
+    Route::get('/vouchers', [VoucherController::class, 'index'])
+        ->name('vouchers.index');
 
-
-// Route::fallback(function () {
-//     return Inertia::render('ErrorPage', [
-//         'statusCode' => 404,
-//         'message' => 'Page not found.'
-//     ])->toResponse(request())->setStatusCode(404);
-// });
-
+    Route::post('/vouchers/check', [VoucherController::class, 'validateForUser'])
+        ->name('vouchers.check');
+});
 
 require __DIR__ . '/auth.php';
+require __DIR__ . '/admin_routes.php';

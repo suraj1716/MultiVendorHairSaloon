@@ -6,9 +6,7 @@ export default function LoginPage(props: { status?: string; canResetPassword?: b
 
   return (
     <>
-
-
-      <LoginModal
+ <LoginModal
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         status={props.status}

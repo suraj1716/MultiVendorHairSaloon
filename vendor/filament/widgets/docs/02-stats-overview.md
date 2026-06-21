@@ -35,7 +35,7 @@ class StatsOverview extends BaseWidget
 }
 ```
 
-Now, check out your widget in the dashboard.
+Now, check out your widget in the home.
 
 ## Adding a description and icon to a stat
 

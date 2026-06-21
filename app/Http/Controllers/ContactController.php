@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 class ContactController extends Controller
 {
-   public function index()
+    public function index()
     {
         $contactReasons = array_map(fn($case) => [
             'value' => $case->value,
@@ -21,42 +21,56 @@ class ContactController extends Controller
 
         return Inertia::render('Contact', [
             'contactReasons' => $contactReasons,
+          'departments' => \App\Models\Department::with([
+    'categories' => fn($q) => $q
+        ->select('id', 'name', 'department_id')
+        ->whereHas('products', fn($q) => $q->where('status', 'published')),
+    'categories.products' => fn($q) => $q
+        ->select('id', 'title', 'category_id')
+        ->where('status', 'published'),
+])->whereHas('categories', fn($q) =>
+    $q->whereHas('products', fn($q) =>
+        $q->where('status', 'published')
+    )
+)->get(['id', 'name', 'slug']),
         ]);
     }
 
-public function store(Request $request)
-{
-    $validated = $request->validate([
-        'name' => 'required|string|max:255',
-        'email' => 'required|email',
-        'message' => 'required|string',
-        'reason' => 'nullable|string',
-        'department' => 'nullable|integer|exists:departments,id',
-        'category' => 'nullable|integer|exists:categories,id',
-        'product' => 'nullable|integer|exists:products,id',
-        'quantity' => 'nullable|integer|min:1',
-        'file' => 'nullable|file|max:2048', // max 2MB
-    ]);
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email',
+            'phone'      => 'nullable|string|max:20',   // add
+            'message' => 'required|string',
+            'reason' => 'nullable|string',
+            'department' => 'nullable|integer|exists:departments,id',
+            'category' => 'nullable|integer|exists:categories,id',
+            'product' => 'nullable|integer|exists:products,id',
+            'quantity' => 'nullable|integer|min:1',
+            'file' => 'nullable|file|max:2048', // max 2MB
+        ]);
 
-    $filePath = null;
+        $filePath = null;
 
-    if ($request->hasFile('file')) {
-        $filePath = $request->file('file')->store('contacts', 'public'); // saves to storage/app/public/contacts
+        if ($request->hasFile('file')) {
+            $filePath = $request->file('file')->store('contacts', 'public'); // saves to storage/app/public/contacts
+        }
+
+        Contact::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone'         => $validated['phone'] ?? null,   // add
+            'message' => $validated['message'],
+            'reason' => $validated['reason'] ?? null,
+            'department_id' => $validated['department'] ?? null,
+            'category_id' => $validated['category'] ?? null,
+            'product_id' => $validated['product'] ?? null,
+            'quantity' => $validated['quantity'] ?? null,
+            'file_path' => $filePath,
+
+        ]);
+
+        return back()->with('success', 'Your message has been sent.');
     }
-
-    Contact::create([
-        'name' => $validated['name'],
-        'email' => $validated['email'],
-        'message' => $validated['message'],
-        'reason' => $validated['reason'] ?? null,
-        'department_id' => $validated['department'] ?? null,
-        'category_id' => $validated['category'] ?? null,
-        'product_id' => $validated['product'] ?? null,
-        'quantity' => $validated['quantity'] ?? null,
-        'file_path' => $filePath,
-
-    ]);
-
-    return back()->with('success', 'Your message has been sent.');
-}
 }

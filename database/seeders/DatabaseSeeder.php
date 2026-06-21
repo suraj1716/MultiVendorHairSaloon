@@ -14,11 +14,18 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
-$this->call([
-    RoleSeeder::class,
-    UserSeeder::class,
-    DepartmentSeeder::class,
-    CategorySeeder::class
-]);
+        $this->call([
+            RoleSeeder::class,
+            DepartmentSeeder::class,
+            DepartmentCategorySeeder::class,
+            AdminAndVendorSeeder::class,   // ← creates owner@hairsalon.com (vendor)
+            UserSeeder::class,             // whatever this actually does
+            CustomerSeeder::class,
+            ProductSeeder::class,
+            GallerySeeder::class,
+            HeroBannerSeeder::class,
+            OrderAndBookingSeeder::class,
+            VoucherSeeder::class
+        ]);
     }
 }

@@ -1,126 +1,421 @@
-import InputError from "@/Components/Core/InputError";
-import InputLabel from "@/Components/Core/InputLabel";
-import PrimaryButton from "@/Components/Core/PrimaryButton";
-import TextInput from "@/Components/Core/TextInput";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import GuestLayout from "@/Layouts/GuestLayout";
-import { Head, Link, useForm } from "@inertiajs/react";
+import { useRef, useState } from 'react';
+import { useForm } from "@inertiajs/react";
 import { FormEventHandler } from "react";
+import GoogleLoginButton from '@/Components/Core/GoogleLoginButton';
 
-export default function Register() {
-  const { data, setData, post, processing, errors, reset } = useForm({
-    name: "",
-    email: "",
-    password: "",
-    password_confirmation: "",
-  });
+type RegisterClientErrors = {
+    name?: string;
+    email?: string;
+    password?: string;
+    password_confirmation?: string;
+};
 
-  const submit: FormEventHandler = (e) => {
-    e.preventDefault();
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    post(route("register"), {
-      onFinish: () => reset("password", "password_confirmation"),
-    });
-  };
+// ── Helpers ──────────────────────────────────────────────────
 
-  return (
-    <AuthenticatedLayout>
-      <div className="p-8">
-        <div className="card bg-white shadow max-w-[420px] mx-auto">
-          <div className="card-body">
-            {" "}
-            <Head title="Log in" />
-            <Head title="Register" />
-            <form onSubmit={submit}>
-              <div>
-                <InputLabel htmlFor="name" value="Name" />
+function inputStyle(hasError: boolean): React.CSSProperties {
+    return {
+        width: "100%",
+        background: "rgba(255,255,255,0.04)",
+        border: `1px solid ${hasError ? "rgba(220,60,60,0.6)" : "rgba(255,255,255,0.1)"}`,
+        borderRadius: "2px",
+        padding: "0.75rem 1rem",
+        color: "rgba(255,255,255,0.88)",
+        fontFamily: "Jost, sans-serif",
+        fontSize: "0.875rem",
+        letterSpacing: "0.02em",
+        outline: "none",
+        transition: "border-color 0.2s",
+        boxSizing: "border-box",
+    };
+}
 
-                <TextInput
-                  id="name"
-                  name="name"
-                  value={data.name}
-                  className="mt-1 block w-full"
-                  autoComplete="name"
-                  isFocused={true}
-                  onChange={(e) => setData("name", e.target.value)}
-                  required
-                />
-
-                <InputError message={errors.name} className="mt-2" />
-              </div>
-
-              <div className="mt-4">
-                <InputLabel htmlFor="email" value="Email" />
-
-                <TextInput
-                  id="email"
-                  type="email"
-                  name="email"
-                  value={data.email}
-                  className="mt-1 block w-full"
-                  autoComplete="username"
-                  onChange={(e) => setData("email", e.target.value)}
-                  required
-                />
-
-                <InputError message={errors.email} className="mt-2" />
-              </div>
-
-              <div className="mt-4">
-                <InputLabel htmlFor="password" value="Password" />
-
-                <TextInput
-                  id="password"
-                  type="password"
-                  name="password"
-                  value={data.password}
-                  className="mt-1 block w-full"
-                  autoComplete="new-password"
-                  onChange={(e) => setData("password", e.target.value)}
-                  required
-                />
-
-                <InputError message={errors.password} className="mt-2" />
-              </div>
-
-              <div className="mt-4">
-                <InputLabel
-                  htmlFor="password_confirmation"
-                  value="Confirm Password"
-                />
-
-                <TextInput
-                  id="password_confirmation"
-                  type="password"
-                  name="password_confirmation"
-                  value={data.password_confirmation}
-                  className="mt-1 block w-full"
-                  autoComplete="new-password"
-                  onChange={(e) =>
-                    setData("password_confirmation", e.target.value)
-                  }
-                  required
-                />
-
-                <InputError
-                  message={errors.password_confirmation}
-                  className="mt-2"
-                />
-              </div>
-
-              <div className="mt-4 flex items-center justify-end">
-                <Link href={route("login")} className="link">
-                  Already registered?
-                </Link>
-
-                <PrimaryButton className="ms-4" disabled={processing}>
-                  Register
-                </PrimaryButton>
-              </div>
-            </form>
-          </div>
+function Field({
+    label,
+    error,
+    children,
+}: {
+    label: string;
+    error?: string;
+    children: React.ReactNode;
+}) {
+    return (
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+            <label
+                style={{
+                    fontFamily: "Jost, sans-serif",
+                    fontSize: "0.68rem",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.4)",
+                }}
+            >
+                {label}
+            </label>
+            {children}
+            {error && error.trim() && (
+                <span
+                    style={{
+                        fontSize: "0.72rem",
+                        color: "rgba(255,110,110,0.85)",
+                        letterSpacing: "0.02em",
+                    }}
+                >
+                    {error}
+                </span>
+            )}
         </div>
-      </div>
-    </AuthenticatedLayout>
-  );
+    );
+}
+
+// ── Component ─────────────────────────────────────────────────
+
+export default function RegisterModal({
+    isOpen,
+    onClose,
+    onSwitchToLogin,
+    status,
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSwitchToLogin?: () => void;
+    status?: string;
+}) {
+    const { data, setData, post, processing, errors, reset } = useForm({
+        name: "",
+        email: "",
+        password: "",
+        password_confirmation: "",
+    });
+
+    const [clientErrors, setClientErrors] = useState<RegisterClientErrors>({});
+    const modalRef = useRef<HTMLDivElement>(null);
+
+    const validate = () => {
+        const next: RegisterClientErrors = {};
+
+        if (!data.name.trim()) {
+            next.name = "Name is required.";
+        }
+        if (!data.email.trim()) {
+            next.email = "Email is required.";
+        } else if (!EMAIL_REGEX.test(data.email)) {
+            next.email = "Enter a valid email address.";
+        }
+        if (!data.password) {
+            next.password = "Password is required.";
+        } else if (data.password.length < 8) {
+            next.password = "Password must be at least 8 characters.";
+        }
+        if (!data.password_confirmation) {
+            next.password_confirmation = "Please confirm your password.";
+        } else if (data.password_confirmation !== data.password) {
+            next.password_confirmation = "Passwords do not match.";
+        }
+
+        setClientErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
+    const submit: FormEventHandler = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+
+        post(route("register"), {
+            onSuccess: () => {
+                reset();
+                onClose();
+            },
+            onError: () => {
+                reset("password", "password_confirmation");
+            },
+        });
+    };
+
+    if (!isOpen) return null;
+
+    const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
+            onClose();
+        }
+    };
+
+    const nameError = clientErrors.name || errors.name;
+    const emailError = clientErrors.email || errors.email;
+    const passwordError = clientErrors.password || errors.password;
+    const confirmError = clientErrors.password_confirmation || errors.password_confirmation;
+
+    return (
+        <div
+            onClick={handleOverlayClick}
+            style={{
+                position: "fixed",
+                inset: 0,
+                zIndex: 99999,
+                background: "rgba(10, 9, 8, 0.72)",
+                backdropFilter: "blur(6px)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "1rem",
+            }}
+        >
+            <div
+                ref={modalRef}
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    position: "relative",
+                    background: "rgb(28, 26, 23)",
+                    border: "1px solid rgba(212, 175, 90, 0.2)",
+                    borderRadius: "2px",
+                    width: "100%",
+                    maxWidth: "420px",
+                    padding: "3rem 2.5rem",
+                    boxShadow: "0 32px 80px rgba(0,0,0,0.6)",
+                }}
+            >
+                {/* Close */}
+                <button
+                    onClick={onClose}
+                    aria-label="Close"
+                    style={{
+                        position: "absolute",
+                        top: "1.25rem",
+                        right: "1.25rem",
+                        background: "none",
+                        border: "none",
+                        color: "rgba(255,255,255,0.35)",
+                        fontSize: "1.25rem",
+                        lineHeight: 1,
+                        cursor: "pointer",
+                        padding: "0.25rem",
+                        transition: "color 0.2s",
+                    }}
+                    onMouseEnter={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.color = "rgba(212,175,90,0.9)")
+                    }
+                    onMouseLeave={(e) =>
+                        ((e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.35)")
+                    }
+                >
+                    ✕
+                </button>
+
+                {/* Header */}
+                <div style={{ textAlign: "center", marginBottom: "2.25rem" }}>
+                    <p
+                        style={{
+                            fontFamily: "Cormorant Garamond, Georgia, serif",
+                            fontSize: "0.65rem",
+                            letterSpacing: "0.25em",
+                            textTransform: "uppercase",
+                            color: "rgba(212,175,90,0.75)",
+                            marginBottom: "0.6rem",
+                        }}
+                    >
+                        Join us
+                    </p>
+                    <h2
+                        style={{
+                            fontFamily: "Cormorant Garamond, Georgia, serif",
+                            fontSize: "2rem",
+                            fontWeight: 300,
+                            color: "rgba(255,255,255,0.92)",
+                            letterSpacing: "0.04em",
+                            margin: 0,
+                        }}
+                    >
+                        Create Account
+                    </h2>
+                    <div
+                        style={{
+                            width: "2rem",
+                            height: "1px",
+                            background: "rgba(212,175,90,0.45)",
+                            margin: "0.85rem auto 0",
+                        }}
+                    />
+                </div>
+
+                {status && (
+                    <div
+                        style={{
+                            marginBottom: "1.25rem",
+                            padding: "0.65rem 1rem",
+                            background: "rgba(74,163,105,0.12)",
+                            border: "1px solid rgba(74,163,105,0.3)",
+                            borderRadius: "2px",
+                            color: "rgba(120,210,140,0.9)",
+                            fontSize: "0.8rem",
+                            letterSpacing: "0.02em",
+                        }}
+                    >
+                        {status}
+                    </div>
+                )}
+
+                <form onSubmit={submit} noValidate style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+
+                    <Field label="Name" error={nameError}>
+                        <input
+                            id="name"
+                            name="name"
+                            type="text"
+                            autoComplete="name"
+                            value={data.name}
+                            onChange={(e) => {
+                                setData("name", e.target.value);
+                                if (clientErrors.name)
+                                    setClientErrors((p) => ({ ...p, name: undefined }));
+                            }}
+                            placeholder="Your full name"
+                            style={inputStyle(!!nameError)}
+                        />
+                    </Field>
+
+                    <Field label="Email Address" error={emailError}>
+                        <input
+                            id="reg-email"
+                            name="email"
+                            type="text"
+                            autoComplete="username"
+                            value={data.email}
+                            onChange={(e) => {
+                                setData("email", e.target.value);
+                                if (clientErrors.email)
+                                    setClientErrors((p) => ({ ...p, email: undefined }));
+                            }}
+                            placeholder="your@email.com"
+                            style={inputStyle(!!emailError)}
+                        />
+                    </Field>
+
+                    <Field label="Password" error={passwordError}>
+                        <input
+                            id="reg-password"
+                            name="password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={data.password}
+                            onChange={(e) => {
+                                setData("password", e.target.value);
+                                if (clientErrors.password)
+                                    setClientErrors((p) => ({ ...p, password: undefined }));
+                            }}
+                            placeholder="••••••••"
+                            style={inputStyle(!!passwordError)}
+                        />
+                    </Field>
+
+                    <Field label="Confirm Password" error={confirmError}>
+                        <input
+                            id="reg-password-confirm"
+                            name="password_confirmation"
+                            type="password"
+                            autoComplete="new-password"
+                            value={data.password_confirmation}
+                            onChange={(e) => {
+                                setData("password_confirmation", e.target.value);
+                                if (clientErrors.password_confirmation)
+                                    setClientErrors((p) => ({ ...p, password_confirmation: undefined }));
+                            }}
+                            placeholder="••••••••"
+                            style={inputStyle(!!confirmError)}
+                        />
+                    </Field>
+
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        disabled={processing}
+                        style={{
+                            width: "100%",
+                            padding: "0.85rem",
+                            background: processing
+                                ? "rgba(212,175,90,0.4)"
+                                : "rgba(212,175,90,0.9)",
+                            border: "none",
+                            borderRadius: "2px",
+                            color: "rgb(28,26,23)",
+                            fontFamily: "Jost, sans-serif",
+                            fontSize: "0.72rem",
+                            fontWeight: 600,
+                            letterSpacing: "0.18em",
+                            textTransform: "uppercase",
+                            cursor: processing ? "not-allowed" : "pointer",
+                            transition: "background 0.2s",
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!processing)
+                                (e.currentTarget as HTMLButtonElement).style.background =
+                                    "rgba(212,175,90,1)";
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!processing)
+                                (e.currentTarget as HTMLButtonElement).style.background =
+                                    "rgba(212,175,90,0.9)";
+                        }}
+                    >
+                        {processing ? "Creating account…" : "Create Account"}
+                    </button>
+
+                    {/* Divider */}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+                        <span
+                            style={{
+                                color: "rgba(255,255,255,0.25)",
+                                fontSize: "0.7rem",
+                                letterSpacing: "0.1em",
+                                textTransform: "uppercase",
+                            }}
+                        >
+                            or
+                        </span>
+                        <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.08)" }} />
+                    </div>
+
+                    <GoogleLoginButton className="w-full" />
+
+                    {/* Switch to login */}
+                    <p
+                        style={{
+                            textAlign: "center",
+                            fontSize: "0.75rem",
+                            letterSpacing: "0.04em",
+                            color: "rgba(255,255,255,0.35)",
+                            margin: 0,
+                        }}
+                    >
+                        Already have an account?{" "}
+                        <button
+                            type="button"
+                            onClick={onSwitchToLogin}
+                            style={{
+                                background: "none",
+                                border: "none",
+                                padding: 0,
+                                color: "rgba(212,175,90,0.75)",
+                                fontSize: "0.75rem",
+                                letterSpacing: "0.04em",
+                                cursor: "pointer",
+                                textDecoration: "underline",
+                                textUnderlineOffset: "3px",
+                                transition: "color 0.2s",
+                            }}
+                            onMouseEnter={(e) =>
+                                ((e.currentTarget as HTMLButtonElement).style.color = "rgba(212,175,90,1)")
+                            }
+                            onMouseLeave={(e) =>
+                                ((e.currentTarget as HTMLButtonElement).style.color = "rgba(212,175,90,0.75)")
+                            }
+                        >
+                            Sign in
+                        </button>
+                    </p>
+                </form>
+            </div>
+        </div>
+    );
 }

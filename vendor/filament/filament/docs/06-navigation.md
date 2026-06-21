@@ -283,10 +283,10 @@ public function panel(Panel $panel): Panel
                 ->icon('heroicon-o-presentation-chart-line')
                 ->group('Reports')
                 ->sort(3),
-            NavigationItem::make('dashboard')
-                ->label(fn (): string => __('filament-panels::pages/dashboard.title'))
+            NavigationItem::make('home')
+                ->label(fn (): string => __('filament-panels::pages/home.title'))
                 ->url(fn (): string => Dashboard::getUrl())
-                ->isActiveWhen(fn () => request()->routeIs('filament.admin.pages.dashboard')),
+                ->isActiveWhen(fn () => request()->routeIs('filament.admin.pages.home')),
             // ...
         ]);
 }
@@ -394,7 +394,7 @@ public function panel(Panel $panel): Panel
             return $builder->items([
                 NavigationItem::make('Dashboard')
                     ->icon('heroicon-o-home')
-                    ->isActiveWhen(fn (): bool => request()->routeIs('filament.admin.pages.dashboard'))
+                    ->isActiveWhen(fn (): bool => request()->routeIs('filament.admin.pages.home'))
                     ->url(fn (): string => Dashboard::getUrl()),
                 ...UserResource::getNavigationItems(),
                 ...Settings::getNavigationItems(),

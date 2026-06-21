@@ -22,7 +22,7 @@ namespace Stripe;
  * creation to finalize the invoice.
  *
  * If your invoice is configured to be billed by sending an email, then based on your
- * <a href="https://dashboard.stripe.com/account/billing/automatic">email settings</a>,
+ * <a href="https://home.stripe.com/account/billing/automatic">email settings</a>,
  * Stripe will email the invoice to your customer and await payment. These
  * emails can contain a link to a hosted page to pay the invoice.
  *

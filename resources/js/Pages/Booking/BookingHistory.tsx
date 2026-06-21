@@ -73,7 +73,6 @@ export default function BookingHistory() {
     setErrors({});
     setDialogOpen(true);
   };
-console.log('products',orders)
   const handleCancelBooking = (item: OrderItem, orderStatus: string) => {
     if (orderStatus !== "draft" && orderStatus !== "paid") {
       console.warn(
@@ -95,7 +94,6 @@ console.log('products',orders)
           {},
           {
             onSuccess: () => {
-              console.log("Booking cancelled");
             },
             onError: (errors) => {
               console.error("Failed to cancel booking", errors);
@@ -107,27 +105,23 @@ console.log('products',orders)
   };
 
  const handleConfirmBooking = (date: string, slot: string) => {
-  console.log("Inside handleConfirmBooking");
-  console.log("editingItem:", editingItem);
+
 
   if (!editingItem || !editingItem.booking) {
     console.warn("Missing editingItem or booking");
     return;
   }
 
-  console.log(editingItem.booking.id, date, slot);
   router.put(
     route("bookings.update", editingItem.booking.id),
     { booking_date: date, time_slot: slot },
     {
       onSuccess: () => {
-        console.log("Booking updated successfully");
         setEditingItem(null);
         setConfirmModalOpen(false);
         setErrors({});
       },
       onError: (errorBag) => {
-        console.error("Error updating booking", errorBag);
         setErrors(errorBag);
         setConfirmModalOpen(false);
         setDialogOpen(true);
@@ -366,7 +360,6 @@ console.log('products',orders)
             setDialogOpen(true);
           }}
           onSave={() => {
-            console.log("hit");
             handleConfirmBooking(bookingDate, timeSlot);
             setConfirmModalOpen(false);
           }}

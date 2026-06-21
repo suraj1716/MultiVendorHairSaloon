@@ -5,7 +5,7 @@ import LaracastsBanner from "@components/LaracastsBanner.astro"
 
 ## Overview
 
-Panels are the top-level container in Filament, allowing you to build feature-rich admin panels that include pages, resources, forms, tables, notifications, actions, infolists, and widgets. All Panels include a default dashboard that can include widgets with statistics, charts, tables, and more.
+Panels are the top-level container in Filament, allowing you to build feature-rich admin panels that include pages, resources, forms, tables, notifications, actions, infolists, and widgets. All Panels include a default home that can include widgets with statistics, charts, tables, and more.
 
 <LaracastsBanner
     title="Introduction to Filament"
@@ -20,7 +20,7 @@ Before using Filament, you should be familiar with Laravel. Filament builds upon
 
 ## The demo project
 
-This guide covers building a simple patient management system for a veterinary practice using Filament. It will support adding new patients (cats, dogs, or rabbits), assigning them to an owner, and recording which treatments they received. The system will have a dashboard with statistics about the types of patients and a chart showing the number of treatments administered over the past year.
+This guide covers building a simple patient management system for a veterinary practice using Filament. It will support adding new patients (cats, dogs, or rabbits), assigning them to an owner, and recording which treatments they received. The system will have a home with statistics about the types of patients and a chart showing the number of treatments administered over the past year.
 
 ## Setting up the database and models
 
@@ -649,9 +649,9 @@ public function table(Table $table): Table
 
 ## Introducing widgets
 
-Filament widgets are components that display information on your dashboard, especially statistics. Widgets are typically added to the default [Dashboard](../panels/dashboard) of the panel, but you can add them to any page, including resource pages. Filament includes built-in widgets like the [stats widget](../widgets/stats-overview), to render important statistics in a simple overview; [chart widget](../widgets/charts), which can render an interactive chart; and [table widget](../panels/dashboard#table-widgets), which allows you to easily embed the Table Builder.
+Filament widgets are components that display information on your home, especially statistics. Widgets are typically added to the default [Dashboard](../panels/home) of the panel, but you can add them to any page, including resource pages. Filament includes built-in widgets like the [stats widget](../widgets/stats-overview), to render important statistics in a simple overview; [chart widget](../widgets/charts), which can render an interactive chart; and [table widget](../panels/home#table-widgets), which allows you to easily embed the Table Builder.
 
-Let's add a stats widget to our default dashboard page that includes a stat for each type of patient and a chart to visualize treatments administered over time.
+Let's add a stats widget to our default home page that includes a stat for each type of patient and a chart to visualize treatments administered over time.
 
 ### Creating a stats widget
 
@@ -687,11 +687,11 @@ class PatientTypeOverview extends BaseWidget
 }
 ```
 
-Open your dashboard, and you should see your new widget displayed. Each stat should show the total number of patients for the specified type.
+Open your home, and you should see your new widget displayed. Each stat should show the total number of patients for the specified type.
 
 ### Creating a chart widget
 
-Let's add a chart to the dashboard to visualize the number of treatments administered over time. Use the following artisan command to create a new chart widget:
+Let's add a chart to the home to visualize the number of treatments administered over time. Use the following artisan command to create a new chart widget:
 
 ```bash
 php artisan make:filament-widget TreatmentsChart --chart
@@ -738,9 +738,9 @@ protected function getData(): array
 }
 ```
 
-Now, check out your new chart widget in the dashboard!
+Now, check out your new chart widget in the home!
 
-> You can [customize your dashboard page](../panels/dashboard#customizing-the-dashboard-page) to change the grid and how many widgets are displayed.
+> You can [customize your home page](../panels/home#customizing-the-home-page) to change the grid and how many widgets are displayed.
 
 ## Next steps with the Panel Builder
 

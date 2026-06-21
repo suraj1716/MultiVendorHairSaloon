@@ -2,709 +2,1066 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 import BookingWidget from "@/Pages/Booking/BookingWidget";
 import CartItem from "@/Components/App/CartItem";
-import ShippingAddressSelector from "@/Components/App/ShippingAddressSelector";
-import PrimaryButton from "@/Components/Core/PrimaryButton";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
-import {
-  CalendarIcon,
-  ClockIcon,
-  CreditCardIcon,
-} from "@heroicons/react/24/outline";
-import { Inertia, Method } from "@inertiajs/inertia";
 import { Head, Link, router, usePage } from "@inertiajs/react";
-import { time } from "console";
-import { Button } from "@/Components/ui/button"; // shadcn button
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
-import { ScrollArea } from "@/Components/ui/scroll-area";
 import { ShoppingCartIcon } from "@heroicons/react/20/solid";
+import axios from "axios";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function Index({
   csrf_token,
   cartItems,
-  totalQuantity,
   totalPrice,
   shippingAddresses,
-  bookings,
   showBookingWidget,
   showShippingForm,
   vendorId,
 }: any) {
+  // ── Promo ──────────────────────────────────────────────────────────────────
+  const [promoCode, setPromoCode] = useState("");
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [promoDetails, setPromoDetails] = useState<any>(null);
+
+  // ── Shipping ───────────────────────────────────────────────────────────────
   const [selectedAddressId, setSelectedAddressId] = useState(
-    shippingAddresses.find((a: any) => a.is_default)?.id ?? null
+    shippingAddresses.find((a: any) => a.is_default)?.id ?? null,
   );
+
+  // ── Booking ────────────────────────────────────────────────────────────────
   const [bookingDate, setBookingDate] = useState(
-    () => localStorage.getItem("bookingDate") || ""
+    () => localStorage.getItem("bookingDate") || "",
   );
   const [timeSlot, setTimeSlot] = useState(
-    () => localStorage.getItem("timeSlot") || ""
+    () => localStorage.getItem("timeSlot") || "",
   );
   const [bookingConfirmed, setBookingConfirmed] = useState(() => {
-    const storedDate = localStorage.getItem("bookingDate");
-    const storedSlot = localStorage.getItem("timeSlot");
-    return !!(storedDate && storedSlot);
+    const d = localStorage.getItem("bookingDate");
+    const t = localStorage.getItem("timeSlot");
+    return !!(d && t);
   });
+  const [dialogOpen, setDialogOpen] = useState(false);
 
+  // ── Steps ──────────────────────────────────────────────────────────────────
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [step, setStep] = useState(() =>
+    parseInt(localStorage.getItem("checkoutStep") || "1", 10),
+  );
+  const steps = ["Cart", "Booking", "Review"];
+
+  // ── Loading ────────────────────────────────────────────────────────────────
+  const [loading, setLoading] = useState(false);
+
+  // ── Flash ──────────────────────────────────────────────────────────────────
   const { props } = usePage();
-  type FlashProps = {
-    success?: string;
-    error?: string;
-  };
-
-  const flash: FlashProps = props.flash || {};
+  const flash: any = (props as any).flash || {};
   useEffect(() => {
-    if (flash.success) {
-      toast.success(flash.success); // ← using react-toastify
-    }
-    if (flash.error) {
-      toast.error(flash.error);
-    }
+    if (flash.success) toast.success(flash.success);
+    if (flash.error) toast.error(flash.error);
+    // Show real checkout error if backend exposes it
+    if (flash.checkout) toast.error(flash.checkout);
   }, [flash]);
 
-  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [step, setStep] = useState(() => {
-    const savedStep = localStorage.getItem("checkoutStep");
-    return savedStep ? parseInt(savedStep, 10) : 1;
-  });
+  // ── Persist step & booking to localStorage ─────────────────────────────────
+  useEffect(
+    () => localStorage.setItem("checkoutStep", step.toString()),
+    [step],
+  );
+  useEffect(
+    () => localStorage.setItem("bookingDate", bookingDate),
+    [bookingDate],
+  );
+  useEffect(() => localStorage.setItem("timeSlot", timeSlot), [timeSlot]);
 
+  // ── Scroll step into view ──────────────────────────────────────────────────
   useEffect(() => {
-    localStorage.setItem("checkoutStep", step.toString());
-  }, [step]);
-
-  useEffect(() => {
-    const currentRef = stepRefs.current[step - 1];
-    if (currentRef) {
-      currentRef.scrollIntoView({
+    const ref = stepRefs.current[step - 1];
+    if (ref)
+      ref.scrollIntoView({
         behavior: "smooth",
         inline: "center",
         block: "nearest",
       });
-    }
   }, [step]);
 
+  // ── Re-hydrate booking when returning to step 2 ────────────────────────────
   useEffect(() => {
     if (step === 2) {
-      const storedDate = localStorage.getItem("bookingDate") || "";
-      const storedSlot = localStorage.getItem("timeSlot") || "";
-
-      setBookingDate(storedDate);
-      setTimeSlot(storedSlot);
-
-      setBookingConfirmed(!!(storedDate && storedSlot));
+      const d = localStorage.getItem("bookingDate") || "";
+      const t = localStorage.getItem("timeSlot") || "";
+      setBookingDate(d);
+      setTimeSlot(t);
+      setBookingConfirmed(!!(d && t));
     }
   }, [step]);
 
-  const [loading, setLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  // ── Derived values ─────────────────────────────────────────────────────────
+  const hasAppointmentItems = Object.values(cartItems).some((group: any) => {
+    const vt = group.user.vendor_type;
+    if (!vt) return false;
+    // handle both string and object (enum cast)
+    return (typeof vt === "string" ? vt : vt?.value) === "appointment";
+  });
+  const totalBookingFee = bookingConfirmed
+    ? Object.values(cartItems)
+        .filter((g: any) => g.user.vendor_type === "appointment")
+        .reduce(
+          (sum: number, g: any) => sum + parseFloat(g.user.booking_fee || "0"),
+          0,
+        )
+    : 0;
 
-  useEffect(() => {
-    const storedDate = localStorage.getItem("bookingDate") || "";
-    const storedSlot = localStorage.getItem("timeSlot") || "";
-
-    setBookingDate(storedDate);
-    setTimeSlot(storedSlot);
-
-    if (storedDate && storedSlot) {
-      setBookingConfirmed(true);
-    }
-  }, []);
-
-  // 1. Check if any cart group has vendor_type "appointment"
-  const hasAppointmentItems = Object.values(cartItems).some(
-    (group: any) => group.user.vendor_type === "appointment"
-  );
-
-  // 2. Calculate total booking fee ONLY if user said "Yes"
-  const totalBookingFee =
-    bookingConfirmed === true
-      ? Object.values(cartItems)
-          .filter((group: any) => group.user.vendor_type === "appointment")
-          .reduce((sum: number, group: any) => {
-            const fee = parseFloat(group.user.booking_fee || "0");
-            return sum + (isNaN(fee) ? 0 : fee);
-          }, 0)
-      : 0;
-
-  // 3. Subtotal with booking fee added
   const subtotalWithBooking = totalPrice + totalBookingFee;
 
-  useEffect(() => {
-    if (bookingDate) {
-      localStorage.setItem("bookingDate", bookingDate);
-    }
-  }, [bookingDate]);
+  const allGiftCards = Object.values(cartItems)
+    .flatMap((g: any) => g.items)
+    .every((item: any) => item.is_gift_card === true);
 
-  useEffect(() => {
-    if (timeSlot) {
-      localStorage.setItem("timeSlot", timeSlot);
+  // ── Discounted total (pure — no side effects) ──────────────────────────────
+  const getDiscountedTotal = (): number => {
+    const base = bookingConfirmed ? subtotalWithBooking : totalPrice;
+    if (!promoApplied || !promoDetails) return base;
+    const discount = Number(promoDetails.discount_amount ?? 0);
+    if (!Number.isFinite(discount) || discount <= 0) return base;
+    return Math.max(0, base - discount);
+  };
+
+  // ── Promo toast (only on apply, not on every render) ──────────────────────
+ const handleApplyPromo = async () => {
+
+  if (promoApplied) {
+    toast.error("A promo code is already applied. Remove it first.");
+    return;
+  }
+  try {
+    const orderTotal = bookingConfirmed ? subtotalWithBooking : totalPrice;
+
+    const res = await fetch("/vouchers/validate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": csrf_token,
+      },
+      body: JSON.stringify({
+        code: promoCode,
+        order_total: orderTotal, // ← add this
+      }),
+    });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Invalid code");
+        return;
+      }
+      setPromoApplied(true);
+      setPromoDetails(data);
+      toast.success("Promo applied!");
+    } catch {
+      toast.error("Failed to apply promo");
     }
-  }, [timeSlot]);
+  };
+
+  // ── Core fix: wrap Inertia router.post in a real Promise ───────────────────
+  const postAsync = (url: string, data: Record<string, any>): Promise<void> =>
+    new Promise((resolve, reject) => {
+      router.post(url, data, {
+        preserveScroll: true,
+        onSuccess: () => resolve(),
+        onError: (errors) => reject(new Error(JSON.stringify(errors))),
+      });
+    });
+
+  // ── Checkout ───────────────────────────────────────────────────────────────
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 1) Validation
-    if (showShippingForm && !selectedAddressId) {
-      return alert("Please select a shipping address.");
-    }
-    if (bookingConfirmed && (!bookingDate || !timeSlot)) {
-      return alert("Please select booking date and time.");
+    // Prevent double submission — button is disabled while loading=true
+    if (loading) return;
+
+    if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
+      toast.error("Please select a booking date and time before proceeding.");
+      return;
     }
 
     setLoading(true);
 
-    // pick out a single vendor ID (or leave null for “all vendors”)
     const primitiveVendorId = Array.isArray(vendorId) ? vendorId[0] : vendorId;
 
-    // 2) Prepare and log the booking payload
-    const bookingPayload = {
-      booking_date: bookingDate,
-      hasBooking: bookingConfirmed ? "1" : "0",
-      hasShipping: showShippingForm ? "1" : "0",
-      time_slot: timeSlot,
-      vendor_user_id: primitiveVendorId,
-    };
-    console.log("📦 Booking POST payload:", bookingPayload);
-
     try {
-      // 3) Save the booking
-    await router.post(route("bookings.store"), bookingPayload, {
-  preserveState: true,
-  preserveScroll: true,
-});
+      // Store booking first (only for non-gift-card carts with a booking)
+      if (!allGiftCards && bookingConfirmed) {
+        await axios.post(route("bookings.store"), {
+          booking_date: bookingDate,
+          hasBooking: "1",
+          hasShipping: showShippingForm ? "1" : "0",
+          time_slot: timeSlot,
+          vendor_user_id: primitiveVendorId,
+        });
+      }
 
-      // 4) Prepare and log the checkout payload
-      const checkoutPayload = {
-        shipping_address_id: selectedAddressId,
-        vendor_id: null, // <-- null means “checkout all grouped vendors”
-      };
-      console.log("🧾 Checkout POST payload:", checkoutPayload);
+      // Fire checkout — Inertia will follow the Stripe redirect
+      router.visit(route("cart.checkout"), {
+        method: "post",
+        data: {
+          shipping_address_id: selectedAddressId ?? null,
+          vendor_id: null,
+          total_price: getDiscountedTotal(),
+          voucher_id: promoDetails?.id ?? null,
+        },
+        onError: (errors) => {
+          const msg =
+            Object.values(errors)[0] ?? "Checkout failed. Please try again.";
+          toast.error(String(msg));
+          setLoading(false); // re-enable button on error
+        },
+        // onSuccess fires if Laravel returns a non-redirect (shouldn't happen
+        // in normal flow since Stripe redirects, but just in case)
+        onSuccess: () => {
+          setLoading(false);
+        },
+      });
 
-      // 5) Trigger Stripe checkout
-   router.visit(route("cart.checkout"), {
-  method: "post",
-  data: checkoutPayload,
-  onError: (errors) => {
-    console.error("Validation errors:", errors);
-    // Show errors in UI as needed
-  },
-});
-
-
-      // 6) Clean up localStorage & reset UI
+      // Clean up — fires before Stripe redirect, that's fine
       ["bookingDate", "timeSlot", "checkoutStep"].forEach((k) =>
-        localStorage.removeItem(k)
+        localStorage.removeItem(k),
       );
       setBookingDate("");
       setTimeSlot("");
       setBookingConfirmed(false);
       setStep(1);
-    } catch (err) {
-      console.error("Checkout failed", err);
-      alert("Checkout failed. Please try again.");
+    } catch (err: any) {
+      console.error("Booking store failed:", err);
+      toast.error("Could not save your booking. Please try again.");
       setLoading(false);
     }
   };
 
+  // ── Shared button styles ───────────────────────────────────────────────────
+  const btnPrimary: React.CSSProperties = {
+    background: "var(--color-primary)",
+    color: "var(--color-text-inverse)",
+    border: "1px solid var(--color-primary)",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-sm)",
+    fontWeight: 500,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    padding: "0.875rem 2rem",
+    cursor: "pointer",
+    transition: "background var(--transition-base)",
+  };
+  const btnOutline: React.CSSProperties = {
+    background: "transparent",
+    color: "var(--color-text-muted)",
+    border: "1px solid var(--color-border)",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-sm)",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
+    padding: "0.875rem 2rem",
+    cursor: "pointer",
+  };
+  const btnAccent: React.CSSProperties = {
+    background: "var(--color-accent)",
+    color: "var(--color-bg-dark)",
+    border: "none",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-xs)",
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    padding: "0.75rem 1.5rem",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+  };
 
-function EmptyCartMessage() {
-return (
-    <div className="flex flex-col md:flex-row items-center justify-center min-h-[60vh] px-6 md:px-20 bg-gray-50 rounded-lg ">
-
-      {/* Left side - icon */}
-      <div className="flex items-center justify-center w-full md:w-1/2 mb-8 md:mb-0">
-        <ShoppingCartIcon className="w-40 h-40 text-purple-600 opacity-70" />
-      </div>
-
-      {/* Right side - text + button */}
-      <div className="w-full md:w-1/2 text-center md:text-left space-y-6">
-        <h2 className="text-3xl font-extrabold text-gray-900">
-          Your Cart is Empty
-        </h2>
-        <p className="text-lg text-gray-600 max-w-md mx-auto md:mx-0">
-          Looks like you haven’t added anything to your cart yet. Start shopping now and find something you love!
-        </p>
-        <Link
-           href="/shop"
-          className="inline-block bg-purple-600 text-white text-lg font-semibold rounded-md px-10 py-4 hover:bg-purple-700 transition"
-        >
-          Shop Now
-        </Link>
-      </div>
-    </div>
-  );
-}
-
+  // ──────────────────────────────────────────────────────────────────────────
   return (
     <AuthenticatedLayout>
+      <ToastContainer position="top-right" autoClose={4000} />
       <Head title="Your Cart" />
-{Object.keys(cartItems).length > 0 ? (
-      <div className="max-w-7xl mx-auto px-8 py-10 bg-gray-50 min-h-screen">
-        {/* Step Navigation */}
-        <ScrollArea className="mb-8">
-          <div className="flex items-center justify-center gap-10 px-4 min-w-max select-none">
-            {["Cart", "Shipping/Booking", "Review"].map((label, index) => {
-              const stepIndex = index + 1;
-              const isCompleted = step > stepIndex;
-              const isActive = step === stepIndex;
 
-              return (
-                <div
-                  key={label}
-                  ref={(el) => (stepRefs.current[index] = el)}
-                  className="flex items-center gap-3"
-                >
-                  <Button
-                    variant={
-                      isActive ? "default" : isCompleted ? "outline" : "ghost"
-                    }
-                    size="sm"
-                    className={`
-                    w-12 h-12 rounded-full p-0 text-xl font-semibold transition-all duration-300
-                    ${
-                      isActive
-                        ? "bg-purple-700 text-white"
-                        : isCompleted
-                        ? "border-purple-500 text-purple-600 hover:bg-purple-100"
-                        : "text-gray-400 hover:text-gray-600 hover:bg-gray-200"
-                    }
-                  `}
-                    onClick={() => setStep(stepIndex)}
-                    aria-current={isActive ? "step" : undefined}
+      <style>{`
+        .co-page {
+          max-width: 860px;
+          margin: 0 auto;
+          padding: var(--space-3xl) var(--space-lg);
+          font-family: var(--font-body);
+        }
+
+        /* Step indicator */
+        .co-steps {
+          display: flex;
+          align-items: center;
+          margin-bottom: var(--space-3xl);
+          padding-bottom: var(--space-xl);
+          border-bottom: 1px solid var(--color-border);
+        }
+        .co-step-btn {
+          display: flex; align-items: center; gap: 10px;
+          background: none; border: none; cursor: pointer; padding: 0;
+        }
+        .co-step-circle {
+          width: 36px; height: 36px;
+          border-radius: var(--radius-full);
+          display: flex; align-items: center; justify-content: center;
+          font-family: var(--font-display);
+          font-size: 1rem; font-weight: 400;
+          flex-shrink: 0;
+          transition: all var(--transition-base);
+        }
+        .co-step-label {
+          font-family: var(--font-body);
+          font-size: var(--text-sm);
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          font-weight: 400;
+          white-space: nowrap;
+        }
+        .co-step-line {
+          flex: 1; height: 1px;
+          margin: 0 var(--space-md);
+          transition: background var(--transition-base);
+        }
+
+        /* Sections */
+        .co-card {
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          padding: var(--space-xl);
+        }
+        .co-card-warm {
+          background: var(--color-surface-warm);
+          border: 1px solid var(--color-border);
+          padding: var(--space-xl);
+        }
+
+        /* Order summary rows */
+        .co-summary-row {
+          display: flex; justify-content: space-between;
+          padding: var(--space-sm) 0;
+          border-bottom: 1px solid var(--color-border);
+          font-family: var(--font-body);
+          font-size: var(--text-sm);
+          color: var(--color-text-muted);
+        }
+
+        /* Booking confirmed bar */
+        .co-booking-bar {
+          background: var(--color-surface-warm);
+          border: 1px solid var(--color-border);
+          padding: var(--space-lg) var(--space-xl);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: var(--space-md);
+        }
+
+        /* Promo input */
+        .co-promo-input {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          font-family: var(--font-body);
+          font-size: var(--text-sm);
+          color: var(--color-text);
+          background: var(--color-surface);
+          border: 1px solid var(--color-border);
+          outline: none;
+          transition: border-color var(--transition-fast);
+        }
+        .co-promo-input:focus { border-color: var(--color-primary); }
+
+        /* Empty */
+        .co-empty {
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          min-height: 60vh; text-align: center; gap: var(--space-lg);
+        }
+
+        @media (max-width: 540px) {
+          .co-page { padding: var(--space-xl) var(--space-md); }
+          .co-step-label { display: none; }
+        }
+      `}</style>
+
+      <div className="co-page">
+        {Object.keys(cartItems).length > 0 ? (
+          <>
+            {/* ── Step Indicator ── */}
+            <div className="co-steps">
+              {steps.map((label, index) => {
+                const stepIndex = index + 1;
+                const isActive = step === stepIndex;
+                const isDone = step > stepIndex;
+                return (
+                  <div
+                    key={label}
+                    ref={(el) => (stepRefs.current[index] = el)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      flex: index < steps.length - 1 ? 1 : "none",
+                    }}
                   >
-                    {stepIndex}
-                  </Button>
-
-                  <span
-                    className={`text-lg font-semibold transition-colors duration-300 ${
-                      isActive
-                        ? "text-purple-700"
-                        : isCompleted
-                        ? "text-purple-600"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {label}
-                  </span>
-
-                  {index < 2 && (
-                    <div className="w-14 h-[3px] rounded bg-gray-300 dark:bg-gray-600" />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </ScrollArea>
-
-        {/* Step Content Wrapper */}
-        <div className="mt-8">
-          {/* Step 1: Shopping Cart */}
-          {step === 1 && (
-            <Card className=" rounded-lg border border-gray-200">
-              <CardHeader className="border-b border-gray-300">
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  Step 1: Shopping Cart
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {Object.keys(cartItems).length === 0 && (
-                  <p className="py-12 text-center text-gray-400 text-xl font-medium">
-                    Your cart is empty.
-                  </p>
-                )}
-
-                {Object.values(cartItems).map((group: any) => (
-                  <section key={group.user.id} className="mb-8">
-                    <div className="flex p-4 items-center justify-between pb-3 border-b border-gray-300 mb-4">
-                      <Link
-                        href="/"
-                        className="underline text-xl font-semibold text-gray-800 hover:text-purple-600"
+                    <button
+                      className="co-step-btn"
+                      onClick={() => setStep(stepIndex)}
+                    >
+                      <span
+                        className="co-step-circle"
+                        style={{
+                          border: `1px solid ${isActive ? "var(--color-primary)" : isDone ? "var(--color-accent)" : "var(--color-border)"}`,
+                          background: isActive
+                            ? "var(--color-primary)"
+                            : isDone
+                              ? "var(--color-accent)"
+                              : "transparent",
+                          color:
+                            isActive || isDone
+                              ? "var(--color-text-inverse)"
+                              : "var(--color-text-light)",
+                        }}
                       >
-                        {group.user.name}
-                      </Link>
-                    </div>
+                        {isDone ? "✓" : stepIndex}
+                      </span>
+                      <span
+                        className="co-step-label"
+                        style={{
+                          color: isActive
+                            ? "var(--color-primary)"
+                            : "var(--color-text-light)",
+                          fontWeight: isActive ? 500 : 400,
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                    {index < steps.length - 1 && (
+                      <div
+                        className="co-step-line"
+                        style={{
+                          background: isDone
+                            ? "var(--color-accent)"
+                            : "var(--color-border)",
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
 
-                    <div className="space-y-4">
+            {/* ══════════════════ STEP 1: CART ══════════════════ */}
+            {step === 1 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-xl)",
+                }}
+              >
+                {Object.values(cartItems).map((group: any) => (
+                  <div key={group.user.id}>
+                    <h2
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--text-2xl)",
+                        fontWeight: 400,
+                        color: "var(--color-text)",
+                        marginBottom: "var(--space-md)",
+                        paddingBottom: "var(--space-sm)",
+                        borderBottom: "1px solid var(--color-border)",
+                      }}
+                    >
+                      {group.user.name}
+                    </h2>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "var(--space-sm)",
+                      }}
+                    >
                       {group.items.map((item: any) => (
                         <CartItem key={item.id} item={item} />
                       ))}
                     </div>
-                  </section>
+                  </div>
                 ))}
 
-                <div className="flex justify-end">
-                  <Button
-                    className="px-10 py-5 text-xl font-semibold rounded-md bg-purple-700 text-white hover:bg-purple-800 transition"
-                    onClick={() => setStep(2)}
-                  >
-                    Next: Shipping / Booking
-                  </Button>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    paddingTop: "var(--space-md)",
+                  }}
+                >
+                  <button style={btnPrimary} onClick={() => setStep(2)}>
+                    Next: Booking →
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
 
-          {/* Step 2: Shipping / Booking */}
-          {step === 2 && (
-            <Card className=" rounded-lg border border-gray-200">
-              <CardHeader className="border-b border-gray-300">
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  Step 2: Shipping or Booking
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {/* Booking Section */}
-                {hasAppointmentItems && !bookingDate && !timeSlot && (
-                  <div className="p-6 mt-10 rounded-lg bg-yellow-50 border border-yellow-300">
-                    <p className="text-xl font-semibold mb-3 text-yellow-900">
-                      Your cart contains items that require a professional
-                      installer:
-                    </p>
-
+            {/* ══════════════════ STEP 2: BOOKING ══════════════════ */}
+            {step === 2 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-xl)",
+                }}
+              >
+                {/* Appointment vendor info (not yet booked) */}
+                {hasAppointmentItems && !bookingConfirmed && (
+                  <>
                     {Object.values(cartItems)
-                      .filter(
-                        (group: any) => group.user.vendor_type === "appointment"
-                      )
+                      .filter((g: any) => g.user.vendor_type === "appointment")
                       .map((group: any) => (
-                        <div
-                          key={group.user.id}
-                          className="mb-6 p-5 rounded-lg bg-yellow-100 border border-yellow-400"
-                        >
-                          <p className="mb-3 font-semibold text-yellow-900 text-lg">
-                            Would you like to book an appointment for items from{" "}
-                            <span className="underline">{group.user.name}</span>
-                            ?
-                          </p>
-
-                          <p className="mb-4 text-yellow-800 text-base">
-                            Booking fee:{" "}
-                            <strong>
-                              ${parseFloat(group.user.booking_fee).toFixed(2)}
+                        <div className="co-card-warm" key={group.user.id}>
+                          <p
+                            style={{
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--text-sm)",
+                              color: "var(--color-text-muted)",
+                              marginBottom: "var(--space-md)",
+                            }}
+                          >
+                            A booking fee of{" "}
+                            <strong style={{ color: "var(--color-primary)" }}>
+                              $
+                              {parseFloat(
+                                group.user.booking_fee || "0",
+                              ).toFixed(2)}
                             </strong>{" "}
-                            added to subtotal.
+                            will be added to your subtotal.
                           </p>
-
-                          <ul className="list-disc list-inside text-yellow-800 mb-5 text-base">
-                            {group.items.map((item: any) => (
-                              <li key={item.id}>
-                                {item.title} — Qty: {item.quantity}
-                              </li>
-                            ))}
-                          </ul>
-
-                          <div className="flex-row space-y-4">
-                            <Button
-                              variant="default"
-                              onClick={() => {
-                                setBookingConfirmed(true);
-                                setDialogOpen(true);
-                              }}
-                              className="px-8 py-3 text-lg font-semibold"
-                            >
-                              Yes, book installer
-                            </Button>
-                          </div>
+                          <button
+                            style={btnAccent}
+                            onClick={() => {
+                              setBookingConfirmed(true);
+                              setDialogOpen(true);
+                            }}
+                          >
+                            Book Appointment
+                          </button>
                         </div>
                       ))}
-                  </div>
+                  </>
                 )}
 
-                {/* Booking Widget */}
-                {showBookingWidget && bookingConfirmed && (
-                  <div className="relative w-screen/2 left-1/2 -translate-x-1/2 mt-6 mb-20">
-                    <div className="bg-white border border-gray-200 rounded-lg  md:p-5 flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-                      {/* Left: Selected Date & Time */}
-                      <div className="text-gray-800 space-y-2">
-                        <p className="text-lg">
-                          <strong className="text-lg">Selected Date:</strong>{" "}
-                          {bookingDate}
-                        </p>
-                        <p className="text-lg">
-                          <strong>Selected Time:</strong> {timeSlot}
-                        </p>
-                      </div>
-
-                      {/* Right: Actions */}
-                      <div className="flex space-x-3">
-                        <Button
-                          variant="outline"
-                          className="px-5 py-2 text-lg font-semibold rounded-md border-purple-600 text-purple-600 hover:bg-purple-50"
-                          onClick={() => setDialogOpen(true)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          className="px-5 py-2 text-sm font-semibold rounded-md bg-red-600 hover:bg-red-700 text-white"
-                          onClick={() => {
-                            setBookingConfirmed(false);
-                            setBookingDate("");
-                            setTimeSlot("");
-                            localStorage.removeItem("bookingDate");
-                            localStorage.removeItem("timeSlot");
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
+                {/* Booking confirmed bar */}
+                {bookingConfirmed && bookingDate && timeSlot && (
+                  <div className="co-booking-bar">
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.15em",
+                          textTransform: "uppercase",
+                          color: "var(--color-accent)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Appointment Confirmed
+                      </span>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Date:
+                        </strong>{" "}
+                        {bookingDate}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Time:
+                        </strong>{" "}
+                        {timeSlot}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                      <button
+                        onClick={() => setDialogOpen(true)}
+                        style={{
+                          background: "transparent",
+                          color: "var(--color-primary)",
+                          border: "1px solid var(--color-primary)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          padding: "0.5rem 1.25rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBookingConfirmed(false);
+                          setBookingDate("");
+                          setTimeSlot("");
+                          localStorage.removeItem("bookingDate");
+                          localStorage.removeItem("timeSlot");
+                        }}
+                        style={{
+                          background: "transparent",
+                          color: "var(--color-error)",
+                          border: "1px solid var(--color-error)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          padding: "0.5rem 1.25rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
                     </div>
                   </div>
                 )}
 
-                <BookingWidget
-                  bookingDate={bookingDate}
-                  setBookingDate={setBookingDate}
-                  timeSlot={timeSlot}
-                  setTimeSlot={setTimeSlot}
-                  open={dialogOpen}
-                  onOpenChange={setDialogOpen}
-                  vendorId={vendorId.length > 0 ? vendorId[0] : null}
-                  onSubmit={(date, slot) => {
-                    setBookingDate(date);
-                    setTimeSlot(slot);
-                  }}
-                />
-
-                {/* Shipping Address Form */}
-                <form onSubmit={handleCheckout} className="space-y-6">
-                  <input type="hidden" name="_token" value={csrf_token} />
-                  {showShippingForm && (
-                    <ShippingAddressSelector
-                      shippingAddresses={shippingAddresses}
-                      selectedAddressId={selectedAddressId}
-                      setSelectedAddressId={setSelectedAddressId}
-                    />
-                  )}
-                </form>
-              </CardContent>
-
-              {/* Subtotal */}
-              <p className="mt-6 ml-10 font-semibold text-lg text-gray-900">
-                Subtotal:{" "}
-                <CurrencyFormatter
-                  amount={bookingConfirmed ? subtotalWithBooking : totalPrice}
-                  currency="AUD"
-                />
-                {bookingConfirmed && totalBookingFee > 0 && (
-                  <span className="ml-2 text-base text-green-600">
-                    (Includes ${totalBookingFee.toFixed(2)} booking fee)
-                  </span>
-                )}
-              </p>
-
-              <div className="flex gap-4 mt-8">
-                <Button
-                  variant="outline"
-                  className="flex-1 py-4 text-xl font-semibold rounded-md border-2 border-purple-600 text-purple-600 hover:bg-purple-50 transition"
-                  onClick={() => setStep(1)}
-                >
-                  Back
-                </Button>
-                <Button
-                  className="flex-1 py-4 text-xl font-semibold rounded-md bg-purple-700 text-white  hover:bg-purple-800 transition"
-                  onClick={() => {
-                    if (showShippingForm && !selectedAddressId) {
-                      alert("Please select a shipping address.");
-                      return;
+                {/* BookingWidget dialog */}
+                {showBookingWidget && (
+                  <BookingWidget
+                    bookingDate={bookingDate}
+                    setBookingDate={setBookingDate}
+                    timeSlot={timeSlot}
+                    setTimeSlot={setTimeSlot}
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    vendorId={
+                      Array.isArray(vendorId) && vendorId.length > 0
+                        ? vendorId[0]
+                        : (vendorId ?? null)
                     }
-                    if (bookingConfirmed && (!bookingDate || !timeSlot)) {
-                      alert("Please select a Booking Date & Time.");
-                      return;
-                    }
-                    setStep(3);
-                  }}
-                >
-                  Next: Review
-                </Button>
-              </div>
-            </Card>
-          )}
-
-          {/* Step 3: Review */}
-          {step === 3 && (
-            <Card className="space-y-8  rounded-lg border border-gray-200">
-              <CardHeader className="border-b border-gray-300">
-                <CardTitle className="text-2xl font-bold text-gray-900">
-                  Step 3: Review Order
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-8">
-                {/* Cart Items Summary */}
-                <div>
-                  <h3 className="font-semibold text-xl mb-4 text-gray-900">
-                    Shopping Cart
-                  </h3>
-                  {Object.keys(cartItems).length === 0 ? (
-                    <p className="text-gray-400 text-center text-xl font-medium">
-                      Your cart is empty.
-                    </p>
-                  ) : (
-                    Object.values(cartItems).map((group: any) => (
-                      <section
-                        key={group.user.id}
-                        className="mb-6 border border-gray-300 rounded-lg p-5 bg-white "
-                      >
-                        <div className="flex justify-between items-center mb-3">
-                          <Link
-                            href="/"
-                            className="underline font-semibold text-gray-900 hover:text-purple-600 text-lg"
-                          >
-                            {group.user.name}
-                          </Link>
-                          <Button
-                            variant="link"
-                            size="lg"
-                            className="bg-purple-600 text-white hover:bg-purple-700 text-lg font-semibold rounded-md mt-5 px-5 py-2"
-                            onClick={() => setStep(1)}
-                          >
-                            Edit
-                          </Button>
-                        </div>
-                        <ul className="space-y-2 text-gray-700 text-lg">
-                          {group.items.map((item: any) => (
-                            <li
-                              key={item.id}
-                              className="flex justify-between items-center"
-                            >
-                              <span>
-                                {item.title} x {item.quantity}
-                              </span>
-                              <span>
-                                ${(item.price * item.quantity).toFixed(2)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      </section>
-                    ))
-                  )}
-                </div>
-
-                {/* Booking Summary */}
-                {hasAppointmentItems && (
-          <div className="border border-yellow-300 bg-yellow-50 rounded-lg p-6">
-  <h3 className="font-semibold mb-3 text-yellow-900 text-xl">
-    Installer Booking
-  </h3>
-  <p className="mb-3 text-yellow-900 text-lg">
-    Booking confirmed: <strong>{bookingConfirmed ? "Yes" : "No"}</strong>
-  </p>
-
-  {bookingConfirmed && bookingDate && timeSlot && (
-    <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-      {/* Left: Date and Time */}
-      <div className="space-y-2 text-gray-800 text-lg">
-        <div className="flex items-center space-x-2">
-          <CalendarIcon className="w-5 h-5 text-purple-600" />
-          <span>{bookingDate}</span>
-        </div>
-        <div className="flex items-center space-x-2">
-          <ClockIcon className="w-6 h-6 text-purple-600" />
-          <span>{timeSlot}</span>
-        </div>
-      </div>
-
-      {/* Right: Booking Fee + Edit Button stacked top-right on desktop */}
-      <div className="flex flex-col items-start md:items-end space-y-2 mt-4 md:mt-0">
-        <p className="font-semibold text-green-700 text-lg">
-          Booking fee added: ${totalBookingFee.toFixed(2)}
-        </p>
-        <Button
-          variant="link"
-          size="lg"
-          className="bg-purple-600 text-white hover:bg-purple-700 text-lg font-semibold rounded-md px-5 py-2"
-          onClick={() => setStep(2)}
-        >
-          Edit Booking
-        </Button>
-      </div>
-    </div>
-  )}
-</div>
-
-
+                    onSubmit={(date: string, slot: string) => {
+                      setBookingDate(date);
+                      setTimeSlot(slot);
+                      setBookingConfirmed(true);
+                      setDialogOpen(false);
+                    }}
+                  />
                 )}
-
-                {/* Shipping Address Summary */}
-              {selectedAddressId && showShippingForm && (
-  <div className="border border-gray-300 rounded-lg p-6 bg-white">
-    <h3 className="font-regular mb-3 text-gray-900 text-xl">Shipping Address</h3>
-    <div className="flex flex-col md:flex-row md:justify-between md:items-start">
-      {/* Left: Address details */}
-      <div className="text-gray-700 text-lg space-y-1 max-w-md">
-        {(() => {
-          const address = shippingAddresses.find(
-            (addr: any) => addr.id === selectedAddressId
-          );
-          if (!address) return <p>No shipping address selected.</p>;
-          return (
-            <>
-              <p>{address.full_name}</p>
-              <p>{address.address_line1}</p>
-              {address.address_line2 && <p>{address.address_line2}</p>}
-              <p>
-                {address.city}, {address.state} {address.postcode}
-              </p>
-              <p>{address.country}</p>
-              <p>{address.phone}</p>
-            </>
-          );
-        })()}
-      </div>
-
-      {/* Right: Edit button */}
-      <div className="mt-4 md:mt-0 flex justify-start md:justify-end">
-        <Button
-          variant="link"
-          size="lg"
-          className="bg-purple-600 text-white hover:bg-purple-700 text-lg font-semibold rounded-md px-5 py-2"
-          onClick={() => setStep(2)}
-        >
-          Edit Shipping
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
-
 
                 {/* Subtotal */}
-                <p className="font-semibold text-left text-2xl text-gray-900">
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-lg)",
+                    color: "var(--color-text-muted)",
+                    borderTop: "1px solid var(--color-border)",
+                    paddingTop: "var(--space-lg)",
+                  }}
+                >
                   Subtotal:{" "}
-                  <CurrencyFormatter
-                    amount={bookingConfirmed ? subtotalWithBooking : totalPrice}
-                    currency="AUD"
-                  />
-                </p>
+                  <span
+                    style={{
+                      fontWeight: 500,
+                      color: "var(--color-primary)",
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--text-xl)",
+                    }}
+                  >
+                    <CurrencyFormatter
+                      amount={
+                        bookingConfirmed ? subtotalWithBooking : totalPrice
+                      }
+                      currency="AUD"
+                    />
+                  </span>
+                </div>
 
-                {/* Navigation Buttons */}
-                <div className="flex justify-between gap-6">
-                  <Button
-                    variant="outline"
-                    className="flex-1 py-4 text-xl lg:w-[50%] font-semibold rounded-md border-2 border-purple-600 text-purple-600 hover:bg-purple-50 transition"
+                {/* Nav buttons */}
+                <div style={{ display: "flex", gap: "var(--space-md)" }}>
+                  <button
+                    style={{ ...btnOutline, flex: 1 }}
+                    onClick={() => setStep(1)}
+                  >
+                    ← Back
+                  </button>
+
+
+                  <button
+                    style={{ ...btnPrimary, flex: 1 }}
+                    onClick={() => {
+                      if (
+                        !allGiftCards &&
+                        hasAppointmentItems &&
+                        (!bookingDate || !timeSlot)
+                      ) {
+                        toast.error(
+                          "Please select a booking date and time before proceeding.",
+                        );
+                        return;
+                      }
+                      setStep(3);
+                    }}
+                  >
+                    Next: Review →
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ══════════════════ STEP 3: REVIEW ══════════════════ */}
+            {step === 3 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-xl)",
+                }}
+              >
+                {/* Promo code */}
+                <div className="co-card-warm">
+                  <label
+                    style={{
+                      display: "block",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--text-xs)",
+                      fontWeight: 500,
+                      letterSpacing: "0.1em",
+                      textTransform: "uppercase",
+                      color: "var(--color-text-muted)",
+                      marginBottom: "var(--space-sm)",
+                    }}
+                  >
+                    Promo / Gift Code
+                  </label>
+                  <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                    <input
+                      className="co-promo-input"
+                      type="text"
+                      placeholder="Enter code"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
+                    />
+                    <button style={btnAccent} onClick={handleApplyPromo}>
+                      Apply
+                    </button>
+                  </div>
+                  {promoApplied && promoDetails && (
+                    <p
+                      style={{
+                        marginTop: "var(--space-sm)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--text-sm)",
+                        color: "var(--color-success)",
+                      }}
+                    >
+                      {promoDetails.type === "gift"
+                        ? `Gift card applied — $${Number(promoDetails.remaining_amount ?? 0).toFixed(2)} remaining`
+                        : promoDetails.discount_type === "percentage"
+                          ? `Promo applied: ${promoDetails.amount}% off`
+                          : `Promo applied: $${Number(promoDetails.amount).toFixed(2)} off`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Order summary */}
+                <div className="co-card">
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--text-xl)",
+                      fontWeight: 400,
+                      color: "var(--color-text)",
+                      marginBottom: "var(--space-lg)",
+                      paddingBottom: "var(--space-sm)",
+                      borderBottom: "1px solid var(--color-border)",
+                    }}
+                  >
+                    Order Summary
+                  </h3>
+
+                  {Object.values(cartItems).map((group: any) => (
+                    <div
+                      key={group.user.id}
+                      style={{ marginBottom: "var(--space-lg)" }}
+                    >
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          fontWeight: 500,
+                          letterSpacing: "0.1em",
+                          textTransform: "uppercase",
+                          color: "var(--color-accent-dark)",
+                          marginBottom: "var(--space-sm)",
+                        }}
+                      >
+                        {group.user.name}
+                      </p>
+                      {group.items.map((item: any) => (
+                        <div className="co-summary-row" key={item.id}>
+                          <span>
+                            {item.title}{" "}
+                            <span style={{ color: "var(--color-text-light)" }}>
+                              × {item.quantity}
+                            </span>
+                          </span>
+                          <span
+                            style={{
+                              color: "var(--color-text)",
+                              fontWeight: 500,
+                            }}
+                          >
+                            ${(item.price * item.quantity).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+
+                  {/* Booking fee row */}
+                  {bookingConfirmed && totalBookingFee > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "var(--space-sm) 0",
+                        borderBottom: "1px solid var(--color-border)",
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--text-sm)",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      <span>Booking Fee</span>
+                      <span
+                        style={{ color: "var(--color-text)", fontWeight: 500 }}
+                      >
+                        ${totalBookingFee.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Discount row */}
+                  {promoApplied &&
+                    promoDetails &&
+                    Number(promoDetails.discount_amount) > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          padding: "var(--space-sm) 0",
+                          borderBottom: "1px solid var(--color-border)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-success)",
+                        }}
+                      >
+                        <span>Discount</span>
+                        <span>
+                          −${Number(promoDetails.discount_amount).toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                  {/* Subtotal */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      paddingTop: "var(--space-md)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "var(--text-sm)",
+                        letterSpacing: "0.08em",
+                        textTransform: "uppercase",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      Subtotal
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--text-lg)",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      <CurrencyFormatter
+                        amount={
+                          bookingConfirmed ? subtotalWithBooking : totalPrice
+                        }
+                        currency="AUD"
+                      />
+                    </span>
+                  </div>
+
+                  {/* Total */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "baseline",
+                      marginTop: "var(--space-md)",
+                      paddingTop: "var(--space-md)",
+                      borderTop: "2px solid var(--color-border-dark)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--text-xl)",
+                        color: "var(--color-text)",
+                      }}
+                    >
+                      Total
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "var(--text-3xl)",
+                        fontWeight: 300,
+                        color: "var(--color-primary)",
+                      }}
+                    >
+                      <CurrencyFormatter
+                        amount={getDiscountedTotal()}
+                        currency="AUD"
+                      />
+                    </span>
+                  </div>
+                </div>
+
+                {/* Booking summary if confirmed */}
+                {bookingConfirmed && bookingDate && timeSlot && (
+                  <div
+                    style={{
+                      background: "rgba(45,80,22,0.04)",
+                      border: "1px solid var(--color-primary)",
+                      borderLeft: "3px solid var(--color-primary)",
+                      padding: "var(--space-md) var(--space-lg)",
+                      fontFamily: "var(--font-body)",
+                      fontSize: "var(--text-sm)",
+                      color: "var(--color-text-muted)",
+                      display: "flex",
+                      gap: "var(--space-xl)",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span>
+                      <strong style={{ color: "var(--color-text)" }}>
+                        Appointment:
+                      </strong>{" "}
+                      {bookingDate} at {timeSlot}
+                    </span>
+                  </div>
+                )}
+
+                {/* Nav buttons */}
+                <div style={{ display: "flex", gap: "var(--space-md)" }}>
+                  <button
+                    style={{ ...btnOutline, flex: 1 }}
                     onClick={() => setStep(2)}
                   >
-                    Back
-                  </Button>
-                  <Button
-                   className="bg-purple-600 p-4 lg:w-[50%] text-white hover:bg-purple-700 text-lg font-semibold rounded-md px-5 py-2"
-
+                    ← Back
+                  </button>
+                  <button
                     onClick={handleCheckout}
+                    disabled={loading}
+                    style={{
+                      ...btnPrimary,
+                      flex: 2,
+                      background: loading
+                        ? "var(--color-primary-dark)"
+                        : "var(--color-primary)",
+                      cursor: loading ? "not-allowed" : "pointer",
+                      opacity: loading ? 0.8 : 1,
+                    }}
                   >
-                    Proceed to Checkout
-                  </Button>
+                    {loading ? "Processing…" : "Confirm & Pay"}
+                  </button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* ── Empty cart ── */
+          <div className="co-empty">
+            <div
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "var(--radius-full)",
+                border: "1px solid var(--color-border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <ShoppingCartIcon
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  color: "var(--color-primary)",
+                }}
+              />
+            </div>
+            <div>
+              <h2
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontSize: "var(--text-3xl)",
+                  fontWeight: 300,
+                  color: "var(--color-text)",
+                  marginBottom: "var(--space-sm)",
+                }}
+              >
+                Your cart is empty
+              </h2>
+              <p
+                style={{
+                  color: "var(--color-text-muted)",
+                  fontSize: "var(--text-base)",
+                }}
+              >
+                Looks like you haven't added anything yet.
+              </p>
+            </div>
+            <Link
+              href="/shop"
+              style={{
+                ...btnPrimary,
+                padding: "0.875rem 2.5rem",
+                textDecoration: "none",
+                display: "inline-block",
+              }}
+            >
+              Shop Now
+            </Link>
+          </div>
+        )}
       </div>
-) : (
-  // Show empty cart message instead of navigation and step 1
-  <EmptyCartMessage />
-)}
-
-
     </AuthenticatedLayout>
   );
 }

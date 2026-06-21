@@ -36,8 +36,6 @@ class CartController extends Controller
         $user = Auth::user();
         $userId = $user ? $user->id : null;
 
-
-
         $cartItems = CartItem::with('product.vendor')->where('user_id', $userId)->get();
 
 
@@ -151,194 +149,206 @@ class CartController extends Controller
         return back()->with('success', 'Product removed from cart successfully.');
     }
 
-public function checkout(Request $request, CartService $cartService)
-{
-    $request->validate([
-        'vendor_id' => ['nullable', 'integer'],
-        'shipping_address_id' => ['nullable', 'exists:shipping_addresses,id'],
-    ]);
+    public function checkout(Request $request, CartService $cartService)
+    {
 
-    Stripe::setApiKey(config('app.stripe_secret_key'));
-
-    $user = $request->user();
-    $vendorId = $request->input('vendor_id');
-    $shippingAddressId = $request->input('shipping_address_id');
-
-    $shippingAddress = $shippingAddressId
-        ? ShippingAddress::where('id', $shippingAddressId)
-            ->where('user_id', $user->id)
-            ->first()
-        : null;
-
-    $latestBooking = Booking::where('user_id', $user->id)
-        ->whereNull('order_id')
-        ->latest()
-        ->first();
-
-    $hasBooking = !is_null($latestBooking);
-
-    $allCartItems = $cartService->getCartItemsGrouped();
-
-    foreach ($allCartItems as &$group) {
-        if (is_null($group['vendor'])) {
-            $group['vendor'] = $group['user'];
-        }
-    }
-
-    DB::beginTransaction();
-
-    try {
-        $checkoutCartItems = $vendorId ? [$allCartItems[$vendorId]] : $allCartItems;
-        $orders = [];
-        $lineItems = [];
-
-        $bookingLinked = false;
-
-        foreach ($checkoutCartItems as $item) {
-            $vendor = $item['vendor'];
-            $cartItems = $item['items'];
-
-            $bookingFee = 0;
-            $isAppointmentVendor = $vendor &&
-                $vendor['vendor_type'] instanceof VendorType &&
-                $vendor['vendor_type']->value === VendorType::APPOINTMENT->value;
-
-            if ($hasBooking && $isAppointmentVendor && !$bookingLinked) {
-                $bookingFee = floatval($vendor['booking_fee'] ?? 0);
-            }
-
-            $totalPrice = $item['totalPrice'] + $bookingFee;
-
-            $onlineFee = round(($totalPrice * 0.029) + 0.30, 4);
-            $platformFee = round($totalPrice * 0.10, 4);
-            $vendorSubtotal = round($totalPrice - $onlineFee - $platformFee, 4);
-
-            $order = Order::create([
-                'stripe_session_id' => null,
-                'user_id' => $user->id,
-                'vendor_user_id' => $vendor['id'],
-                'total_price' => $totalPrice,
-                'booking_fee' => $bookingFee,
-                'status' => OrderStatusEnum::Draft->value,
-                'shipping_address_id' => optional($shippingAddress)->id,
-                'online_payment_comission' => $onlineFee,
-                'website_payment_comission' => $platformFee,
-                'vendor_subtotal' => $vendorSubtotal,
-            ]);
-
-            $orders[] = $order;
-
-            if ($hasBooking && $isAppointmentVendor && !$bookingLinked) {
-                $latestBooking->order_id = $order->id;
-                $latestBooking->save();
-                $bookingLinked = true;
-
-                if ($user->google_access_token) {
-                    $googleService = new GoogleCalendarService(
-                        ['access_token' => $user->google_access_token],
-                        $user->google_refresh_token
-                    );
-
-                    try {
-                        $startDateTime = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
-                        $endDateTime   = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
-
-                        $googleEvent = $googleService->createEvent(
-                            'Booking Appointment',
-                            "Booking ID: {$latestBooking->id}",
-                            $startDateTime,
-                            $endDateTime,
-                            'Australia/Sydney',
-                            null,
-                            null,
-                            ['admin@gmail.com'],
-                            [
-                                ['method' => 'popup', 'minutes' => 180],
-                                ['method' => 'popup', 'minutes' => 60],
-                            ]
-                        );
-
-                        $latestBooking->google_event_id = $googleEvent->id;
-                        $latestBooking->save();
-
-                        if ($googleService->newAccessToken) {
-                            $user->google_access_token = $googleService->newAccessToken;
-                            $user->save();
-                        }
-                    } catch (\Exception $e) {
-                        DB::rollBack();
-                        return redirect()->back()->with('error', 'Google Calendar sync failed: ' . $e->getMessage());
-                    }
-                }
-            }
-
-            foreach ($cartItems as $cartItem) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $cartItem['product_id'],
-                    'quantity' => $cartItem['quantity'],
-                    'price' => $cartItem['price'],
-                    'variation_type_option_ids' => $cartItem['option_ids'],
-                    'attachment_path' => $cartItem['attachment_path'] ?? null,
-                    'attachment_name' => $cartItem['attachment_name'] ?? null,
-                    'designer' => $cartItem['designer'] ?? false,
-                ]);
-
-                $description = collect($cartItem['options'])
-                    ->map(fn($opt) => "{$opt['type']['name']}::{$opt['name']}")
-                    ->implode(',');
-
-                $productData = ['name' => $cartItem['title']];
-                if (!empty($description)) {
-                    $productData['description'] = $description;
-                }
-
-                $lineItems[] = [
-                    'price_data' => [
-                        'currency' => config('app.currency'),
-                        'product_data' => $productData,
-                        'unit_amount' => intval($cartItem['price'] * 100),
-                    ],
-                    'quantity' => $cartItem['quantity'],
-                ];
-            }
-
-            if ($bookingFee > 0) {
-                $lineItems[] = [
-                    'price_data' => [
-                        'currency' => config('app.currency'),
-                        'product_data' => [
-                            'name' => "Booking Fee for Installer ({$vendor['name']})",
-                        ],
-                        'unit_amount' => intval($bookingFee * 100),
-                    ],
-                    'quantity' => 1,
-                ];
-            }
-        }
-
-        $session = Session::create([
-            'customer_email' => $user->email,
-            'line_items' => $lineItems,
-            'mode' => 'payment',
-            'success_url' => route('stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => route('stripe.failure'),
+        $request->validate([
+            'vendor_id' => ['nullable', 'integer'],
+            'shipping_address_id' => ['nullable', 'exists:shipping_addresses,id'],
         ]);
 
-        foreach ($orders as $order) {
-            $order->stripe_session_id = $session->id;
-            $order->save();
+        Stripe::setApiKey(config('app.stripe_secret_key'));
+
+        $user = $request->user();
+        $vendorId = $request->input('vendor_id');
+        $shippingAddressId = $request->input('shipping_address_id');
+
+        $shippingAddress = $shippingAddressId
+            ? ShippingAddress::where('id', $shippingAddressId)
+            ->where('user_id', $user->id)
+            ->first()
+            : null;
+
+        $latestBooking = Booking::where('user_id', $user->id)
+            ->whereNull('order_id')
+            ->latest()
+            ->first();
+
+        $hasBooking = !is_null($latestBooking);
+
+        $allCartItems = $cartService->getCartItemsGrouped();
+
+        foreach ($allCartItems as &$group) {
+            if (is_null($group['vendor'])) {
+                $group['vendor'] = $group['user'];
+            }
         }
 
-        DB::commit();
+        DB::beginTransaction();
 
-        return Inertia::location($session->url);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Checkout failed: ' . $e->getMessage());
-        return back()->withErrors('Checkout failed. Please try again.');
+        try {
+            $checkoutCartItems = $vendorId ? [$allCartItems[$vendorId]] : $allCartItems;
+            $orders = [];
+            $lineItems = [];
+
+            $bookingLinked = false;
+
+            foreach ($checkoutCartItems as $item) {
+                $vendor = $item['vendor'];
+                $cartItems = $item['items'];
+
+                $bookingFee = 0;
+                $isAppointmentVendor = $vendor &&
+                    $vendor['vendor_type'] instanceof VendorType &&
+                    $vendor['vendor_type']->value === VendorType::APPOINTMENT->value;
+
+                if ($hasBooking && $isAppointmentVendor && !$bookingLinked) {
+                    $bookingFee = floatval($vendor['booking_fee'] ?? 0);
+                }
+
+                $totalPrice = $item['totalPrice'] + $bookingFee;
+
+                $onlineFee = round(($totalPrice * 0.029) + 0.30, 4);
+                $platformFee = round($totalPrice * 0.10, 4);
+                $vendorSubtotal = round($totalPrice - $onlineFee - $platformFee, 4);
+
+                $order = Order::create([
+                    'stripe_session_id' => null,
+                    'user_id' => $user->id,
+                    'vendor_user_id' => $vendor['id'],
+                    'total_price' => $totalPrice,
+                    'booking_fee' => $bookingFee,
+                    'status' => OrderStatusEnum::Draft->value,
+                    'shipping_address_id' => optional($shippingAddress)->id,
+                    'online_payment_comission' => $onlineFee,
+                    'website_payment_comission' => $platformFee,
+                    'vendor_subtotal' => $vendorSubtotal,
+                ]);
+
+                $orders[] = $order;
+
+                if ($hasBooking && $isAppointmentVendor && !$bookingLinked) {
+                    $latestBooking->order_id = $order->id;
+                    $latestBooking->save();
+                    $bookingLinked = true;
+
+                    if ($user->google_access_token) {
+                        $googleService = new GoogleCalendarService(
+                            ['access_token' => $user->google_access_token],
+                            $user->google_refresh_token
+                        );
+
+                        try {
+                            $startDateTime = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
+                            $endDateTime   = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
+
+                            $vendorEmail = $vendor['email'] ?? null;
+
+                            $googleEvent = $googleService->createEvent(
+                                'Booking Appointment',
+                                "Booking ID: {$latestBooking->id}",
+                                $startDateTime,
+                                $endDateTime,
+                                'Australia/Sydney',
+                                null,
+                                null,
+                                $vendorEmail ? [$vendorEmail] : [],
+                                [
+                                    ['method' => 'popup', 'minutes' => 180],
+                                    ['method' => 'popup', 'minutes' => 60],
+                                ]
+                            );
+
+                            $latestBooking->google_event_id = $googleEvent->id;
+                            $latestBooking->save();
+
+                            if ($googleService->newAccessToken) {
+                                $user->google_access_token = $googleService->newAccessToken;
+                                $user->save();
+                            }
+                        } catch (\Exception $e) {
+                            DB::rollBack();
+                            return redirect()->back()->with('error', 'Google Calendar sync failed: ' . $e->getMessage());
+                        }
+                    }
+                }
+
+                foreach ($cartItems as $cartItem) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $cartItem['product_id'],
+                        'quantity' => $cartItem['quantity'],
+                        'price' => $cartItem['price'],
+                        'variation_type_option_ids' => $cartItem['option_ids'],
+                        'attachment_path' => $cartItem['attachment_path'] ?? null,
+                        'attachment_name' => $cartItem['attachment_name'] ?? null,
+                        'designer' => $cartItem['designer'] ?? false,
+                    ]);
+
+                    $description = collect($cartItem['options'])
+                        ->map(fn($opt) => "{$opt['type']['name']}::{$opt['name']}")
+                        ->implode(',');
+
+                    $productData = ['name' => $cartItem['title']];
+                    if (!empty($description)) {
+                        $productData['description'] = $description;
+                    }
+
+                    $lineItems[] = [
+                        'price_data' => [
+                            'currency' => config('app.currency'),
+                            'product_data' => $productData,
+                            'unit_amount' => intval($cartItem['price'] * 100),
+                        ],
+                        'quantity' => $cartItem['quantity'],
+                    ];
+                }
+
+                if ($bookingFee > 0) {
+                    $lineItems[] = [
+                        'price_data' => [
+                            'currency' => config('app.currency'),
+                            'product_data' => [
+                                'name' => "Booking Fee for Installer ({$vendor['name']})",
+                            ],
+                            'unit_amount' => intval($bookingFee * 100),
+                        ],
+                        'quantity' => 1,
+                    ];
+                }
+            }
+
+            $session = Session::create([
+                'customer_email' => $user->email,
+                'line_items' => $lineItems,
+                'mode' => 'payment',
+                'success_url' => route('stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('stripe.failure'),
+            ]);
+
+            foreach ($orders as $order) {
+                $order->stripe_session_id = $session->id;
+                $order->save();
+            }
+
+            DB::commit();
+
+            return Inertia::location($session->url);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Checkout failed: ' . $e->getMessage());
+            return back()->withErrors('Checkout failed. Please try again.');
+        }
     }
-}
+    public function destroyGiftCard(CartItem $cartItem)
+    {
+        // Ensure the item belongs to the authenticated user
+        if ($cartItem->user_id !== Auth::id()) {
+            abort(403);
+        }
 
+        $cartItem->delete();
 
+        return back()->with('success', 'Gift card removed from cart.');
+    }
 }

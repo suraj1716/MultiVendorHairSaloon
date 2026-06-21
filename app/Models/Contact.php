@@ -9,6 +9,7 @@ class Contact extends Model
    protected $fillable = [
     'name',
     'email',
+    'phone',
     'message',
     'reason',
     'department_id',
@@ -16,6 +17,7 @@ class Contact extends Model
     'product_id',
     'quantity',
     'file_path',
+    'is_read'
 ];
 
 

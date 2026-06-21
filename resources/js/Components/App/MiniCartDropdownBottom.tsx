@@ -6,24 +6,43 @@ import LoginModal from "@/Pages/Auth/Login";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
 
 export default function MiniCartDropdownBottom() {
-  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props;
-  const { user } = auth;
-
+  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props as any;
+  const user = (auth as any)?.user ?? null;
   const [open, setOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
   return (
-    <>
+    <><style>{` .bn-tab {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 3px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          color: rgba(253,250,246,0.4);
+          text-decoration: none;
+          padding: 4px 12px;
+          transition: color var(--transition-fast);
+          -webkit-tap-highlight-color: transparent;
+        }
+        .bn-tab:hover, .bn-tab:active { color: rgba(212,175,90,0.9); }
+        .bn-tab-label {
+          font-family: var(--font-body);
+          font-size: 9px;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+        }`}</style>
       {/* Cart Button */}
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="relative rounded-md  text-white"
+        className="relative rounded-md  btn-tab"
         aria-label="Open cart"
       >
 
-        <ShoppingBagIcon className="w-7 h-7" />
-         <span className="text-white mt-5">Cart</span>
+        <ShoppingBagIcon className="w-6 h-6" />
+         <span className="btn-tab mt-5">Cart</span>
         {totalQuantity > 0 && (
           <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
             {totalQuantity}
@@ -75,15 +94,18 @@ export default function MiniCartDropdownBottom() {
                   Cart ({totalQuantity} {totalQuantity === 1 ? "item" : "items"})
                 </h2>
 
-                {miniCartItems.length === 0 ? (
+                {miniCartItems?.length === 0 ? (
                   <div className="text-gray-500 text-center py-20">
                     Your cart is empty.
                   </div>
                 ) : (
                   <div className="space-y-4 p-8">
-                    {miniCartItems.map((item: any) => (
+                    {miniCartItems?.map((item: any) => (
                       <div key={item.id} className="flex items-center gap-4">
-                        <Link href={route("product.show", item.slug)} className="w-16 h-16">
+                        <Link
+                        href='#'
+                        // href={route("product.show", item.slug)}
+                        className="w-16 h-16">
                           <img
                             src={item.image_url}
                             alt={item.title}
@@ -92,7 +114,8 @@ export default function MiniCartDropdownBottom() {
                         </Link>
                         <div className="flex-1 text-sm">
                           <Link
-                            href={route("product.show", item.slug)}
+                            href='#'
+                            // href={route("product.show", item.slug)}
                             className="block font-medium line-clamp-2 hover:underline"
                           >
                             {item.title}
@@ -122,7 +145,7 @@ export default function MiniCartDropdownBottom() {
                 )}
 
                 {/* Subtotal & Action Button */}
-                {miniCartItems.length > 0 && (
+                {miniCartItems?.length > 0 && (
                   <>
                     <hr className="my-4" />
                     <div className="flex justify-between text-sm font-semibold mb-4">

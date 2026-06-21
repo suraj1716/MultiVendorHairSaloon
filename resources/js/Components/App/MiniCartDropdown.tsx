@@ -1,3 +1,4 @@
+import { productRoute } from "@/helper";
 import LoginModal from "@/Pages/Auth/Login";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
 import { ShoppingBagIcon } from "@heroicons/react/24/outline";
@@ -5,112 +6,287 @@ import { Link, usePage } from "@inertiajs/react";
 import React, { useState, useRef, useEffect } from "react";
 
 function MiniCartDropdown() {
-  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props;
-  const { user } = auth;
+  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props as any;
+  const user = (auth as any)?.user ?? null;
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [loginOpen, setLoginOpen] = useState(false);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpen(false);
       }
     };
-
-    if (open) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    else document.removeEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [open]);
 
   return (
-    <div className="">
-      {/* Backdrop Blur when dropdown is open */}
+    <div>
+      {/* Backdrop */}
       {open && (
-        <div className="fixed inset-0  bg-black/20 backdrop-blur-sm transition-opacity duration-300" />
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "var(--color-overlay)",
+            backdropFilter: "blur(4px)",
+            WebkitBackdropFilter: "blur(4px)",
+            zIndex: 9998,
+            transition: "opacity var(--transition-base)",
+          }}
+        />
       )}
 
-      <div
-        className="relative z-500000 flex items-center justify-center px-2 sm:px-4"
-        ref={dropdownRef}
-      >
-        {/* Cart Icon */}
+      <div style={{ position: "relative", zIndex: 9999 }} ref={dropdownRef}>
+
+        {/* Cart Icon Button */}
         <button
           onClick={() => setOpen(!open)}
-          className="relative flex items-center justify-center p-2 rounded-full hover:bg-gray-100 transition"
           aria-label="Open Cart"
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "40px",
+            height: "40px",
+            background: "transparent",
+            border: "1px solid var(--color-border)",
+            cursor: "pointer",
+            transition: "all var(--transition-fast)",
+            color: "var(--color-text-muted)",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-primary)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--color-primary)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-border)";
+            (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-muted)";
+          }}
         >
-          <ShoppingBagIcon className="h-6 w-6 text-gray-600" />
+          <ShoppingBagIcon style={{ width: "18px", height: "18px" }} />
           {totalQuantity > 0 && (
-            <span className="absolute -top-1 -right-1 bg-purple-600 text-white text-xs font-semibold px-1.5 py-0.5 rounded-full">
+            <span
+              style={{
+                position: "absolute",
+                top: "-6px",
+                right: "-6px",
+                background: "var(--color-accent)",
+                color: "var(--color-bg-dark)",
+                fontFamily: "var(--font-body)",
+                fontSize: "0.6rem",
+                fontWeight: 600,
+                lineHeight: 1,
+                minWidth: "18px",
+                height: "18px",
+                borderRadius: "var(--radius-full)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "0 4px",
+              }}
+            >
               {totalQuantity}
             </span>
           )}
         </button>
 
-        {/* Dropdown Menu */}
+        {/* Dropdown Panel */}
         <div
-          className={`absolute right-0 top-full mt-2 w-[92vw] sm:w-90 md:w-96 bg-white border border-gray-200 rounded-xl shadow-xl transition-all transform origin-top-right duration-200 ${
-            open
-              ? "mt-10 scale-100 opacity-100 visible translate-x-7"
-              : "scale-95 opacity-0 invisible"
-          }`}
+          style={{
+            position: "absolute",
+            right: 0,
+            top: "calc(100% + 12px)",
+            width: "360px",
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "var(--shadow-xl)",
+            transformOrigin: "top right",
+            transition: "opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base)",
+            opacity: open ? 1 : 0,
+            transform: open ? "scale(1) translateY(0)" : "scale(0.97) translateY(-6px)",
+            visibility: open ? "visible" : "hidden",
+            pointerEvents: open ? "auto" : "none",
+          }}
         >
-          <div className="p-4 max-h-[60vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-3">
-              {totalQuantity} Item(s)
-            </h3>
+          {/* Header */}
+          <div
+            style={{
+              padding: "var(--space-lg) var(--space-lg) var(--space-md)",
+              borderBottom: "1px solid var(--color-border)",
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "space-between",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-xl)",
+                fontWeight: 400,
+                color: "var(--color-text)",
+              }}
+            >
+              Your Bag
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "var(--text-xs)",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--color-text-light)",
+              }}
+            >
+              {totalQuantity} item{totalQuantity !== 1 ? "s" : ""}
+            </span>
+          </div>
 
-            {miniCartItems.length === 0 ? (
-              <div className="text-gray-500 text-center py-10">
-                Your cart is empty
+          {/* Items */}
+          <div
+            style={{
+              padding: "var(--space-md) var(--space-lg)",
+              maxHeight: "54vh",
+              overflowY: "auto",
+            }}
+          >
+            {miniCartItems?.length === 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "var(--space-3xl) 0",
+                  gap: "var(--space-md)",
+                }}
+              >
+                <ShoppingBagIcon
+                  style={{ width: "36px", height: "36px", color: "var(--color-border-dark)" }}
+                />
+                <p
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-text-light)",
+                    margin: 0,
+                  }}
+                >
+                  Your bag is empty
+                </p>
               </div>
             ) : (
-              <div className="space-y-4">
-                {miniCartItems.map((item: any) => (
-                  <div key={item.id} className="flex items-center gap-4">
-                    <Link
-                      href={route("product.show", item.slug)}
-                      className="w-16 h-16"
-                    >
-                      <img
-                        src={item.image_url}
-                        alt={item.title}
-                        className="w-full h-full object-cover rounded"
-                      />
+              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+                {miniCartItems?.map((item: any, idx: number) => (
+                  <div
+                    key={item.id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "var(--space-md)",
+                      padding: "var(--space-md) 0",
+                      borderBottom: idx < miniCartItems?.length - 1
+                        ? "1px solid var(--color-border)"
+                        : "none",
+                    }}
+                  >
+                    {/* Thumbnail */}
+                   <Link
+                   href='#'
+                  //  href={productRoute(item)}
+                   >
+                      <div
+                        style={{
+                          width: "60px",
+                          height: "60px",
+                          flexShrink: 0,
+                          overflow: "hidden",
+                          background: "var(--color-bg-alt)",
+                          border: "1px solid var(--color-border)",
+                        }}
+                      >
+                        <img
+                          src={item.image_url}
+                          alt={item.title}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                            transition: "transform var(--transition-slow)",
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.transform = "scale(1.06)";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.transform = "scale(1)";
+                          }}
+                        />
+                      </div>
                     </Link>
-                    <div className="flex-1 text-sm">
+
+                    {/* Details */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <Link
-                        href={route("product.show", item.slug)}
-                        className="block font-medium line-clamp-2 hover:underline"
+                        href='#'
+                        // href={productRoute(item)}
+                        style={{
+
+                          fontFamily: "var(--font-display)",
+                          fontSize: "var(--text-base)",
+                          fontWeight: 400,
+                          color: "var(--color-text)",
+                          textDecoration: "none",
+                          overflow: "hidden",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          marginBottom: "4px",
+                          lineHeight: 1.3,
+                        } as React.CSSProperties}
                       >
                         {item.title}
                       </Link>
-                      <div className="text-xs text-gray-600 flex justify-between mt-1">
-                        {/* <span>Qty: {item.quantity}</span> */}
-                        <CurrencyFormatter
-                          amount={item.quantity * item.price}
-                          currency="AUD"
-                        />
+
+                      {/* Qty × price */}
+                      <div
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-primary)",
+                          fontWeight: 500,
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <span style={{ color: "var(--color-text-light)", fontWeight: 400 }}>
+                          ×{item.quantity}&nbsp;
+                        </span>
+                        <CurrencyFormatter amount={item.quantity * item.price} currency="AUD" />
                       </div>
 
                       {/* Variations */}
                       {item.options && item.options.length > 0 && (
-                        <div className="text-xs text-gray-600 mt-1">
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
                           {item.options.map((opt: any) => (
-                            <div key={opt.id}>
+                            <span
+                              key={opt.id}
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "0.65rem",
+                                letterSpacing: "0.06em",
+                                textTransform: "uppercase",
+                                color: "var(--color-accent-dark)",
+                                background: "rgba(201,169,110,0.12)",
+                                padding: "2px 8px",
+                                borderRadius: "var(--radius-full)",
+                              }}
+                            >
                               {opt.type.name}: {opt.name}
-                            </div>
+                            </span>
                           ))}
                         </div>
                       )}
@@ -119,43 +295,117 @@ function MiniCartDropdown() {
                 ))}
               </div>
             )}
-
-            {/* Subtotal */}
-            {miniCartItems.length > 0 && (
-              <>
-                <hr className="my-4" />
-                <div className="flex justify-between text-sm font-semibold mb-3">
-                  <span>Subtotal:</span>
-                  <CurrencyFormatter amount={totalPrice} currency="AUD" />
-                </div>
-
-                {user ? (
-                  <Link
-                    href={route("cart.index")}
-                    className="w-full block text-center bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md transition"
-                  >
-                    View Cart
-                  </Link>
-                ) : (
-                  <span
-                    onClick={() => setLoginOpen(true)}
-                    className="w-full block text-center bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-md transition"
-                  >
-                    Login to View Cart
-                  </span>
-                )}
-              </>
-            )}
           </div>
-        </div>
 
-        {/* Login Modal */}
-        <LoginModal
-          isOpen={loginOpen}
-          onClose={() => setLoginOpen(false)}
-          canResetPassword={true}
-        />
+          {/* Footer */}
+          {miniCartItems?.length > 0 && (
+            <div
+              style={{
+                padding: "var(--space-md) var(--space-lg) var(--space-lg)",
+                borderTop: "1px solid var(--color-border)",
+                background: "var(--color-surface-warm)",
+              }}
+            >
+              {/* Subtotal row */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "baseline",
+                  marginBottom: "var(--space-md)",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-xs)",
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  Subtotal
+                </span>
+                <span
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "var(--text-xl)",
+                    fontWeight: 400,
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  <CurrencyFormatter amount={totalPrice} currency="AUD" />
+                </span>
+              </div>
+
+              {/* CTA */}
+              {user ? (
+                <Link
+                  href={route("cart.index")}
+                  style={{
+                    display: "block",
+                    textAlign: "center",
+                    background: "var(--color-primary)",
+                    color: "var(--color-text-inverse)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 500,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    padding: "0.875rem",
+                    textDecoration: "none",
+                    transition: "background var(--transition-fast)",
+                    border: "1px solid var(--color-primary)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "var(--color-primary-light)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "var(--color-primary)";
+                  }}
+                >
+                  View Bag & Checkout
+                </Link>
+              ) : (
+                <button
+                  onClick={() => setLoginOpen(true)}
+                  style={{
+                    display: "block",
+                    width: "100%",
+                    textAlign: "center",
+                    background: "var(--color-primary)",
+                    color: "var(--color-text-inverse)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-xs)",
+                    fontWeight: 500,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    padding: "0.875rem",
+                    border: "1px solid var(--color-primary)",
+                    cursor: "pointer",
+                    transition: "background var(--transition-fast)",
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "var(--color-primary-light)";
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLButtonElement).style.background = "var(--color-primary)";
+                  }}
+                >
+                  Sign In to Checkout
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        canResetPassword={true}
+      />
     </div>
   );
 }

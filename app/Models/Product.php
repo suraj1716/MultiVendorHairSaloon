@@ -20,33 +20,34 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Product extends Model implements HasMedia
 {
-use HasFactory;
+    use HasFactory;
     use InteractsWithMedia;
-protected $casts = [
-    'deleted_combinations' => 'array',
-];
+    protected $casts = [
+        'deleted_combinations' => 'array',
+         'price' => 'float',
+    ];
     // protected $casts = [
     //     'variations' => 'array'
     // ];
 
-public function scopeForVendorOrPublished(Builder $query): Builder
-{
-    $userId = Auth::id();
+    public function scopeForVendorOrPublished(Builder $query): Builder
+    {
+        $userId = Auth::id();
 
-    return $query->where(function ($q) use ($userId) {
-        $q->where('created_by', $userId)
-          ->orWhere('status', ['published', 'draft']);
-    });
-}
+        return $query->where(function ($q) use ($userId) {
+            $q->where('created_by', $userId)
+                ->orWhere('status', ['published', 'draft']);
+        });
+    }
 
 
 
     public function ScopeForVendor(Builder $query): Builder
     {
-          $userId = Auth::id();
+        $userId = Auth::id();
 
-    return $query->where('created_by', $userId)
-                 ->orWhere('status', 'published');
+        return $query->where('created_by', $userId)
+            ->orWhere('status', 'published');
     }
 
     public function ScopePublished(Builder $query): Builder
@@ -66,26 +67,26 @@ public function scopeForVendorOrPublished(Builder $query): Builder
     //     return $query->join('vendors', 'vendors.user_id', '=', 'products.created_by')
     //         ->where('vendors.status', VendorStatusEnum::Approved->value);
     // }
-public function scopeVendorApproved($query)
-{
-    return $query->whereHas('vendor', function ($q) {
-        $q->where('status', 'approved');
-    });
-}
-
-
-// In Product.php model
-public function scopeSearchKeyword($query, $keyword)
-{
-    if ($keyword) {
-        $query->where(function ($q) use ($keyword) {
-            $q->where('title', 'LIKE', "%{$keyword}%")
-              ->orWhere('description', 'LIKE', "%{$keyword}%");
+    public function scopeVendorApproved($query)
+    {
+        return $query->whereHas('vendor', function ($q) {
+            $q->where('status', 'approved');
         });
     }
 
-    return $query;
-}
+
+    // In Product.php model
+    public function scopeSearchKeyword($query, $keyword)
+    {
+        if ($keyword) {
+            $query->where(function ($q) use ($keyword) {
+                $q->where('title', 'LIKE', "%{$keyword}%")
+                    ->orWhere('description', 'LIKE', "%{$keyword}%");
+            });
+        }
+
+        return $query;
+    }
 
 
 
@@ -100,6 +101,7 @@ public function scopeSearchKeyword($query, $keyword)
         $this->addMediaConversion('thumb')
             ->width(100)
             ->quality(80)
+            ->nonQueued()
             ->performOnCollections('images');
 
         $this->addMediaConversion('small')
@@ -125,7 +127,7 @@ public function scopeSearchKeyword($query, $keyword)
     public function department(): BelongsTo
     {
 
-        return $this->belongsTo(Department::class,'department_id');
+        return $this->belongsTo(Department::class, 'department_id');
     }
     public function category(): BelongsTo
     {
@@ -134,11 +136,11 @@ public function scopeSearchKeyword($query, $keyword)
     }
 
 
-  public function variationTypes()
-{
-    return $this->hasMany(VariationType::class);
-    // ->with('options')->orderBy('sort');
-}
+    public function variationTypes()
+    {
+        return $this->hasMany(VariationType::class);
+        // ->with('options')->orderBy('sort');
+    }
 
 
 
@@ -172,19 +174,31 @@ public function scopeSearchKeyword($query, $keyword)
         return $this->price;
     }
 
-    public function getPriceForOptions($optionIds = [])
-    {
-        $optionIds = array_values($optionIds);
-        sort($optionIds);
-        foreach ($this->variations as $variation) {
-            $a = $variation->variation_type_option_ids;
-            sort($a);
-            if ($a === $optionIds) {
-                return $variation->price !== null ? $variation->price : $this->price;
-            }
+   public function getPriceForOptions($optionIds = [])
+{
+    $optionIds = array_values((array) $optionIds);
+    sort($optionIds);
+
+    foreach ($this->variations as $variation) {
+        $raw = $variation->getRawOriginal('variation_type_option_ids');
+
+        // Fix: handle null, empty string, and invalid JSON
+        if (empty($raw)) continue;
+
+        $a = is_array($raw) ? $raw : json_decode($raw, true);
+
+        // Fix: skip if still not an array after decode
+        if (!is_array($a)) continue;
+
+        sort($a);
+
+        if ($a === $optionIds) {
+            return $variation->price !== null ? $variation->price : $this->price;
         }
-        return $this->price;
     }
+
+    return $this->price;
+}
 
 
     public function getImages(): MediaCollection
@@ -192,13 +206,14 @@ public function scopeSearchKeyword($query, $keyword)
         if ($this->options->count()) {
             foreach ($this->options as $opt) {
                 $images = $opt->getMedia('images');
-                if ($images) {
+                if ($images->isNotEmpty()) {  // <-- check for non-empty collection
                     return $images;
                 }
             }
         }
         return $this->getMedia('images');
     }
+
 
     public function getFirstOptionsMap(): array
     {
@@ -244,55 +259,53 @@ public function scopeSearchKeyword($query, $keyword)
 
 
 
-public function scopeFilterApproved($query, $departmentIds = null, $categoryIds = null, $price = null)
-{
-    if (is_array($departmentIds) && count($departmentIds) > 0) {
-        $query->whereHas('category', function ($q) use ($departmentIds) {
-            $q->whereIn('department_id', $departmentIds);
-        });
-    } elseif ($departmentIds && $departmentIds != 0) {
-        $query->whereHas('category', function ($q) use ($departmentIds) {
-            $q->where('department_id', $departmentIds);
-        });
+    public function scopeFilterApproved($query, $departmentIds = null, $categoryIds = null, $price = null)
+    {
+        if (is_array($departmentIds) && count($departmentIds) > 0) {
+            $query->whereHas('category', function ($q) use ($departmentIds) {
+                $q->whereIn('department_id', $departmentIds);
+            });
+        } elseif ($departmentIds && $departmentIds != 0) {
+            $query->whereHas('category', function ($q) use ($departmentIds) {
+                $q->where('department_id', $departmentIds);
+            });
+        }
+
+        if (is_array($categoryIds) && count($categoryIds) > 0) {
+            $query->whereIn('category_id', $categoryIds);
+        } elseif ($categoryIds && $categoryIds != 0) {
+            $query->where('category_id', $categoryIds);
+        }
+
+        if ($price) {
+            $query->where('price', '<=', $price);
+        }
+
+        return $query->where('status', 'published')
+            ->whereHas('vendor', function ($q) {
+                $q->where('status', 'approved');
+            });
     }
 
-    if (is_array($categoryIds) && count($categoryIds) > 0) {
-        $query->whereIn('category_id', $categoryIds);
-    } elseif ($categoryIds && $categoryIds != 0) {
-        $query->where('category_id', $categoryIds);
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'created_by', 'user_id');
     }
 
-    if ($price) {
-        $query->where('price', '<=', $price);
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
     }
 
-    return $query->where('status', 'published')
-        ->whereHas('vendor', function ($q) {
-            $q->where('status', 'approved');
-        });
-}
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
 
 
-public function vendor()
-{
-   return $this->belongsTo(Vendor::class, 'created_by', 'user_id');
-}
-
-public function bookings()
-{
-    return $this->hasMany(Booking::class);
-}
-
-public function reviews()
-{
-    return $this->hasMany(Review::class);
-}
-
-
-public function productGroups()
-{
-    return $this->belongsToMany(ProductGroup::class, 'product_group_product'); // Explicit pivot table name
-}
-
-
+    public function productGroups()
+    {
+        return $this->belongsToMany(ProductGroup::class, 'product_group_product'); // Explicit pivot table name
+    }
 }

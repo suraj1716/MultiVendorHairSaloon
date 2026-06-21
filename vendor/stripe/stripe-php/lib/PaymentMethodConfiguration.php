@@ -13,7 +13,7 @@ namespace Stripe;
  *
  * <strong>Child</strong> configurations apply to payments created on your connected accounts using direct charges, and charges with the on_behalf_of parameter.
  *
- * Child configurations have a <code>parent</code> that sets default values and controls which settings connected accounts may override. You can specify a parent ID at payment time, and Stripe will automatically resolve the connected account’s associated child configuration. Parent configurations are <a href="https://dashboard.stripe.com/settings/payment_methods/connected_accounts">managed in the dashboard</a> and are not available in this API.
+ * Child configurations have a <code>parent</code> that sets default values and controls which settings connected accounts may override. You can specify a parent ID at payment time, and Stripe will automatically resolve the connected account’s associated child configuration. Parent configurations are <a href="https://home.stripe.com/settings/payment_methods/connected_accounts">managed in the home</a> and are not available in this API.
  *
  * Related guides:
  * - <a href="https://stripe.com/docs/connect/payment-method-configurations">Payment Method Configurations API</a>

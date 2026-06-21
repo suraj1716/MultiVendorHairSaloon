@@ -9,9 +9,9 @@ The breadcrumbs component is used to render a simple, linear navigation that inf
 ```blade
 <x-filament::breadcrumbs :breadcrumbs="[
     '/' => 'Home',
-    '/dashboard' => 'Dashboard',
-    '/dashboard/users' => 'Users',
-    '/dashboard/users/create' => 'Create User',
+    '/home' => 'Dashboard',
+    '/home/users' => 'Users',
+    '/home/users/create' => 'Create User',
 ]" />
 ```
 

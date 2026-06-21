@@ -14,7 +14,7 @@ class GoogleCalendarService
 
    public ?string $newAccessToken = null;
 
-public function __construct(array $token)
+public function __construct(array $token, ?string $refreshToken = null)
 {
     $this->client = new Client();
     $this->client->setClientId(config('services.google.client_id'));
@@ -23,16 +23,17 @@ public function __construct(array $token)
     $this->client->setAccessType('offline');
     $this->client->setScopes([Calendar::CALENDAR]);
 
+    if ($refreshToken) {
+        $token['refresh_token'] = $refreshToken;
+    }
+
     $this->client->setAccessToken($token);
 
-    // Refresh if expired
     if ($this->client->isAccessTokenExpired() && isset($token['refresh_token'])) {
         $newToken = $this->client->fetchAccessTokenWithRefreshToken($token['refresh_token']);
 
         if (!isset($newToken['error'])) {
-            $newToken['refresh_token'] = $token['refresh_token']; // re-attach
-            $this->client->setAccessToken($newToken);
-            $this->newAccessToken = json_encode($newToken);
+            $this->newAccessToken = $newToken['access_token'];
         }
     }
 
@@ -83,15 +84,14 @@ public function createEvent(
 
     $event = new Event($eventData);
 
-    try {
-        return $this->calendar->events->insert('primary', $event);
-    } catch (\Exception $e) {
-        Log::error('Google insert failed', [
-            'message' => $e->getMessage(),
-            'access_token' => $this->client->getAccessToken(),
-        ]);
-        throw $e;
-    }
+  try {
+    return $this->calendar->events->insert('primary', $event, ['sendUpdates' => 'all']);
+} catch (\Exception $e) {
+    Log::error('Google insert failed', [
+        'message' => $e->getMessage(),
+    ]);
+    throw $e;
+}
 }
 
 
@@ -135,9 +135,8 @@ public function updateEvent(
 }
 
 
-    public function deleteEvent(string $eventId)
+public function deleteEvent(string $eventId)
 {
-
-    return $this->calendar->events->delete('primary', $eventId);
+    return $this->calendar->events->delete('primary', $eventId, ['sendUpdates' => 'all']);
 }
 }

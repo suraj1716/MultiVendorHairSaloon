@@ -246,7 +246,6 @@ function Show({
         console.error("Error adding to cart:", errors);
       },
       onSuccess: () => {
-        console.log("Product successfully added to cart.");
       },
     });
   };

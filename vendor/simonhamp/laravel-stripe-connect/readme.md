@@ -83,7 +83,7 @@ Route::get('/connect', function () {
         return redirect(auth()->user()->getStripeAccountLink());
     }
 
-    return redirect('dashboard');
+    return redirect('home');
 })->middleware(['auth']);
 ```
 

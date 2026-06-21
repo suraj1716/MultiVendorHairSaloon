@@ -83,7 +83,7 @@ Resource classes:
 - `getGlobalSearchResults()`has a `$search` parameter instead of `$searchQuery`
 - `getRouteBaseName()` has a new `?string $panel` parameter
 
-Resource classes and all page classes, including resource pages, custom pages, settings pages, and dashboard pages:
+Resource classes and all page classes, including resource pages, custom pages, settings pages, and home pages:
 
 - `getActiveNavigationIcon()` is public
 - `getNavigationBadge()` is public
@@ -95,7 +95,7 @@ Resource classes and all page classes, including resource pages, custom pages, s
 - `getNavigationUrl()` is public
 - `shouldRegisterNavigation()` is public
 
-All page classes, including resource pages, custom pages, settings pages, and custom dashboard pages:
+All page classes, including resource pages, custom pages, settings pages, and custom home pages:
 
 - `getBreadcrumbs()` is public
 - `getFooterWidgetsColumns()` is public
@@ -126,14 +126,14 @@ Relation managers:
 - `getInverseRelationshipName()` return type is now `?string`
 - `table()` is no longer static
 
-Custom dashboard pages:
+Custom home pages:
 
 - `getDashboard()` is public
 - `getWidgets()` is public
 
 #### Property signature changes
 
-Resource classes and all page classes, including resource pages, custom pages, settings pages, and dashboard pages:
+Resource classes and all page classes, including resource pages, custom pages, settings pages, and home pages:
 
 - `$middlewares` is now `$routeMiddleware`
 

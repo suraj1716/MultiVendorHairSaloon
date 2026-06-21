@@ -19,10 +19,10 @@ class ProductResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'highlight'=>$this->highlight,
+            'highlight' => $this->highlight,
             'description' => $this->description,
             'price' => $this->price,
-'status' => $this->status, // Add this line to include the status
+            'status' => $this->status, // Add this line to include the status
             'image' => $this->getFirstMediaUrl('images'),
             // 'image' => $this->getMedia('images')->first()?->getUrl('small') ?? '',
             'slug' => $this->slug,
@@ -45,7 +45,11 @@ class ProductResource extends JsonResource
                 ];
             }),
             'reviews_count' => $this->reviews_count,
-            'category' => new CategoryResource($this->whenLoaded('category')),
+            'category' => $this->category ? [
+                'id'   => $this->category->id,
+                'name' => $this->category->name,
+                'slug' => $this->category->slug,
+            ] : null,
             'average_rating' => round($this->reviews_avg_rating, 1),
             'vendor' => new VendorUserResource($this->whenLoaded('vendor')),
             'images' => $this->getMedia('images')->map(function ($image) {
@@ -57,10 +61,12 @@ class ProductResource extends JsonResource
                 ];
             }),
             'user' => [
-                'id' => $this->user->id,
-                'name' => $this->user->name,
-                'store_name' => $this->user->vendor->store_name
+                'id'         => $this->user?->id,
+                'name'       => $this->user?->name,
+                 'email'        => $this->user->email,
+                'store_name' => $this->user?->vendor?->store_name ?? '',
             ],
+
             'department' => [
                 'id' => $this->department->id,
                 'name' => $this->department->name,

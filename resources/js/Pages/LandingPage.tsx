@@ -1,7 +1,18 @@
 import { motion } from "framer-motion";
 import { Link } from "@inertiajs/react";
+import { useEffect } from "react";
 
 export default function LandingPage() {
+
+  useEffect(() => {
+    if (window.location.hash === "#services") {
+      const el = document.getElementById("services");
+      if (el) {
+        // slight delay ensures layout has settled before scrolling
+        setTimeout(() => el.scrollIntoView({ behavior: "smooth" }), 100);
+      }
+    }
+  }, []);
   return (
     <div className="bg-gradient-to-br from-purple-200 via-pink-100 to-yellow-100 min-h-screen font-sans">
       {/* Hero Section */}
@@ -42,7 +53,7 @@ export default function LandingPage() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-white">
+      <section id="services" className="py-20 bg-white">
         <div className="max-w-6xl mx-auto px-4 text-center">
           <h2 className="text-3xl font-bold mb-10 text-gray-800">Our Services</h2>
           <div className="grid md:grid-cols-3 gap-10">

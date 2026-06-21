@@ -8,9 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class OrderViewResource extends JsonResource
 {
-
     public static $wrap = false;
-
 
     public function toArray($request)
     {
@@ -19,19 +17,20 @@ class OrderViewResource extends JsonResource
             'status' => $this->status,
             'created_at' => $this->created_at,
             'total_price' => $this->total_price,
-            'booking_date' => optional(optional($this->order)->booking)->booking_date,
-            'time_slot' => optional(optional($this->order)->booking)->time_slot,
+            'payment_method' => $this->payment_method,
+            'booking_date' => optional($this->booking)->booking_date,
+            'time_slot' => optional($this->booking)->time_slot,
             'refunded_at' => $this->refunded_at,
             'refund_amount' => $this->refund_amount,
-
-            'refund_reason ' => $this->refund_reason,
+            'refund_reason' => $this->refund_reason,
 
             'vendor' => [
                 'name' => $this->vendorUser->name ?? '',
                 'store_name' => $this->vendorUser->vendor->store_name ?? '',
                 'store_address' => $this->vendorUser->vendor->store_address ?? '',
-                'vendor_type' => $this->vendorUser->vendor->vendor_type->value ?? '',
+                'vendor_type' => $this->vendorUser->vendor->vendor_type?->value ?? '',
             ],
+
             'orderItems' => $this->orderItems->map(function ($item) {
                 $variationOptionIds = is_string($item->variation_type_option_ids)
                     ? json_decode($item->variation_type_option_ids, true)
@@ -57,7 +56,6 @@ class OrderViewResource extends JsonResource
                 }
 
                 return [
-
                     'booking' => $this->booking ? [
                         'id' => $this->booking->id,
                         'booking_date' => $this->booking->booking_date,
@@ -71,12 +69,17 @@ class OrderViewResource extends JsonResource
                     'attachment_name' => $item->attachment_name,
                     'attachment_path' => $item->attachment_path,
 
-                    'product' => [
-                        'id' => $item->product->id,
+                    'product' => $item->product ? [
+                        'id'    => $item->product->id,
                         'title' => $item->product->title,
                         'image' => $item->product->getImageForOptions($item->variation_type_option_ids ?: []),
-                    'slug' => $item->product->slug,
-                    ],
+                        'slug'  => $item->product->slug,
+                    ] : ($item->item_type === 'gift_card' ? [
+                        'id'    => null,
+                        'title' => 'Gift Card',
+                        'image' => null,
+                        'slug'  => null,
+                    ] : null),
                 ];
             }),
         ];

@@ -52,59 +52,52 @@ class BookingController extends Controller
 
 
     public function store(Request $request)
-    {
-        Log::info('Inside BookingController@store', $request->all());
-        try {
+{
+    Log::info('Inside BookingController@store', $request->all());
+    try {
+        $hasBooking = $request->input('hasBooking') == '1';
+        $user = Auth::user();
 
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
 
-            $hasBooking = $request->input('hasBooking') == '1';
-            $user = Auth::user();
+        if ($hasBooking) {
+            $validated = $request->validate([
+                'booking_date' => 'required|date',
+                'time_slot' => 'required|string|max:255',
+            ]);
 
-            if (!$user) {
-                dd('User not authenticated'); // Checkpoint
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            $existingBooking = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
+                ->where('bookings.booking_date', $validated['booking_date'])
+                ->where('bookings.time_slot', $validated['time_slot'])
+                ->where('orders.status', '!=', 'cancelled')
+                ->exists();
+
+            if ($existingBooking) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected slot is already booked. Please choose a different time.'
+                ], 409);
             }
 
-            if ($hasBooking) {
-                $validated = $request->validate([
-                    'booking_date' => 'required|date',
-                    'time_slot' => 'required|string|max:255',
-                ]);
+            $booking = Booking::create([
+                'user_id' => $user->id,
+                'booking_date' => $validated['booking_date'],
+                'time_slot' => $validated['time_slot'],
+            ]);
 
-
-
-                $existingBooking = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
-                    ->where('bookings.booking_date', $validated['booking_date'])
-                    ->where('bookings.time_slot', $validated['time_slot'])
-                    ->where('orders.status', '!=', 'cancelled')
-                    ->exists();
-
-                if ($existingBooking) {
-                    dd('Booking already exists'); // Checkpoint
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Selected slot is already booked. Please choose a different time.'
-                    ], 409);
-                }
-
-                $booking = Booking::create([
-                    'user_id' => $user->id,
-                    'booking_date' => $validated['booking_date'],
-                    'time_slot' => $validated['time_slot'],
-                ]);
-
-
-
-                if ($user->google_token) {
+            if ($user->google_access_token) {
+                try {
                     $googleService = new GoogleCalendarService(
-                        $user->google_token,
+                        ['access_token' => $user->google_access_token],
                         $user->google_refresh_token
                     );
 
                     $startDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[0]))->format(\DateTime::RFC3339);
                     $endDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[1]))->format(\DateTime::RFC3339);
 
-                    $googleService->createEvent(
+                    $event = $googleService->createEvent(
                         'Booking Appointment',
                         "Booking ID: {$booking->id}",
                         $startDateTime,
@@ -112,29 +105,36 @@ class BookingController extends Controller
                         'Australia/Sydney',
                         null
                     );
+
+                    $booking->google_event_id = $event->id;
+                    $booking->save();
+
+                    if ($googleService->newAccessToken) {
+                        $user->google_access_token = $googleService->newAccessToken;
+                        $user->save();
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Google Calendar create failed in store(): ' . $e->getMessage());
                 }
             }
-
-
-
-            return response()->json(['success' => true, 'message' => 'Booking created successfully']);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            dd('Validation error caught', $e->errors()); // Catch validation
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            dd('General exception caught', $e->getMessage()); // Catch all other errors
-            Log::error('Booking store failed: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred. Please try again later.'
-            ], 500);
         }
+
+        return response()->json(['success' => true, 'message' => 'Booking created successfully']);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Booking store failed: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred. Please try again later.'
+        ], 500);
     }
+}
 
 
 
@@ -380,9 +380,11 @@ class BookingController extends Controller
         ]);
 
         // Authorization: user must own booking or vendor
-        if ($booking->user_id !== Auth::id() && $booking->vendor_id !== Auth::id()) {
-            abort(403);
-        }
+       $vendorUserId = $booking->order?->vendor_user_id;
+
+if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
+    abort(403);
+}
 
         // Update booking details
         $booking->update([
@@ -480,9 +482,11 @@ class BookingController extends Controller
 {
     $user = Auth::user();
 
-    if ($booking->user_id !== $user->id && $booking->vendor_id !== $user->id) {
-        abort(403, 'Unauthorized');
-    }
+    $vendorUserId = $booking->order?->vendor_user_id;
+
+if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
+    abort(403);
+}
 
     $order = $booking->order;
 

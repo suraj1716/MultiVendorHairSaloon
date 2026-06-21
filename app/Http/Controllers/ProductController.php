@@ -6,6 +6,7 @@ use App\Http\Resources\DepartmentResource;
 use App\Http\Resources\ProductGroupResource;
 use App\Http\Resources\ProductResource;
 use App\Http\Resources\ProductListResource;
+use App\Models\Category;
 use App\Models\CategoryGroup;
 use App\Models\Department;
 use App\Models\HeroBanner;
@@ -22,77 +23,82 @@ class ProductController extends Controller
 
 
 
-  public function home(Request $request)
-{
-    $banners = HeroBanner::where('is_active', true)
-        ->latest()
-        ->get()
-        ->map(function ($banner) {
-            $banner->image_path = $banner->image_url; // full URL from accessor
-            return $banner;
-        });
+    public function home(Request $request)
+    {
+        $banners = HeroBanner::where('is_active', true)
+            ->latest()
+            ->get();
 
-    $keyword = $request->query('keyword');
+        $keyword = $request->query('keyword');
 
-    // Load category groups with departments
-    $categoryGroups = CategoryGroup::with(['categories.department'])
-        ->where('active', true)
-        ->get()
-        ->map(function ($group) {
-            $group->image_url; // Touch accessor
-            return $group;
-        });
+        $categories = Category::whereHas('products', function ($q) {
+            $q->where('status', 'published');
+        })
+            ->with('department')
+            ->get();
 
-    // Load product groups with nested products and ratings - only published products
-    $productGroups = ProductGroup::where('active', 1)
-        ->with([
-            'groupedProducts' => function ($query) {
-                $query->where('status', 'published')  // <=== filter published products only
-                    ->withAvg('reviews', 'rating')   // average rating per product
-                    ->withCount('reviews')           // review count per product
-                    ->with([
-                        'user.vendor',
-                        'department',
-                        'variationTypes.options.media',
-                        'variations',
-                        'media',
-                        'reviews.user'
-                    ]);
-            }
-        ])
-        ->get();
 
-    // Convert to resources
-    $productGroupsResource = ProductGroupResource::collection($productGroups);
-    $productGroupsArray = $productGroupsResource->toArray($request);
+        // Load category groups with departments
+        $categoryGroups = CategoryGroup::with(['categories.department'])
+            ->where('active', true)
+            ->get()
+            ->map(function ($group) {
+                $group->image_url; // Touch accessor
+                return $group;
+            });
 
-    // Get departments that have published products (filterApproved presumably means status = published)
-    $departments = Department::whereHas('categories.products', fn($q) => $q->filterApproved())
-        ->with(['categories' => fn($q) => $q->whereHas('products', fn($q) => $q->where('status', 'published'))])
-        ->get();
+        // Load product groups with nested products and ratings - only published products
+        $productGroups = ProductGroup::where('active', 1)
+            ->with([
+                'groupedProducts' => function ($query) {
+                    $query->where('status', 'published')  // <=== filter published products only
+                        ->withAvg('reviews', 'rating')   // average rating per product
+                        ->withCount('reviews')           // review count per product
+                        ->with([
+                            'user.vendor',
+                            'department',
+                            'variationTypes.options.media',
+                            'variations',
+                            'media',
+                            'reviews.user'
+                        ]);
+                }
+            ])
+            ->get();
 
-    // Product search - only published products
-    $products = ProductSearchService::queryWithKeyword($keyword)
-        ->where('status', 'published')  // <=== filter published
-        ->paginate(12);
+        // Convert to resources
+        $productGroupsResource = ProductGroupResource::collection($productGroups);
+        $productGroupsArray = $productGroupsResource->toArray($request);
 
-    // All published products for whatever purpose - optional
-    $allProducts = Product::with(['department', 'category', 'media', 'variationTypes.options'])
-        ->where('status', 'published')
-        ->get();
+        // Get departments that have published products (filterApproved presumably means status = published)
+        $departments = Department::whereHas('categories.products', fn($q) => $q->filterApproved())
+            ->with(['categories' => fn($q) => $q->whereHas('products', fn($q) => $q->where('status', 'published'))])
+            ->get();
 
-    // Render home page
-    return Inertia::render('Home', [
-        'banners' => $banners,
-        'products' => ProductResource::collection($products),
-        'keyword' => $keyword,
-        'departments' => $departments,
-        'department' => null,
-        'categoryGroups' => $categoryGroups,
-        'productGroups' => $productGroupsArray,
-        'allproducts' => ProductResource::collection($allProducts),
-    ]);
-}
+        // Product search - only published products
+        $products = ProductSearchService::queryWithKeyword($keyword)
+            ->where('status', 'published')  // <=== filter published
+            ->paginate(12);
+
+        // All published products for whatever purpose - optional
+        $allProducts = Product::with(['department', 'category', 'media', 'variationTypes.options'])
+            ->where('status', 'published')
+            ->get();
+
+        // Render home page
+        return Inertia::render('Home', [
+            'banners' => $banners,
+            'products' => ProductResource::collection($products),
+            'keyword' => $keyword,
+            'departments' => $departments,
+            'categories' => $categories,
+            'department' => null,
+            'categoryGroups' => $categoryGroups,
+            'productGroups' => $productGroupsArray,
+            'allProducts' => ProductResource::collection($allProducts),
+
+        ]);
+    }
 
 
 
@@ -292,19 +298,29 @@ class ProductController extends Controller
 
 
 
-  public function search(Request $request)
+    public function search(Request $request)
     {
+        // ── All products for accordion (no pagination) ────────────────
+        $allProducts = Product::forWebsite()
+            ->with([
+                'department',
+                'category',
+                'user.vendor',
+                'variationTypes.options',  // ← add
+                'variations',              // ← add
+                'media',                   // ← add
 
-        $products = Product::where('status', 'published')
-            ->with(['department', 'category', 'user'])
+            ])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->latest()
-            ->get();
+            ->get();  // ← no paginate
 
         $productGroups = ProductGroup::where('active', 1)
             ->with([
                 'groupedProducts' => function ($query) {
-                    $query->withAvg('reviews', 'rating')   // ✅ average rating per product
-                        ->withCount('reviews')           // ✅ review count per product
+                    $query->withAvg('reviews', 'rating')
+                        ->withCount('reviews')
                         ->with([
                             'user.vendor',
                             'department',
@@ -317,17 +333,17 @@ class ProductController extends Controller
             ])
             ->get();
 
-        // Convert to resources
         $productGroupsResource = ProductGroupResource::collection($productGroups);
         $productGroupsArray = $productGroupsResource->toArray($request);
+
         $categoryGroups = CategoryGroup::with(['categories.department'])
             ->where('active', true)
             ->get()
             ->map(function ($group) {
-                $group->image_url; // Touch accessor
+                $group->image_url;
                 return $group;
             });
-        // Get departments that have categories with products (filtered by forWebsite)
+
         $departments = Department::whereHas('categories.products', function ($query) {
             $query->forWebsite();
         })
@@ -338,26 +354,17 @@ class ProductController extends Controller
             }])
             ->get();
 
-        $keyword = $request->query('keyword');
+        $keyword   = $request->query('keyword');
         $categoryId = $request->query('category_id');
-        $maxPrice = $request->query('max_price');
-        $sortBy = $request->query('sort_by');
+        $maxPrice  = $request->query('max_price');
+        $sortBy    = $request->query('sort_by');
 
-
-
-        $query = Product::query()
-            ->forWebsite()
-            ->with(['user.vendor', 'department'])
-            ->withAvg('reviews', 'rating')->withCount('reviews'); // ✅ Add this line here
-
-        // Initialize null
         $searchedProduct = null;
 
         if ($keyword) {
-            // Create a separate filtered query only for search
             $searchedProduct = Product::query()
                 ->forWebsite()
-                ->with(['user.vendor', 'department'])
+                ->with(['user.vendor', 'department', 'category'])
                 ->withAvg('reviews', 'rating')
                 ->withCount('reviews')
                 ->where('title', 'LIKE', "%{$keyword}%")
@@ -365,87 +372,65 @@ class ProductController extends Controller
                 ->withQueryString();
         }
 
-
-        if ($keyword) {
-            $query->where('title', 'LIKE', "%{$keyword}%");
-        }
-        if ($categoryId) {
-            $query->where('category_id', $categoryId);
-        }
-        if ($maxPrice) {
-            $query->where('price', '<=', $maxPrice);
-        }
-        if ($sortBy) {
-            if ($sortBy === 'price_asc') {
-                $query->orderBy('price', 'asc');
-            } elseif ($sortBy === 'price_desc') {
-                $query->orderBy('price', 'desc');
-            } elseif ($sortBy === 'newest') {
-                $query->orderBy('created_at', 'desc');
-            }
-        }
-
         $allGroupedProducts = $productGroups
             ->flatMap(fn($group) => $group->groupedProducts)
             ->unique('id')
             ->values();
 
-        // Manual pagination for collections
-        $page = request()->get('page', 1);
+        $page    = request()->get('page', 1);
         $perPage = 12;
-        $offset = ($page - 1) * $perPage;
+        $offset  = ($page - 1) * $perPage;
 
         $pagedProducts = new LengthAwarePaginator(
-            $allGroupedProducts->slice($offset, $perPage)->values(), // items for current page
-            $allGroupedProducts->count(),                             // total items
+            $allGroupedProducts->slice($offset, $perPage)->values(),
+            $allGroupedProducts->count(),
             $perPage,
             $page,
-            ['path' => request()->url(), 'query' => request()->query()] // maintain query params
+            ['path' => request()->url(), 'query' => request()->query()]
         );
 
         return Inertia::render('Shop/ListProducts', [
-            'allProducts' => ProductListResource::collection($products),
-            'products' => ProductListResource::collection($pagedProducts),
+            'allProducts'      => ProductListResource::collection($allProducts),  // ← all, no pagination
+            'products'         => ProductListResource::collection($pagedProducts),
             'searchedProducts' => $searchedProduct
                 ? ProductListResource::collection($searchedProduct)
                 : null,
             'filters' => [
-                'keyword' => $keyword,
+                'keyword'     => $keyword,
                 'category_id' => $categoryId,
-                'max_price' => $maxPrice,
-                'sort_by' => $sortBy,
+                'max_price'   => $maxPrice,
+                'sort_by'     => $sortBy,
             ],
-            'departments' => $departments,  // send filtered departments only
-            'categoryGroups'  => $categoryGroups,
-            'productGroups'   => $productGroupsArray,
+            'departments'  => $departments,
+            'categoryGroups' => $categoryGroups,
+            'productGroups'  => $productGroupsArray,
         ]);
     }
 
 
 
 
- public function showProductGroup(ProductGroup $productGroup)
-{
-    // Eager load only published products and their relations
-    $productGroup->load([
-        'products' => function ($query) {
-            $query->where('status', 'published');
-        },
-        'products.user',
-        'products.department',
-        'products.options',
-    ]);
+    public function showProductGroup(ProductGroup $productGroup)
+    {
+        // Eager load only published products and their relations
+        $productGroup->load([
+            'products' => function ($query) {
+                $query->where('status', 'published');
+            },
+            'products.user',
+            'products.department',
+            'products.options',
+        ]);
 
-    // Get only published products (paginated)
-    $products = $productGroup->products()
-        ->where('status', 'published')
-        ->latest()
-        ->paginate(12);
+        // Get only published products (paginated)
+        $products = $productGroup->products()
+            ->where('status', 'published')
+            ->latest()
+            ->paginate(12);
 
-    return Inertia::render('showProductGroup/Show', [
-        'productGroup' => $productGroup,
-        'products' => ProductListResource::collection($products),
-    ]);
-}
-
+        return Inertia::render('showProductGroup/Show', [
+            'productGroup' => $productGroup,
+            'products' => ProductListResource::collection($products),
+        ]);
+    }
 }

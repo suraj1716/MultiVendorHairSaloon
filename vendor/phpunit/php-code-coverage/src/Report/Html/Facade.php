@@ -45,7 +45,7 @@ final class Facade
         $report = $coverage->getReport();
         $date   = date('D M j G:i:s T Y');
 
-        $dashboard = new Dashboard(
+        $home = new Dashboard(
             $this->templatePath,
             $this->generator,
             $date,
@@ -70,7 +70,7 @@ final class Facade
         );
 
         $directory->render($report, $target . 'index.html');
-        $dashboard->render($report, $target . 'dashboard.html');
+        $home->render($report, $target . 'home.html');
 
         foreach ($report as $node) {
             $id = $node->id();
@@ -79,7 +79,7 @@ final class Facade
                 Filesystem::createDirectory($target . $id);
 
                 $directory->render($node, $target . $id . '/index.html');
-                $dashboard->render($node, $target . $id . '/dashboard.html');
+                $home->render($node, $target . $id . '/home.html');
             } else {
                 $dir = dirname($target . $id);
 

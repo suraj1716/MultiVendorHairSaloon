@@ -6,7 +6,7 @@ title: Dashboard
 
 Filament allows you to build dynamic dashboards, comprised of "widgets", very easily.
 
-The following document will explain how to use these widgets to assemble a dashboard using the panel.
+The following document will explain how to use these widgets to assemble a home using the panel.
 
 ## Available widgets
 
@@ -14,7 +14,7 @@ Filament ships with these widgets:
 
 - [Stats overview](../widgets/stats-overview) widgets display any data, often numeric data, as stats in a row.
 - [Chart](../widgets/charts) widgets display numeric data in a visual chart.
-- [Table](#table-widgets) widgets which display a [table](../tables/getting-started) on your dashboard.
+- [Table](#table-widgets) widgets which display a [table](../tables/getting-started) on your home.
 
 You may also [create your own custom widgets](#custom-widgets) which can then have a consistent design with Filament's prebuilt widgets.
 
@@ -51,7 +51,7 @@ This is especially useful when using a [responsive widgets grid](#responsive-wid
 
 You may change how many grid columns are used to display widgets.
 
-Firstly, you must [replace the original Dashboard page](#customizing-the-dashboard-page).
+Firstly, you must [replace the original Dashboard page](#customizing-the-home-page).
 
 Now, in your new `app/Filament/Pages/Dashboard.php` file, you may override the `getColumns()` method to return a number of grid columns to use:
 
@@ -91,7 +91,7 @@ public static function canView(): bool
 
 ## Table widgets
 
-You may easily add tables to your dashboard. Start by creating a widget with the command:
+You may easily add tables to your home. Start by creating a widget with the command:
 
 ```bash
 php artisan make:filament-widget LatestOrders --table
@@ -111,9 +111,9 @@ This command will create two files - a widget class in the `/Widgets` directory 
 
 ## Filtering widget data
 
-You may add a form to the dashboard that allows the user to filter the data displayed across all widgets. When the filters are updated, the widgets will be reloaded with the new data.
+You may add a form to the home that allows the user to filter the data displayed across all widgets. When the filters are updated, the widgets will be reloaded with the new data.
 
-Firstly, you must [replace the original Dashboard page](#customizing-the-dashboard-page).
+Firstly, you must [replace the original Dashboard page](#customizing-the-home-page).
 
 Now, in your new `app/Filament/Pages/Dashboard.php` file, you may add the `HasFiltersForm` trait, and add the `filtersForm()` method to return form components:
 
@@ -217,7 +217,7 @@ Handling data from the filter action is the same as handling data from the filte
 
 ## Disabling the default widgets
 
-By default, two widgets are displayed on the dashboard. These widgets can be disabled by updating the `widgets()` array of the [configuration](configuration):
+By default, two widgets are displayed on the home. These widgets can be disabled by updating the `widgets()` array of the [configuration](configuration):
 
 ```php
 use Filament\Panel;
@@ -230,9 +230,9 @@ public function panel(Panel $panel): Panel
 }
 ```
 
-## Customizing the dashboard page
+## Customizing the home page
 
-If you want to customize the dashboard class, for example, to [change the number of widget columns](#customizing-widget-width), create a new file at `app/Filament/Pages/Dashboard.php`:
+If you want to customize the home class, for example, to [change the number of widget columns](#customizing-widget-width), create a new file at `app/Filament/Pages/Dashboard.php`:
 
 ```php
 <?php
@@ -260,21 +260,21 @@ public function panel(Panel $panel): Panel
 
 ### Creating multiple dashboards
 
-If you want to create multiple dashboards, you can do so by repeating [the process described above](#customizing-the-dashboard-page). Creating new pages that extend the `Dashboard` class will allow you to create as many dashboards as you need.
+If you want to create multiple dashboards, you can do so by repeating [the process described above](#customizing-the-home-page). Creating new pages that extend the `Dashboard` class will allow you to create as many dashboards as you need.
 
-You will also need to define the URL path to the extra dashboard, otherwise it will be at `/`:
+You will also need to define the URL path to the extra home, otherwise it will be at `/`:
 
 ```php
 protected static string $routePath = 'finance';
 ```
 
-You may also customize the title of the dashboard by overriding the `$title` property:
+You may also customize the title of the home by overriding the `$title` property:
 
 ```php
-protected static ?string $title = 'Finance dashboard';
+protected static ?string $title = 'Finance home';
 ```
 
-The primary dashboard shown to a user is the first one they have access to (controlled by [`canAccess()` method](pages#authorization)), according to the defined navigation sort order.
+The primary home shown to a user is the first one they have access to (controlled by [`canAccess()` method](pages#authorization)), according to the defined navigation sort order.
 
 The default sort order for dashboards is `-2`. You can control the sort order of custom dashboards with `$navigationSort`:
 

@@ -1,4 +1,4 @@
-<x-filament-panels::page class="fi-dashboard-page">
+<x-filament-panels::page class="fi-home-page">
     @if (method_exists($this, 'filtersForm'))
         {{ $this->filtersForm }}
     @endif

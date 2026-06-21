@@ -1,80 +1,123 @@
 import React, { useEffect, useState } from "react";
-import { Inertia } from "@inertiajs/inertia";
+import { router } from "@inertiajs/react";
+import { createPortal } from "react-dom";
 import ErrorPage from "@/Pages/ErrorPage";
+import { useAuthModal } from "@/Contexts/AuthModalContext";
+import LoginModal from "@/Pages/Auth/Login";
+import RegisterModal from "@/Pages/Auth/Register";
 
-// Optional loader
-const Loader = () => (
-  <div className="fixed inset-0 z-[9999] bg-white bg-opacity-60 flex items-center justify-center pointer-events-none">
-    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-  </div>
-);
+const Loader = () =>
+    createPortal(
+        <div className="fixed inset-0 z-[9999] bg-white bg-opacity-60 flex items-center justify-center pointer-events-none">
+            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>,
+        document.body
+    );
 
 interface AppWrapperProps {
-  App: React.ComponentType<any>;
-  props: Record<string, any>;
+    App: React.ComponentType<any>;
+    props: Record<string, any>;
 }
 
 const AppWrapper: React.FC<AppWrapperProps> = ({ App, props }) => {
-  const [loading, setLoading] = useState(false);
-  const [networkError, setNetworkError] = useState(false);
-  const [errorStatus, setErrorStatus] = useState<number>(500);
+    const { loginOpen, registerOpen, openLogin, openRegister, closeAll } = useAuthModal();
+    const [loading, setLoading] = useState(false);
+    const [networkError, setNetworkError] = useState(false);
+    const [errorStatus, setErrorStatus] = useState<number>(500);
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
+    useEffect(() => {
+  let lastUrl = window.location.pathname; // track current page before any navigation
 
-    const onStart = () => {
-      timer = setTimeout(() => setLoading(true), 300);
-    };
+  let timer: NodeJS.Timeout;
 
-    const onFinish = () => {
-      clearTimeout(timer);
-      setLoading(false);
-    };
+  const removeStart = router.on("start", (event: any) => {
+    timer = setTimeout(() => setLoading(true), 300);
+  });
 
-    const onError = (event: any) => {
-      console.error("Inertia error:", event.detail);
-      const status = event.detail?.response?.status ?? 500;
-      setErrorStatus(status);
-      setNetworkError(true);
-    };
+  const removeFinish = router.on("finish", () => {
+    clearTimeout(timer);
+    setLoading(false);
+  });
 
-    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled rejection (likely network error):", event.reason);
-      setErrorStatus(0);
-      setNetworkError(true);
-    };
+  const removeError = router.on("error", (event: any) => {
+    const status = event.detail?.response?.status ?? 500;
+    setErrorStatus(status);
+    setNetworkError(true);
+  });
 
-    Inertia.on("start", onStart);
-    Inertia.on("finish", onFinish);
-    Inertia.on("error", onError);
-    Inertia.on("invalid", onFinish);
-    window.addEventListener("unhandledrejection", onUnhandledRejection);
+  const removeInvalid = router.on("invalid", () => {
+    clearTimeout(timer);
+    setLoading(false);
+  });
 
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener("unhandledrejection", onUnhandledRejection);
-    };
-  }, []);
+  const removeSuccess = router.on("success", (event: any) => {
+    const page = event.detail.page;
+    const isLoginPage = page.component === "Auth/LoginPage";
+    const cameFromRedirect = !page.props?.auth?.user;
 
-  if (networkError) {
+    if (isLoginPage && cameFromRedirect) {
+      const returnTo = lastUrl; // the page user was actually on before this redirect
+      router.visit(returnTo, {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+          setTimeout(() => openLogin(), 50);
+        },
+      });
+      return; // don't update lastUrl to the login page itself
+    }
+
+    lastUrl = page.url; // remember this page for next time
+  });
+
+  const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+    setErrorStatus(0);
+    setNetworkError(true);
+  };
+
+  window.addEventListener("unhandledrejection", onUnhandledRejection);
+
+  return () => {
+    clearTimeout(timer);
+    removeStart();
+    removeFinish();
+    removeError();
+    removeInvalid();
+    removeSuccess();
+    window.removeEventListener("unhandledrejection", onUnhandledRejection);
+  };
+}, [openLogin]);
+
+    if (networkError) {
+        return (
+            <ErrorPage
+                statusCode={errorStatus}
+                message={
+                    errorStatus === 0
+                        ? "Network error occurred. Please check your connection and try again."
+                        : `A server error occurred (status code: ${errorStatus}).`
+                }
+            />
+        );
+    }
+
     return (
-      <ErrorPage
-        statusCode={errorStatus}
-        message={
-          errorStatus === 0
-            ? "Network error occurred. Please check your connection and try again."
-            : `A server error occurred (status code: ${errorStatus}).`
-        }
-      />
+        <>
+            {loading && <Loader />}
+            <App {...props} />
+            <LoginModal
+                isOpen={loginOpen}
+                onClose={closeAll}
+                onSwitchToRegister={openRegister}
+                canResetPassword
+            />
+            <RegisterModal
+                isOpen={registerOpen}
+                onClose={closeAll}
+                onSwitchToLogin={openLogin}
+            />
+        </>
     );
-  }
-
-  return (
-    <>
-      {loading && <Loader />}
-      <App {...props} />
-    </>
-  );
 };
 
 export default AppWrapper;

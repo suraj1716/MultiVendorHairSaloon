@@ -130,10 +130,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
       ...data,
       recurring_closed_days: recurringClosedDaysAsIndices,
     });
-    console.log(
-      "Final recurring_closed_days sent:",
-      recurringClosedDaysAsIndices
-    );
+
 
     // Submit as usual
     post(route("vendor.store"), {

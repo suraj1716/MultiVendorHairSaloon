@@ -87,8 +87,8 @@ abstract class OAuth
         if (null === $clientId) {
             $msg = 'No client_id provided.  (HINT: set your client_id using '
               . '"Stripe::setClientId(<CLIENT-ID>)".  You can find your client_ids '
-              . 'in your Stripe dashboard at '
-              . 'https://dashboard.stripe.com/account/applications/settings, '
+              . 'in your Stripe home at '
+              . 'https://home.stripe.com/account/applications/settings, '
               . 'after registering your account as a platform. See '
               . 'https://stripe.com/docs/connect/standard-accounts for details, '
               . 'or email support@stripe.com if you have any questions.';

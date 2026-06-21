@@ -38,7 +38,7 @@ namespace Stripe;
  * @property null|StripeObject $metadata Set of <a href="https://stripe.com/docs/api/metadata">key-value pairs</a> that you can attach to an object. This can be useful for storing additional information about the object in a structured format.
  * @property null|bool $payouts_enabled Whether the funds in this account can be paid out.
  * @property null|(object{alternatives: null|(object{alternative_fields_due: string[], original_fields_due: string[]}&StripeObject)[], current_deadline: null|int, currently_due: null|string[], disabled_reason: null|string, errors: null|(object{code: string, reason: string, requirement: string}&StripeObject)[], eventually_due: null|string[], past_due: null|string[], pending_verification: null|string[]}&StripeObject) $requirements
- * @property null|(object{bacs_debit_payments?: (object{display_name: null|string, service_user_number: null|string}&StripeObject), branding: (object{icon: null|File|string, logo: null|File|string, primary_color: null|string, secondary_color: null|string}&StripeObject), card_issuing?: (object{tos_acceptance?: (object{date: null|int, ip: null|string, user_agent?: string}&StripeObject)}&StripeObject), card_payments: (object{decline_on?: (object{avs_failure: bool, cvc_failure: bool}&StripeObject), statement_descriptor_prefix: null|string, statement_descriptor_prefix_kana: null|string, statement_descriptor_prefix_kanji: null|string}&StripeObject), dashboard: (object{display_name: null|string, timezone: null|string}&StripeObject), invoices?: (object{default_account_tax_ids: null|(string|TaxId)[], hosted_payment_method_save?: null|string}&StripeObject), payments: (object{statement_descriptor: null|string, statement_descriptor_kana: null|string, statement_descriptor_kanji: null|string, statement_descriptor_prefix_kana: null|string, statement_descriptor_prefix_kanji: null|string}&StripeObject), payouts?: (object{debit_negative_balances: bool, schedule: (object{delay_days: int, interval: string, monthly_anchor?: int, weekly_anchor?: string}&StripeObject), statement_descriptor: null|string}&StripeObject), sepa_debit_payments?: (object{creditor_id?: string}&StripeObject), treasury?: (object{tos_acceptance?: (object{date: null|int, ip: null|string, user_agent?: string}&StripeObject)}&StripeObject)}&StripeObject) $settings Options for customizing how the account functions within Stripe.
+ * @property null|(object{bacs_debit_payments?: (object{display_name: null|string, service_user_number: null|string}&StripeObject), branding: (object{icon: null|File|string, logo: null|File|string, primary_color: null|string, secondary_color: null|string}&StripeObject), card_issuing?: (object{tos_acceptance?: (object{date: null|int, ip: null|string, user_agent?: string}&StripeObject)}&StripeObject), card_payments: (object{decline_on?: (object{avs_failure: bool, cvc_failure: bool}&StripeObject), statement_descriptor_prefix: null|string, statement_descriptor_prefix_kana: null|string, statement_descriptor_prefix_kanji: null|string}&StripeObject), home: (object{display_name: null|string, timezone: null|string}&StripeObject), invoices?: (object{default_account_tax_ids: null|(string|TaxId)[], hosted_payment_method_save?: null|string}&StripeObject), payments: (object{statement_descriptor: null|string, statement_descriptor_kana: null|string, statement_descriptor_kanji: null|string, statement_descriptor_prefix_kana: null|string, statement_descriptor_prefix_kanji: null|string}&StripeObject), payouts?: (object{debit_negative_balances: bool, schedule: (object{delay_days: int, interval: string, monthly_anchor?: int, weekly_anchor?: string}&StripeObject), statement_descriptor: null|string}&StripeObject), sepa_debit_payments?: (object{creditor_id?: string}&StripeObject), treasury?: (object{tos_acceptance?: (object{date: null|int, ip: null|string, user_agent?: string}&StripeObject)}&StripeObject)}&StripeObject) $settings Options for customizing how the account functions within Stripe.
  * @property null|(object{date?: null|int, ip?: null|string, service_agreement?: string, user_agent?: null|string}&StripeObject) $tos_acceptance
  * @property null|string $type The Stripe account type. Can be <code>standard</code>, <code>express</code>, <code>custom</code>, or <code>none</code>.
  */
@@ -62,7 +62,7 @@ class Account extends ApiResource
     /**
      * With <a href="/docs/connect">Connect</a>, you can create Stripe accounts for
      * your users. To do this, you’ll first need to <a
-     * href="https://dashboard.stripe.com/account/applications/settings">register your
+     * href="https://home.stripe.com/account/applications/settings">register your
      * platform</a>.
      *
      * If you’ve already collected information for your connected accounts, you <a
@@ -102,7 +102,7 @@ class Account extends ApiResource
      * href="/api/balance/balance_object">balances</a> are zero.
      *
      * If you want to delete your own account, use the <a
-     * href="https://dashboard.stripe.com/settings/account">account information tab in
+     * href="https://home.stripe.com/settings/account">account information tab in
      * your account settings</a> instead.
      *
      * @param null|array $params
@@ -158,7 +158,7 @@ class Account extends ApiResource
      * onboarding, after which some properties can no longer be updated.
      *
      * To update your own account, use the <a
-     * href="https://dashboard.stripe.com/settings/account">Dashboard</a>. Refer to our
+     * href="https://home.stripe.com/settings/account">Dashboard</a>. Refer to our
      * <a href="/docs/connect/updating-accounts">Connect</a> documentation to learn
      * more about updating accounts.
      *

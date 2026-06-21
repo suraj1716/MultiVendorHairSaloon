@@ -49,7 +49,7 @@ class BlogPostsChart extends ChartWidget
 }
 ```
 
-Now, check out your widget in the dashboard.
+Now, check out your widget in the home.
 
 ## Available chart types
 

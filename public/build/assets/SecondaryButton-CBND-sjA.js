@@ -1,1 +1,0 @@
-import{j as u}from"./app-D41UR1Nu.js";function e({type:t="button",className:n="",disabled:o,children:r,...s}){return u.jsx("button",{...s,type:t,className:"btn "+n,disabled:o,children:r})}export{e as S};
