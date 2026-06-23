@@ -9,6 +9,7 @@ import { ShoppingCartIcon } from "@heroicons/react/20/solid";
 import axios from "axios";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import StaffSelectStep from "@/Components/App/StaffSelectStep";
 
 function Index({
   csrf_token,
@@ -29,6 +30,35 @@ function Index({
     shippingAddresses.find((a: any) => a.is_default)?.id ?? null,
   );
 
+  // ── Staff ──────────────────────────────────────────────────────────────────
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(() => {
+    const v = localStorage.getItem("selectedStaffId");
+    return v ? parseInt(v, 10) : null;
+  });
+  const [selectedStaffName, setSelectedStaffName] = useState<string | null>(
+    () => localStorage.getItem("selectedStaffName") || null,
+  );
+
+  const handleSelectStaff = (
+    staffId: number | null,
+    staffName: string | null = null,
+  ) => {
+    setSelectedStaffId(staffId);
+    setSelectedStaffName(staffName);
+
+    if (staffId !== null) {
+      localStorage.setItem("selectedStaffId", String(staffId));
+      if (staffName) {
+        localStorage.setItem("selectedStaffName", staffName);
+      } else {
+        localStorage.removeItem("selectedStaffName");
+      }
+    } else {
+      localStorage.removeItem("selectedStaffId");
+      localStorage.removeItem("selectedStaffName");
+    }
+  };
+
   // ── Booking ────────────────────────────────────────────────────────────────
   const [bookingDate, setBookingDate] = useState(
     () => localStorage.getItem("bookingDate") || "",
@@ -42,6 +72,7 @@ function Index({
     return !!(d && t);
   });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(false);
 
   // ── Steps ──────────────────────────────────────────────────────────────────
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -128,26 +159,25 @@ function Index({
   };
 
   // ── Promo toast (only on apply, not on every render) ──────────────────────
- const handleApplyPromo = async () => {
+  const handleApplyPromo = async () => {
+    if (promoApplied) {
+      toast.error("A promo code is already applied. Remove it first.");
+      return;
+    }
+    try {
+      const orderTotal = bookingConfirmed ? subtotalWithBooking : totalPrice;
 
-  if (promoApplied) {
-    toast.error("A promo code is already applied. Remove it first.");
-    return;
-  }
-  try {
-    const orderTotal = bookingConfirmed ? subtotalWithBooking : totalPrice;
-
-    const res = await fetch("/vouchers/validate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-CSRF-TOKEN": csrf_token,
-      },
-      body: JSON.stringify({
-        code: promoCode,
-        order_total: orderTotal, // ← add this
-      }),
-    });
+      const res = await fetch("/vouchers/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-TOKEN": csrf_token,
+        },
+        body: JSON.stringify({
+          code: promoCode,
+          order_total: orderTotal,
+        }),
+      });
       const data = await res.json();
       if (!res.ok) {
         toast.error(data.error || "Invalid code");
@@ -197,6 +227,7 @@ function Index({
           hasShipping: showShippingForm ? "1" : "0",
           time_slot: timeSlot,
           vendor_user_id: primitiveVendorId,
+          staff_id: selectedStaffId,
         });
       }
 
@@ -223,12 +254,14 @@ function Index({
       });
 
       // Clean up — fires before Stripe redirect, that's fine
-      ["bookingDate", "timeSlot", "checkoutStep"].forEach((k) =>
-        localStorage.removeItem(k),
+      ["bookingDate", "timeSlot", "checkoutStep", "selectedStaffId", "selectedStaffName"].forEach(
+        (k) => localStorage.removeItem(k),
       );
       setBookingDate("");
       setTimeSlot("");
       setBookingConfirmed(false);
+      setSelectedStaffId(null);
+      setSelectedStaffName(null);
       setStep(1);
     } catch (err: any) {
       console.error("Booking store failed:", err);
@@ -520,36 +553,142 @@ function Index({
                     {Object.values(cartItems)
                       .filter((g: any) => g.user.vendor_type === "appointment")
                       .map((group: any) => (
-                        <div className="co-card-warm" key={group.user.id}>
-                          <p
-                            style={{
-                              fontFamily: "var(--font-body)",
-                              fontSize: "var(--text-sm)",
-                              color: "var(--color-text-muted)",
-                              marginBottom: "var(--space-md)",
-                            }}
-                          >
-                            A booking fee of{" "}
-                            <strong style={{ color: "var(--color-primary)" }}>
-                              $
-                              {parseFloat(
-                                group.user.booking_fee || "0",
-                              ).toFixed(2)}
-                            </strong>{" "}
-                            will be added to your subtotal.
-                          </p>
-                          <button
-                            style={btnAccent}
-                            onClick={() => {
-                              setBookingConfirmed(true);
-                              setDialogOpen(true);
-                            }}
-                          >
-                            Book Appointment
-                          </button>
+                        <div
+                          key={group.user.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "var(--space-md)",
+                          }}
+                        >
+                          {/* Card 1: Booking fee + confirm button */}
+                          <div className="co-card-warm">
+                            <p
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "var(--text-sm)",
+                                color: "var(--color-text-muted)",
+                                marginBottom: "var(--space-md)",
+                              }}
+                            >
+                              A booking fee of{" "}
+                              <strong style={{ color: "var(--color-primary)" }}>
+                                $
+                                {parseFloat(
+                                  group.user.booking_fee || "0",
+                                ).toFixed(2)}
+                              </strong>{" "}
+                              will be added to your subtotal.
+                            </p>
+                            <button
+                              style={btnAccent}
+                              onClick={() => {
+                                setBookingConfirmed(true);
+                                setDialogOpen(true);
+                              }}
+                            >
+                              Book Appointment
+                            </button>
+                          </div>
+
+                          {/* Card 2: Staff selection — its own separate card */}
+                          <div className="co-card">
+                            <StaffSelectStep
+                              vendorId={group.user.id}
+                              selectedStaffId={selectedStaffId}
+                              onSelect={handleSelectStaff}
+                            />
+                          </div>
                         </div>
                       ))}
                   </>
+                )}
+
+                {/* Change staff (after booking confirmed) — separate card, always available */}
+                {bookingConfirmed && hasAppointmentItems && (
+                  <div className="co-card">
+                    {!editingStaff ? (
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: "var(--space-sm)",
+                        }}
+                      >
+                        <p
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--text-sm)",
+                            color: "var(--color-text-muted)",
+                            margin: 0,
+                          }}
+                        >
+                          <strong style={{ color: "var(--color-text)" }}>
+                            Staff:
+                          </strong>{" "}
+                          {selectedStaffName || "No preference — vendor will assign"}
+                        </p>
+                        <button
+                          onClick={() => setEditingStaff(true)}
+                          style={{
+                            background: "transparent",
+                            color: "var(--color-primary)",
+                            border: "1px solid var(--color-primary)",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--text-xs)",
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            padding: "0.5rem 1.25rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Change Staff
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        {Object.values(cartItems)
+                          .filter((g: any) => g.user.vendor_type === "appointment")
+                          .map((group: any) => (
+                            <StaffSelectStep
+                              key={group.user.id}
+                              vendorId={group.user.id}
+                              selectedStaffId={selectedStaffId}
+                              onSelect={(staffId, staffName) => {
+                                handleSelectStaff(staffId, staffName);
+                                setEditingStaff(false);
+                              }}
+                            />
+                          ))}
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            marginTop: "var(--space-sm)",
+                          }}
+                        >
+                          <button
+                            onClick={() => setEditingStaff(false)}
+                            style={{
+                              background: "transparent",
+                              color: "var(--color-text-muted)",
+                              border: "1px solid var(--color-border)",
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--text-xs)",
+                              letterSpacing: "0.08em",
+                              textTransform: "uppercase",
+                              padding: "0.5rem 1.25rem",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Done
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 )}
 
                 {/* Booking confirmed bar */}
@@ -598,6 +737,20 @@ function Index({
                         </strong>{" "}
                         {timeSlot}
                       </p>
+                      {selectedStaffName && (
+                        <p
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "var(--text-sm)",
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
+                          <strong style={{ color: "var(--color-text)" }}>
+                            Staff:
+                          </strong>{" "}
+                          {selectedStaffName}
+                        </p>
+                      )}
                     </div>
                     <div style={{ display: "flex", gap: "var(--space-sm)" }}>
                       <button
@@ -621,8 +774,13 @@ function Index({
                           setBookingConfirmed(false);
                           setBookingDate("");
                           setTimeSlot("");
+                          setSelectedStaffId(null);
+                          setSelectedStaffName(null);
+                          setEditingStaff(false);
                           localStorage.removeItem("bookingDate");
                           localStorage.removeItem("timeSlot");
+                          localStorage.removeItem("selectedStaffId");
+                          localStorage.removeItem("selectedStaffName");
                         }}
                         style={{
                           background: "transparent",
@@ -702,7 +860,6 @@ function Index({
                   >
                     ← Back
                   </button>
-
 
                   <button
                     style={{ ...btnPrimary, flex: 1 }}
@@ -975,6 +1132,14 @@ function Index({
                       </strong>{" "}
                       {bookingDate} at {timeSlot}
                     </span>
+                    {selectedStaffName && (
+                      <span>
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Staff:
+                        </strong>{" "}
+                        {selectedStaffName}
+                      </span>
+                    )}
                   </div>
                 )}
 

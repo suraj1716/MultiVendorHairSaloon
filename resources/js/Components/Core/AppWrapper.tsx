@@ -70,10 +70,11 @@ const AppWrapper: React.FC<AppWrapperProps> = ({ App, props }) => {
     lastUrl = page.url; // remember this page for next time
   });
 
-  const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+ const onUnhandledRejection = (event: PromiseRejectionEvent) => {
++   console.error("Unhandled rejection:", event.reason);
     setErrorStatus(0);
     setNetworkError(true);
-  };
+};
 
   window.addEventListener("unhandledrejection", onUnhandledRejection);
 

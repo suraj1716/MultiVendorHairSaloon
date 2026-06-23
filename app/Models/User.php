@@ -16,7 +16,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, Payable ;
+    use HasFactory, Notifiable, HasRoles, Payable;
 
     /**
      * The attributes that are mass assignable.
@@ -58,22 +58,22 @@ class User extends Authenticatable implements MustVerifyEmail
     //     return $this->hasOne(Vendor::class,'user_id');
     // }
 
-public function vendor(): HasOne
-{
-    return $this->hasOne(Vendor::class, 'user_id','id');
-}
+    public function vendor(): HasOne
+    {
+        return $this->hasOne(Vendor::class, 'user_id', 'id');
+    }
 
-public function shippingAddresses()
-{
-    return $this->hasMany(ShippingAddress::class);
-}
-public function orders()
-{
-    return $this->hasMany(Order::class);
-}
+    public function shippingAddresses()
+    {
+        return $this->hasMany(ShippingAddress::class);
+    }
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
 
-public function bookings()
-{
-    return $this->hasMany(Booking::class);
-}
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }

@@ -26,6 +26,7 @@ use Inertia\Inertia;
 use App\Http\Controllers\Auth\GoogleController;
 
 use App\Filament\Resources\BookingResource\Pages\CreateBooking;
+use App\Http\Controllers\StaffController;
 use App\Http\Controllers\VoucherController;
 
 // ── Public: storage file serving ────────────────────────────────────────────
@@ -194,6 +195,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/vouchers/check', [VoucherController::class, 'validateForUser'])
         ->name('vouchers.check');
 });
+
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin_routes.php';

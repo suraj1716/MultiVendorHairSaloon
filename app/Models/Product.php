@@ -24,7 +24,7 @@ class Product extends Model implements HasMedia
     use InteractsWithMedia;
     protected $casts = [
         'deleted_combinations' => 'array',
-         'price' => 'float',
+        'price' => 'float',
     ];
     // protected $casts = [
     //     'variations' => 'array'
@@ -174,31 +174,31 @@ class Product extends Model implements HasMedia
         return $this->price;
     }
 
-   public function getPriceForOptions($optionIds = [])
-{
-    $optionIds = array_values((array) $optionIds);
-    sort($optionIds);
+    public function getPriceForOptions($optionIds = [])
+    {
+        $optionIds = array_values((array) $optionIds);
+        sort($optionIds);
 
-    foreach ($this->variations as $variation) {
-        $raw = $variation->getRawOriginal('variation_type_option_ids');
+        foreach ($this->variations as $variation) {
+            $raw = $variation->getRawOriginal('variation_type_option_ids');
 
-        // Fix: handle null, empty string, and invalid JSON
-        if (empty($raw)) continue;
+            // Fix: handle null, empty string, and invalid JSON
+            if (empty($raw)) continue;
 
-        $a = is_array($raw) ? $raw : json_decode($raw, true);
+            $a = is_array($raw) ? $raw : json_decode($raw, true);
 
-        // Fix: skip if still not an array after decode
-        if (!is_array($a)) continue;
+            // Fix: skip if still not an array after decode
+            if (!is_array($a)) continue;
 
-        sort($a);
+            sort($a);
 
-        if ($a === $optionIds) {
-            return $variation->price !== null ? $variation->price : $this->price;
+            if ($a === $optionIds) {
+                return $variation->price !== null ? $variation->price : $this->price;
+            }
         }
-    }
 
-    return $this->price;
-}
+        return $this->price;
+    }
 
 
     public function getImages(): MediaCollection

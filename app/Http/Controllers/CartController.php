@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\OrderStatusEnum;
 use App\Enums\RolesEnum;
 use App\Enums\VendorType;
+use App\Http\Resources\OrderViewResource;
 use App\Models\Booking;
 use App\Models\CartItem;
 use App\Models\Order;
@@ -12,6 +13,8 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ShippingAddress;
 use App\Models\User;
+use App\Models\Voucher;
+use App\Models\VoucherUsage;
 use App\Notifications\NewOrderNotification;
 use App\services\CartService;
 use App\services\CartService as ServicesCartService;
@@ -149,12 +152,13 @@ class CartController extends Controller
         return back()->with('success', 'Product removed from cart successfully.');
     }
 
-    public function checkout(Request $request, CartService $cartService)
+  public function checkout(Request $request, CartService $cartService)
     {
 
         $request->validate([
             'vendor_id' => ['nullable', 'integer'],
             'shipping_address_id' => ['nullable', 'exists:shipping_addresses,id'],
+            'voucher_id' => ['nullable', 'exists:vouchers,id'],
         ]);
 
         Stripe::setApiKey(config('app.stripe_secret_key'));
@@ -162,6 +166,7 @@ class CartController extends Controller
         $user = $request->user();
         $vendorId = $request->input('vendor_id');
         $shippingAddressId = $request->input('shipping_address_id');
+        $voucherId = $request->input('voucher_id');
 
         $shippingAddress = $shippingAddressId
             ? ShippingAddress::where('id', $shippingAddressId)
@@ -188,10 +193,20 @@ class CartController extends Controller
 
         try {
             $checkoutCartItems = $vendorId ? [$allCartItems[$vendorId]] : $allCartItems;
-            $orders = [];
-            $lineItems = [];
 
-            $bookingLinked = false;
+            // ── Lock + validate voucher up front (before creating anything) ──
+            $voucher = null;
+            if ($voucherId) {
+                $voucher = Voucher::lockForUpdate()->find($voucherId);
+                if (!$voucher || !$voucher->isUsable()) {
+                    DB::rollBack();
+                    return back()->withErrors(['error' => 'Voucher is no longer valid.']);
+                }
+            }
+
+            // ── First pass: build each order's raw (pre-discount) totals ──
+            $orderBuildData = [];
+            $combinedTotal = 0;
 
             foreach ($checkoutCartItems as $item) {
                 $vendor = $item['vendor'];
@@ -202,11 +217,66 @@ class CartController extends Controller
                     $vendor['vendor_type'] instanceof VendorType &&
                     $vendor['vendor_type']->value === VendorType::APPOINTMENT->value;
 
-                if ($hasBooking && $isAppointmentVendor && !$bookingLinked) {
-                    $bookingFee = floatval($vendor['booking_fee'] ?? 0);
+                if ($hasBooking && $isAppointmentVendor && !empty($orderBuildData) === false) {
+                    // booking fee only ever attaches to the first eligible vendor order;
+                    // resolved properly in the loop below via $bookingLinked
                 }
 
-                $totalPrice = $item['totalPrice'] + $bookingFee;
+                $orderBuildData[] = [
+                    'vendor' => $vendor,
+                    'cartItems' => $cartItems,
+                    'isAppointmentVendor' => $isAppointmentVendor,
+                ];
+            }
+
+            // Determine booking fee placement (first appointment vendor, same as before)
+            $bookingLinked = false;
+            foreach ($orderBuildData as &$data) {
+                $bookingFee = 0;
+                if ($hasBooking && $data['isAppointmentVendor'] && !$bookingLinked) {
+                    $bookingFee = floatval($data['vendor']['booking_fee'] ?? 0);
+                    $bookingLinked = true;
+                }
+                $itemsTotal = collect($data['cartItems'])->sum(fn($ci) => $ci['quantity'] * $ci['price']);
+                $data['bookingFee'] = $bookingFee;
+                $data['rawTotal'] = $itemsTotal + $bookingFee;
+                $combinedTotal += $data['rawTotal'];
+            }
+            unset($data);
+
+            // ── Calculate voucher discount against the combined total ──
+            $discountToApply = $voucher ? $voucher->discountFor($combinedTotal) : 0;
+            $discountToApply = min($discountToApply, $combinedTotal);
+
+            // ── Second pass: create orders + line items with discount distributed proportionally ──
+            $orders = [];
+            $lineItems = [];
+            $bookingLinked = false;
+            $discountRemaining = $discountToApply;
+            $orderCount = count($orderBuildData);
+            $i = 0;
+
+            foreach ($orderBuildData as $data) {
+                $i++;
+                $vendor = $data['vendor'];
+                $cartItems = $data['cartItems'];
+                $bookingFee = $data['bookingFee'];
+                $rawTotal = $data['rawTotal'];
+                $isAppointmentVendor = $data['isAppointmentVendor'];
+
+                // Proportional share of the discount for this order.
+                // Last order absorbs any rounding remainder so totals reconcile exactly.
+                if ($combinedTotal > 0 && $discountToApply > 0) {
+                    $orderDiscount = $i === $orderCount
+                        ? round($discountRemaining, 2)
+                        : round(($rawTotal / $combinedTotal) * $discountToApply, 2);
+                } else {
+                    $orderDiscount = 0;
+                }
+                $orderDiscount = min($orderDiscount, $rawTotal);
+                $discountRemaining = round($discountRemaining - $orderDiscount, 2);
+
+                $totalPrice = round($rawTotal - $orderDiscount, 2);
 
                 $onlineFee = round(($totalPrice * 0.029) + 0.30, 4);
                 $platformFee = round($totalPrice * 0.10, 4);
@@ -216,9 +286,13 @@ class CartController extends Controller
                     'stripe_session_id' => null,
                     'user_id' => $user->id,
                     'vendor_user_id' => $vendor['id'],
+                    'staff_id' => ($hasBooking && $isAppointmentVendor && !$bookingLinked)
+                        ? $latestBooking->staff_id
+                        : null,
                     'total_price' => $totalPrice,
                     'booking_fee' => $bookingFee,
-                    'status' => OrderStatusEnum::Draft->value,
+                    'voucher_discount' => $orderDiscount,
+                    'status' => $totalPrice <= 0 ? OrderStatusEnum::Paid->value : OrderStatusEnum::Draft->value,
                     'shipping_address_id' => optional($shippingAddress)->id,
                     'online_payment_comission' => $onlineFee,
                     'website_payment_comission' => $platformFee,
@@ -284,40 +358,99 @@ class CartController extends Controller
                         'attachment_name' => $cartItem['attachment_name'] ?? null,
                         'designer' => $cartItem['designer'] ?? false,
                     ]);
-
-                    $description = collect($cartItem['options'])
-                        ->map(fn($opt) => "{$opt['type']['name']}::{$opt['name']}")
-                        ->implode(',');
-
-                    $productData = ['name' => $cartItem['title']];
-                    if (!empty($description)) {
-                        $productData['description'] = $description;
-                    }
-
-                    $lineItems[] = [
-                        'price_data' => [
-                            'currency' => config('app.currency'),
-                            'product_data' => $productData,
-                            'unit_amount' => intval($cartItem['price'] * 100),
-                        ],
-                        'quantity' => $cartItem['quantity'],
-                    ];
                 }
 
-                if ($bookingFee > 0) {
-                    $lineItems[] = [
-                        'price_data' => [
-                            'currency' => config('app.currency'),
-                            'product_data' => [
-                                'name' => "Booking Fee for Installer ({$vendor['name']})",
+                // ── Build this order's Stripe line items, scaled down proportionally
+                //    so their sum matches totalPrice (rawTotal - orderDiscount). ──
+                if ($totalPrice > 0) {
+                    $scale = $rawTotal > 0 ? $totalPrice / $rawTotal : 0;
+
+                    foreach ($cartItems as $cartItem) {
+                        $scaledPrice = round($cartItem['price'] * $scale, 2);
+
+                        $description = collect($cartItem['options'])
+                            ->map(fn($opt) => "{$opt['type']['name']}::{$opt['name']}")
+                            ->implode(',');
+
+                        $productData = ['name' => $cartItem['title']];
+                        if (!empty($description)) {
+                            $productData['description'] = $description;
+                        }
+
+                        $lineItems[] = [
+                            'price_data' => [
+                                'currency' => config('app.currency'),
+                                'product_data' => $productData,
+                                'unit_amount' => intval($scaledPrice * 100),
                             ],
-                            'unit_amount' => intval($bookingFee * 100),
-                        ],
-                        'quantity' => 1,
-                    ];
+                            'quantity' => $cartItem['quantity'],
+                        ];
+                    }
+
+                    if ($bookingFee > 0) {
+                        $scaledFee = round($bookingFee * $scale, 2);
+                        $lineItems[] = [
+                            'price_data' => [
+                                'currency' => config('app.currency'),
+                                'product_data' => [
+                                    'name' => "Booking Fee for Installer ({$vendor['name']})",
+                                ],
+                                'unit_amount' => intval($scaledFee * 100),
+                            ],
+                            'quantity' => 1,
+                        ];
+                    }
                 }
             }
 
+            // ── Redeem the voucher synchronously, once, for the combined discount ──
+            if ($voucher && $discountToApply > 0) {
+                foreach ($orders as $idx => $order) {
+                    $orderDiscountUsed = $order->voucher_discount ?? 0;
+                    if ($orderDiscountUsed > 0) {
+                        VoucherUsage::create([
+                            'voucher_id' => $voucher->id,
+                            'user_id' => $user->id,
+                            'order_id' => $order->id,
+                            'amount_used' => $orderDiscountUsed,
+                        ]);
+                    }
+                }
+
+                if ($voucher->type === 'gift') {
+                    $voucher->remaining_amount = max(0, ($voucher->remaining_amount ?? 0) - $discountToApply);
+                    if ($voucher->remaining_amount <= 0) {
+                        $voucher->remaining_amount = 0;
+                        $voucher->active = false;
+                    }
+                } elseif ($voucher->type === 'promo') {
+                    $voucher->used_count += 1;
+                    if ($voucher->max_uses && $voucher->used_count >= $voucher->max_uses) {
+                        $voucher->active = false;
+                    }
+                }
+
+                $voucher->save();
+            }
+
+            $combinedTotalDue = round($combinedTotal - $discountToApply, 2);
+
+            // ── Fully covered by voucher: skip Stripe entirely ──
+            if ($combinedTotalDue <= 0) {
+                foreach ($orders as $order) {
+                    $order->status = OrderStatusEnum::Paid->value;
+                    $order->payment_method = 'gift_card';
+                    $order->save();
+                }
+
+                DB::commit();
+
+                return Inertia::render('Stripe/Success', [
+                    'orders' => OrderViewResource::collection($orders)->collection->toArray(),
+                ]);
+            }
+
+            // ── Otherwise, charge the remainder through Stripe ──
             $session = Session::create([
                 'customer_email' => $user->email,
                 'line_items' => $lineItems,
@@ -340,6 +473,7 @@ class CartController extends Controller
             return back()->withErrors('Checkout failed. Please try again.');
         }
     }
+
     public function destroyGiftCard(CartItem $cartItem)
     {
         // Ensure the item belongs to the authenticated user

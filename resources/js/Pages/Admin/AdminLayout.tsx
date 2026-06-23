@@ -86,6 +86,18 @@ const NAV_GROUPS = [
         icon: "🏪",
         countKey: null,
       },
+        {
+        label: "Staffs",
+        href: "admin.vendor.staff.index",
+        icon: "🏪",
+        countKey: null,
+      },
+          {
+        label: "Roaster",
+        href: "admin.roster.index",
+        icon: "🏪",
+        countKey: null,
+      },
     ],
   },
 ];

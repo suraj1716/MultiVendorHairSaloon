@@ -11,10 +11,12 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Admin\AdminVoucherController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\RosterController;
+use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
 // ── React Admin Dashboard ──────────────────────────────────────────────────
-// All routes protected by auth + Admin role
+// All routes protected by auth + Admin/Vendor role
 Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
     ->prefix('dashboard')
     ->name('admin.')
@@ -90,9 +92,6 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
         // Users
         Route::get('/users',               [AdminUserController::class, 'index'])->name('users.index');
         Route::patch('/users/{user}/read', [AdminUserController::class, 'markRead'])->name('users.read');
-        // Vendors
-        Route::get('/vendors',             [AdminVendorController::class, 'index'])->name('vendors.index');
-        Route::patch('/vendors/{vendor}/status', [AdminVendorController::class, 'updateStatus'])->name('vendors.status');
 
         // Vouchers
         Route::get('/vouchers',                   [AdminVoucherController::class, 'index'])->name('vouchers.index');
@@ -108,7 +107,7 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
         Route::delete('gallery/{gallery}/images/{media}', [GalleryController::class, 'destroyImage'])
             ->name('gallery.destroyImage');
 
-        //Cntact
+        // Contacts
         Route::prefix('contacts')->name('contacts.')->group(function () {
             Route::get('/',                    [AdminContactController::class, 'index'])->name('index');
             Route::get('/{contact}',           [AdminContactController::class, 'show'])->name('show');
@@ -117,15 +116,30 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
             Route::delete('/{contact}',        [AdminContactController::class, 'destroy'])->name('destroy');
         });
 
+        // Vendors
+        Route::prefix('vendors')->name('vendors.')->group(function () {
+            Route::get('/', [AdminVendorController::class, 'index'])->name('index');
+            Route::post('/', [AdminVendorController::class, 'store'])->name('store');
+            Route::get('/{vendor}/edit', [AdminVendorController::class, 'edit'])->name('edit');
+            Route::put('/{vendor}', [AdminVendorController::class, 'update'])->name('update');
+            Route::patch('/{vendor}/status', [AdminVendorController::class, 'updateStatus'])->name('status');
+            Route::delete('/{vendor}', [AdminVendorController::class, 'destroy'])->name('destroy');
+        });
 
-// Vendors
-Route::prefix('vendors')->name('vendors.')->group(function () {
-    Route::get('/', [AdminVendorController::class, 'index'])->name('index');
-    Route::post('/', [AdminVendorController::class, 'store'])->name('store');
-    Route::get('/{vendor}/edit', [AdminVendorController::class, 'edit'])->name('edit');
-    Route::put('/{vendor}', [AdminVendorController::class, 'update'])->name('update');
-    Route::patch('/{vendor}/status', [AdminVendorController::class, 'updateStatus'])->name('status');
-    Route::delete('/{vendor}', [AdminVendorController::class, 'destroy'])->name('destroy');
-});
 
+        Route::prefix('vendor')->name('vendor.')->group(function () {
+            Route::resource('staff', StaffController::class)
+                ->except(['show', 'create', 'edit']);
+        });
+
+
+        Route::prefix('roster')->name('roster.')->group(function () {
+            Route::get('/',                          [RosterController::class, 'index'])->name('index');
+            Route::post('/bookings/{booking}/assign', [RosterController::class, 'assign'])->name('assign');
+            Route::post('/bookings/{booking}/deassign', [RosterController::class, 'deassign'])->name('deassign');
+        });
     });
+
+
+Route::get('/staff-for-booking', [StaffController::class, 'forBooking'])
+    ->name('staff.forBooking');

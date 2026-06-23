@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,             // whatever this actually does
             CustomerSeeder::class,
             ProductSeeder::class,
+            StaffSeeder::class,
             GallerySeeder::class,
             HeroBannerSeeder::class,
             OrderAndBookingSeeder::class,

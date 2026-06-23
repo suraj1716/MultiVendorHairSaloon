@@ -22,23 +22,23 @@ class OrderController extends Controller
     {
         $this->refundService = $refundService;
     }
- public function index()
-{
-    $orders = Auth::user()
-        ->orders()
-        ->where('status', OrderStatusEnum::Paid)
-        ->with([
-            'orderItems.product.variationTypes.options',
-            'booking',
-            'vendorUser.vendor',
-        ])
-        ->latest()
-        ->paginate(10);
+    public function index()
+    {
+        $orders = Auth::user()
+            ->orders()
+            ->where('status', OrderStatusEnum::Paid)
+            ->with([
+                'orderItems.product.variationTypes.options',
+                'booking',
+                'vendorUser.vendor',
+            ])
+            ->latest()
+            ->paginate(10);
 
-    return Inertia::render('Order/OrdersHistory', [
-        'orders' => OrderViewResource::collection($orders),
-    ]);
-}
+        return Inertia::render('Order/OrdersHistory', [
+            'orders' => OrderViewResource::collection($orders),
+        ]);
+    }
 
 
     public function show($orderId)

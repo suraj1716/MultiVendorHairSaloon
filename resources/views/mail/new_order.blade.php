@@ -11,11 +11,15 @@
 ## 🚚 Shipping Address:
 
 <div style="margin-bottom: 20px;">
+@if($order->shippingAddress)
     {{ $order->shippingAddress->full_name }}<br>
     {{ $order->shippingAddress->address_line1 }}@if($order->shippingAddress->address_line2), {{ $order->shippingAddress->address_line2 }}@endif<br>
     {{ $order->shippingAddress->city }}, {{ $order->shippingAddress->state }} {{ $order->shippingAddress->postal_code }}<br>
     {{ $order->shippingAddress->country }}<br>
     Phone: {{ $order->shippingAddress->phone }}
+@else
+    No shipping address on file for this order.
+@endif
 </div>
 
 ## 📦 Ordered Items:
@@ -32,7 +36,7 @@
         @foreach ($order->orderItems as $orderItem)
         <tr>
             <td style="padding: 8px;">
-                <img src="{{ $orderItem->product->getImageForOptions($orderItem->variation_type_option_ids)}}" alt="{{ $orderItem->product->name }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
+                <img src="{{ $orderItem->product->getImageForOptions($orderItem->variation_type_option_ids)}}" alt="{{ $orderItem->product->title }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
                 {{ $orderItem->product->title }}
             </td>
             <td align="center" style="padding: 8px;">{{ $orderItem->quantity }}</td>

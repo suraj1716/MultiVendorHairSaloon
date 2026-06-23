@@ -5,14 +5,17 @@ namespace App\Models {
     /**
      * App\Models\Booking
      *
+     * @property mixed $assigned_staff_id
+     * @property mixed $preferred_staff_id
+     * @property mixed $staff_id
      * @property float|null $booking_fee_refund_amount
      * @property bool $booking_fee_refunded
      * @property string|null $google_event_id
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
      * @property string $time_slot
-     * @property bool $is_read
-     * @property string $booking_date
+     * @property boolean $is_read
+     * @property \Illuminate\Support\Carbon $booking_date
      * @property mixed $user_id
      * @property mixed $order_id
      * @property int $id
@@ -20,6 +23,7 @@ namespace App\Models {
      * @property-read \App\Models\User $vendor
      * @property-read \App\Models\Product $product
      * @property-read \App\Models\Order $order
+     * @property-read \App\Models\Staff $staff
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereOrderId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereUserId($value)
@@ -31,6 +35,9 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereGoogleEventId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereBookingFeeRefunded($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereBookingFeeRefundAmount($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereStaffId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking wherePreferredStaffId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereAssignedStaffId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking query()
@@ -3197,8 +3204,10 @@ namespace App\Models {
      * @property mixed $voucher_id
      * @property string $status
      * @property mixed $shipping_address_id
+     * @property mixed $staff_id
      * @property mixed $vendor_user_id
      * @property mixed $user_id
+     * @property float $voucher_discount
      * @property float $booking_fee
      * @property float $total_price
      * @property int $id
@@ -3206,6 +3215,7 @@ namespace App\Models {
      * @property-read int|null $order_items_count
      * @property-read \App\Models\User $user
      * @property-read \App\Models\Vendor $vendor
+     * @property-read \App\Models\Staff $staff
      * @property-read \App\Models\User $vendorUser
      * @property-read \App\Models\ShippingAddress $shippingAddress
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\CartItem> $cartItems
@@ -3215,8 +3225,10 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereTotalPrice($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereBookingFee($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereVoucherDiscount($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereUserId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereVendorUserId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereStaffId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereShippingAddressId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereStatus($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereVoucherId($value)
@@ -5766,6 +5778,342 @@ namespace App\Models {
      * @mixin \Illuminate\Database\Query\Builder
      */
     class ShippingAddress extends \Illuminate\Database\Eloquent\Model
+    {
+        //
+    }
+
+    /**
+     * App\Models\Staff
+     *
+     * @property \Illuminate\Support\Carbon|null $deleted_at
+     * @property \Illuminate\Support\Carbon|null $updated_at
+     * @property \Illuminate\Support\Carbon|null $created_at
+     * @property boolean $is_active
+     * @property string|null $working_end_time
+     * @property string|null $working_start_time
+     * @property array|null $working_days
+     * @property string|null $employment_type
+     * @property \Illuminate\Support\Carbon|null $hired_date
+     * @property string|null $bio
+     * @property string|null $position
+     * @property string|null $phone
+     * @property string|null $email
+     * @property string $name
+     * @property mixed $vendor_id
+     * @property int $id
+     * @property-read \App\Models\Vendor $vendor
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
+     * @property-read int|null $categories_count
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Booking> $bookings
+     * @property-read int|null $bookings_count
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \Spatie\MediaLibrary\MediaCollections\Models\Media> $media
+     * @property-read int|null $media_count
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereVendorId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereName($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereEmail($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff wherePhone($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff wherePosition($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereBio($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereHiredDate($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereEmploymentType($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereWorkingDays($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereWorkingStartTime($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereWorkingEndTime($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereIsActive($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereCreatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereUpdatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereDeletedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff newModelQuery()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff newQuery()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff query()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff active() {@see App\Models\Staff::scopeActive()}
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff forVendor(mixed $vendorId) {@see App\Models\Staff::scopeForVendor()}
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff select(array|mixed $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff selectSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff selectRaw(string $expression)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff fromSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff fromRaw(string $expression, mixed $bindings)
+     * @method static array createSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query)
+     * @method static array parseSub(mixed $query)
+     * @method static mixed prependDatabaseNameIfCrossDatabaseQuery(mixed $query)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addSelect(array|mixed $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff distinct()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff from(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|\Illuminate\Contracts\Database\Query\Expression|string $table, string|null $as)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff useIndex(string $index)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff forceIndex(string $index)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff ignoreIndex(string $index)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff join(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second, string $type, bool $where)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff joinWhere(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string $operator, \Illuminate\Contracts\Database\Query\Expression|string $second, string $type)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff joinSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second, string $type, bool $where)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff joinLateral(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff leftJoinLateral(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff leftJoin(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff leftJoinWhere(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff leftJoinSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff rightJoin(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff rightJoinWhere(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string $operator, \Illuminate\Contracts\Database\Query\Expression|string $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff rightJoinSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as, \Closure|\Illuminate\Contracts\Database\Query\Expression|string $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff crossJoin(\Illuminate\Contracts\Database\Query\Expression|string $table, \Closure|\Illuminate\Contracts\Database\Query\Expression|string|null $first, string|null $operator, \Illuminate\Contracts\Database\Query\Expression|string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff crossJoinSub(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query, string $as)
+     * @method static \Illuminate\Database\Query\JoinClause newJoinClause(string $type, \Illuminate\Contracts\Database\Query\Expression|string $table)
+     * @method static \Illuminate\Database\Query\JoinLateralClause newJoinLateralClause(string $type, \Illuminate\Contracts\Database\Query\Expression|string $table)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff mergeWheres(array $wheres, array $bindings)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff where(\Closure|string|array|\Illuminate\Contracts\Database\Query\Expression $column, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addArrayOfWheres(array $column, string $boolean, string $method)
+     * @method static array prepareValueAndOperator(string $value, string $operator, bool $useDefault)
+     * @method static bool invalidOperatorAndValue(string $operator, mixed $value)
+     * @method static bool invalidOperator(string $operator)
+     * @method static bool isBitwiseOperator(string $operator)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhere(\Closure|string|array|\Illuminate\Contracts\Database\Query\Expression $column, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNot(\Closure|string|array|\Illuminate\Contracts\Database\Query\Expression $column, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNot(\Closure|string|array|\Illuminate\Contracts\Database\Query\Expression $column, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereColumn(\Illuminate\Contracts\Database\Query\Expression|string|array $first, string|null $operator, string|null $second, string|null $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereColumn(\Illuminate\Contracts\Database\Query\Expression|string|array $first, string|null $operator, string|null $second)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereRaw(string $sql, mixed $bindings, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereRaw(string $sql, mixed $bindings)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereLike(\Illuminate\Contracts\Database\Query\Expression|string $column, string $value, bool $caseSensitive, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereLike(\Illuminate\Contracts\Database\Query\Expression|string $column, string $value, bool $caseSensitive)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotLike(\Illuminate\Contracts\Database\Query\Expression|string $column, string $value, bool $caseSensitive, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotLike(\Illuminate\Contracts\Database\Query\Expression|string $column, string $value, bool $caseSensitive)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereIn(\Illuminate\Contracts\Database\Query\Expression|string $column, mixed $values, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereIn(\Illuminate\Contracts\Database\Query\Expression|string $column, mixed $values)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotIn(\Illuminate\Contracts\Database\Query\Expression|string $column, mixed $values, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotIn(\Illuminate\Contracts\Database\Query\Expression|string $column, mixed $values)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereIntegerInRaw(string $column, \Illuminate\Contracts\Support\Arrayable|array $values, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereIntegerInRaw(string $column, \Illuminate\Contracts\Support\Arrayable|array $values)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereIntegerNotInRaw(string $column, \Illuminate\Contracts\Support\Arrayable|array $values, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereIntegerNotInRaw(string $column, \Illuminate\Contracts\Support\Arrayable|array $values)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNull(string|array|\Illuminate\Contracts\Database\Query\Expression $columns, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNull(string|array|\Illuminate\Contracts\Database\Query\Expression $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotNull(string|array|\Illuminate\Contracts\Database\Query\Expression $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereBetween(\Illuminate\Contracts\Database\Query\Expression|string $column, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereBetweenColumns(\Illuminate\Contracts\Database\Query\Expression|string $column, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereBetween(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereBetweenColumns(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotBetween(\Illuminate\Contracts\Database\Query\Expression|string $column, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotBetweenColumns(\Illuminate\Contracts\Database\Query\Expression|string $column, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotBetween(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotBetweenColumns(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotNull(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereDate(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|null $operator, \DateTimeInterface|string|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereDate(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|null $operator, \DateTimeInterface|string|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereTime(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|null $operator, \DateTimeInterface|string|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereTime(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|null $operator, \DateTimeInterface|string|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereDay(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereDay(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereMonth(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereMonth(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereYear(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereYear(\Illuminate\Contracts\Database\Query\Expression|string $column, \DateTimeInterface|string|int|null $operator, \DateTimeInterface|string|int|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addDateBasedWhere(string $type, \Illuminate\Contracts\Database\Query\Expression|string $column, string $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNested(string $boolean)
+     * @method static \Illuminate\Database\Query\Builder forNestedWhere()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addNestedWhereQuery(\Illuminate\Database\Query\Builder $query, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereSub(\Illuminate\Contracts\Database\Query\Expression|string $column, string $operator, \Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $callback, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereExists(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $callback, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereExists(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $callback, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNotExists(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $callback, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNotExists(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $callback)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addWhereExistsQuery(string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereRowValues(array $columns, string $operator, array $values, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereRowValues(array $columns, string $operator, array $values)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonContains(string $column, mixed $value, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonContains(string $column, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonDoesntContain(string $column, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonDoesntContain(string $column, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonOverlaps(string $column, mixed $value, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonOverlaps(string $column, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonDoesntOverlap(string $column, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonDoesntOverlap(string $column, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonContainsKey(string $column, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonContainsKey(string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonDoesntContainKey(string $column, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonDoesntContainKey(string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereJsonLength(string $column, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereJsonLength(string $column, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff dynamicWhere(string $method, array $parameters)
+     * @method static void addDynamic(string $segment, string $connector, array $parameters, int $index)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereFullText(string|string[] $columns, string $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereFullText(string|string[] $columns, string $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereAll(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereAll(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereAny(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereAny(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNone(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNone(\Illuminate\Contracts\Database\Query\Expression[]|\Closure[]|string[] $columns, mixed $operator, mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff groupBy(array|\Illuminate\Contracts\Database\Query\Expression|string ...$groups)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff groupByRaw(string $sql)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff having(\Illuminate\Contracts\Database\Query\Expression|\Closure|string $column, string|int|float|null $operator, string|int|float|null $value, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orHaving(\Illuminate\Contracts\Database\Query\Expression|\Closure|string $column, string|int|float|null $operator, string|int|float|null $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff havingNested(string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addNestedHavingQuery(\Illuminate\Database\Query\Builder $query, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff havingNull(array|string $columns, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orHavingNull(string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff havingNotNull(array|string $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orHavingNotNull(string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff havingBetween(string $column, string $boolean, bool $not)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff havingRaw(string $sql, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orHavingRaw(string $sql)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orderBy(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|\Illuminate\Contracts\Database\Query\Expression|string $column, string $direction)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orderByDesc(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff latest(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff oldest(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff inRandomOrder(string|int $seed)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orderByRaw(string $sql, array $bindings)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff skip(int $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff offset(int $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff take(int $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff limit(int $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff groupLimit(int $value, string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff forPage(int $page, int $perPage)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff forPageBeforeId(int $perPage, int|null $lastId, string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff forPageAfterId(int $perPage, int|null $lastId, string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff reorder(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Contracts\Database\Query\Expression|string|null $column, string $direction)
+     * @method static array removeExistingOrdersFor(string $column)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff union(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $query, bool $all)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff unionAll(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $query)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff lock(string|bool $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff lockForUpdate()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff sharedLock()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff beforeQuery()
+     * @method static void applyBeforeQueryCallbacks()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff afterQuery()
+     * @method static mixed applyAfterQueryCallbacks(mixed $result)
+     * @method static string toSql()
+     * @method static string toRawSql()
+     * @method static Staff|null find(int|string $id, array|string $columns)
+     * @method static mixed findOr(mixed $id, callable|list<string>|string $columns, callable|null $callback)
+     * @method static mixed value(string $column)
+     * @method static mixed rawValue()
+     * @method static mixed soleValue(string $column)
+     * @method static \Illuminate\Support\Collection<int,\stdClass> get(array|string $columns)
+     * @method static array runSelect()
+     * @method static \Illuminate\Support\Collection withoutGroupLimitKeys(\Illuminate\Support\Collection $items)
+     * @method static \Illuminate\Pagination\LengthAwarePaginator paginate(int|\Closure $perPage, array|string $columns, string $pageName, int|null $page, \Closure|int|null $total)
+     * @method static \Illuminate\Contracts\Pagination\Paginator simplePaginate(int $perPage, array|string $columns, string $pageName, int|null $page)
+     * @method static \Illuminate\Contracts\Pagination\CursorPaginator cursorPaginate(int|null $perPage, array|string $columns, string $cursorName, \Illuminate\Pagination\Cursor|string|null $cursor)
+     * @method static \Illuminate\Support\Collection ensureOrderForCursorPagination(bool $shouldReverse)
+     * @method static int getCountForPagination(array $columns)
+     * @method static array runPaginationCountQuery(array $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff cloneForPaginationCount()
+     * @method static array withoutSelectAliases()
+     * @method static \Illuminate\Support\LazyCollection<int,\stdClass> cursor()
+     * @method static void enforceOrderBy()
+     * @method static mixed pluck(\Illuminate\Contracts\Database\Query\Expression|string $column, string|null $key)
+     * @method static string|null stripTableForPluck(string $column)
+     * @method static \Illuminate\Support\Collection pluckFromObjectColumn(array $queryResult, string $column, string $key)
+     * @method static \Illuminate\Support\Collection pluckFromArrayColumn(array $queryResult, string $column, string $key)
+     * @method static string implode(string $column, string $glue)
+     * @method static bool exists()
+     * @method static bool doesntExist()
+     * @method static mixed existsOr()
+     * @method static mixed doesntExistOr()
+     * @method static int count(\Illuminate\Contracts\Database\Query\Expression|string $columns)
+     * @method static mixed min(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static mixed max(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static mixed sum(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static mixed avg(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static mixed average(\Illuminate\Contracts\Database\Query\Expression|string $column)
+     * @method static mixed aggregate(string $function, array $columns)
+     * @method static float|int numericAggregate(string $function, array $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff setAggregate(string $function, array $columns)
+     * @method static mixed onceWithColumns(array $columns, callable $callback)
+     * @method static bool insert()
+     * @method static int insertOrIgnore()
+     * @method static int insertGetId(string|null $sequence)
+     * @method static int insertUsing(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query)
+     * @method static int insertOrIgnoreUsing(\Closure|\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed>|string $query)
+     * @method static int update()
+     * @method static int updateFrom()
+     * @method static bool updateOrInsert()
+     * @method static int upsert(array|string $uniqueBy, array|null $update)
+     * @method static int increment(string $column, float|int $amount)
+     * @method static int incrementEach(array<string,float|int|numeric-string> $columns, array<string,mixed> $extra)
+     * @method static int decrement(string $column, float|int $amount)
+     * @method static int decrementEach(array<string,float|int|numeric-string> $columns, array<string,mixed> $extra)
+     * @method static int delete(mixed $id)
+     * @method static void truncate()
+     * @method static \Illuminate\Database\Query\Builder newQuery()
+     * @method static \Illuminate\Database\Query\Builder forSubQuery()
+     * @method static array getColumns()
+     * @method static \Illuminate\Contracts\Database\Query\Expression raw(mixed $value)
+     * @method static \Illuminate\Support\Collection getUnionBuilders()
+     * @method static array getBindings()
+     * @method static array getRawBindings()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff setBindings(string $type)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff addBinding(mixed $value, string $type)
+     * @method static mixed castBinding(mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff mergeBindings()
+     * @method static array cleanBindings()
+     * @method static mixed flattenValue(mixed $value)
+     * @method static string defaultKeyName()
+     * @method static \Illuminate\Database\ConnectionInterface getConnection()
+     * @method static \Illuminate\Database\Query\Processors\Processor getProcessor()
+     * @method static \Illuminate\Database\Query\Grammars\Grammar getGrammar()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff useWritePdo()
+     * @method static bool isQueryable(mixed $value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff clone()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff cloneWithout()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff cloneWithoutBindings()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff dump(mixed ...$args)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff dumpRawSql()
+     * @method static void dd()
+     * @method static void ddRawSql()
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff wherePast(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNowOrPast(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWherePast(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNowOrPast(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereFuture(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereNowOrFuture(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereFuture(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereNowOrFuture(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff wherePastOrFuture(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereToday(array|string $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereBeforeToday(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereTodayOrBefore(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereAfterToday(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereTodayOrAfter(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereToday(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereBeforeToday(array|string $columns)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereTodayOrBefore(array|string $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereAfterToday(array|string $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff orWhereTodayOrAfter(array|string $columns, string $boolean)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff whereTodayBeforeOrAfter(array|string $columns, string $operator, string $boolean)
+     * @method static bool chunk(int $count, callable $callback)
+     * @method static mixed chunkMap(callable $callback, int $count)
+     * @method static bool each(callable $callback, int $count)
+     * @method static bool chunkById(int $count, callable $callback, string|null $column, string|null $alias)
+     * @method static bool chunkByIdDesc(int $count, callable $callback, string|null $column, string|null $alias)
+     * @method static bool orderedChunkById(int $count, callable $callback, string|null $column, string|null $alias, bool $descending)
+     * @method static bool eachById(callable $callback, int $count, string|null $column, string|null $alias)
+     * @method static mixed lazy(int $chunkSize)
+     * @method static mixed lazyById(int $chunkSize, string|null $column, string|null $alias)
+     * @method static mixed lazyByIdDesc(int $chunkSize, string|null $column, string|null $alias)
+     * @method static \Illuminate\Support\LazyCollection orderedLazyById(int $chunkSize, string|null $column, string|null $alias, bool $descending)
+     * @method static Staff|null first(array|string $columns)
+     * @method static Staff firstOrFail(array|string $columns, string|null $message)
+     * @method static Staff sole(array|string $columns)
+     * @method static \Illuminate\Contracts\Pagination\CursorPaginator paginateUsingCursor(int $perPage, array|string $columns, string $cursorName, \Illuminate\Pagination\Cursor|string|null $cursor)
+     * @method static string getOriginalColumnNameForCursorPagination(\Illuminate\Database\Query\Builder|\Illuminate\Database\Eloquent\Builder<mixed> $builder, string $parameter)
+     * @method static \Illuminate\Pagination\LengthAwarePaginator paginator(\Illuminate\Support\Collection $items, int $total, int $perPage, int $currentPage, array $options)
+     * @method static \Illuminate\Pagination\Paginator simplePaginator(\Illuminate\Support\Collection $items, int $perPage, int $currentPage, array $options)
+     * @method static \Illuminate\Pagination\CursorPaginator cursorPaginator(\Illuminate\Support\Collection $items, int $perPage, \Illuminate\Pagination\Cursor $cursor, array $options)
+     * @method static \Illuminate\Database\Eloquent\Builder<Staff>|Staff tap(callable $callback)
+     * @method static mixed when(callable|\TWhenParameter|null $value, callable|null $callback, callable|null $default)
+     * @method static mixed unless(callable|\TUnlessParameter|null $value, callable|null $callback, callable|null $default)
+     * @method static \Illuminate\Support\Collection explain()
+     * @method static mixed forwardCallTo(mixed $object, string $method, array $parameters)
+     * @method static mixed forwardDecoratedCallTo(mixed $object, string $method, array $parameters)
+     * @method static void throwBadMethodCallException(string $method)
+     * @method static void macro(string $name, object|callable $macro)
+     * @method static void mixin(object $mixin, bool $replace)
+     * @method static bool hasMacro(string $name)
+     * @method static void flushMacros()
+     * @method static mixed macroCall(string $method, array $parameters)
+     * @mixin \Illuminate\Database\Query\Builder
+     */
+    class Staff extends \Illuminate\Database\Eloquent\Model
     {
         //
     }

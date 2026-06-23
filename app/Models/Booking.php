@@ -8,11 +8,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Booking extends Model
 {
     protected $table = 'bookings';
+
     protected $fillable = [
-        'is_read' => 'boolean',
         'user_id',
-        'booking_date',
-        'time_slot'
+        'time_slot',
+        'order_id',
+        'staff_id',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+         'booking_date' => 'date',
     ];
 
     public function user(): BelongsTo
@@ -30,9 +36,13 @@ class Booking extends Model
         return $this->belongsTo(Product::class);
     }
 
-
     public function order()
     {
         return $this->belongsTo(Order::class, 'order_id');
+    }
+
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class);
     }
 }

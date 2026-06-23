@@ -34,6 +34,7 @@ class Order extends Model
         'is_paid',
         'manual_paid_at',
         'payment_method',
+          'staff_id'
 
     ];
 
@@ -56,7 +57,10 @@ class Order extends Model
         return $this->belongsTo(Vendor::class, 'vendor_user_id', 'user_id');
     }
 
-
+public function staff(): BelongsTo
+{
+    return $this->belongsTo(Staff::class);
+}
 
     public function vendorUser(): BelongsTo
     {

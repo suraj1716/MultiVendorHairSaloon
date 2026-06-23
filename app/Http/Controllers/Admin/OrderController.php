@@ -189,7 +189,7 @@ class OrderController extends Controller
             'new_email'         => 'nullable|email|max:255',
             'new_phone'         => 'required_without:user_id|string|max:30',
             'vendor_user_id'    => 'required|exists:users,id',
-            'payment_method'    => 'required|in:cash,eftpos,other',
+            'payment_method' => 'nullable|in:cash,eftpos,other,stripe,card',
             'is_paid'           => 'boolean',
             'notes'             => 'nullable|string|max:500',
             'items'             => 'required|array|min:1',
@@ -312,7 +312,7 @@ class OrderController extends Controller
     $request->validate([
         'status'            => 'required|in:draft,paid,shipped,delivered,cancelled',
         'is_paid'           => 'boolean',
-        'payment_method'    => 'nullable|in:cash,eftpos,other,stripe',
+        'payment_method' => 'nullable|in:cash,eftpos,other,stripe,card',
         'notes'             => 'nullable|string|max:500',
         'user_id'           => 'nullable|exists:users,id',   // ← add validation
         'items'             => 'required|array|min:1',

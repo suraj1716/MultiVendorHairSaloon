@@ -69,17 +69,22 @@ const Contact: React.FC = () => {
     setData("file", file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    post("/contact", {
-      forceFormData: true,
-      onSuccess: () => reset(),
-    });
-  };
+ const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  post("/contact", {
+    forceFormData: true,
+    preserveState: true,
+    onSuccess: () => reset(),
+  });
+};
   return (
     <AuthenticatedLayout>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
+
+.file-upload-error {
+  border-color: var(--color-error);
+}
 
         .contact-page * {
           box-sizing: border-box;
