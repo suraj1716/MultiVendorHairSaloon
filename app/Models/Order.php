@@ -20,6 +20,8 @@ class Order extends Model
 
     protected $fillable = [
          'is_read' => 'boolean',
+         'stripe_charge_id',
+         'stripe_amount',
         'stripe_session_id',
         'user_id',
         'vendor_user_id',

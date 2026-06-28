@@ -12,24 +12,78 @@ type BookingProp = {
   time_slot: string;
   notes: string | null;
 };
+type VendorProp = {
+  business_start_time: string;
+  business_end_time: string;
+  slot_interval_minutes: number;
+} | null;
 
-type Props = { booking: BookingProp; users: User[]; orders: Order[] };
+type Props = { booking: BookingProp; users: User[]; orders: Order[]; vendor: VendorProp };
 
-const TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00",
-];
+function generateTimeSlots(start: string, end: string, intervalMinutes: number): string[] {
+  const slots: string[] = [];
+  const [startH, startM] = start.split(':').map(Number);
+  const [endH, endM] = end.split(':').map(Number);
 
-export default function BookingEdit({ booking, users, orders }: Props) {
+  let current = startH * 60 + startM;
+  const endTotal = endH * 60 + endM;
+
+  const fmt = (totalMinutes: number) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const ampm = h < 12 ? 'am' : 'pm';
+    const hour = h % 12 === 0 ? 12 : h % 12;
+    const min = String(m).padStart(2, '0');
+    return `${hour}:${min} ${ampm}`;
+  };
+
+  while (current < endTotal) {
+    const next = current + intervalMinutes;
+    slots.push(`${fmt(current)} - ${fmt(next)}`);
+    current = next;
+  }
+
+  return slots;
+}
+
+
+// const TIME_SLOTS = [
+//   "9:00 am - 9:30 am",
+//   "9:30 am - 10:00 am",
+//   "10:00 am - 10:30 am",
+//   "10:30 am - 11:00 am",
+//   "11:00 am - 11:30 am",
+//   "11:30 am - 12:00 pm",
+//   "12:00 pm - 12:30 pm",
+//   "12:30 pm - 1:00 pm",
+//   "1:00 pm - 1:30 pm",
+//   "1:30 pm - 2:00 pm",
+//   "2:00 pm - 2:30 pm",
+//   "2:30 pm - 3:00 pm",
+//   "3:00 pm - 3:30 pm",
+//   "3:30 pm - 4:00 pm",
+//   "4:00 pm - 4:30 pm",
+//   "4:30 pm - 5:00 pm",
+//   "5:00 pm - 5:30 pm",
+//   "5:30 pm - 6:00 pm",
+// ];
+
+export default function BookingEdit({ booking, users, orders,vendor  }: Props) {
   const { data, setData, put, processing, errors } = useForm({
     user_id:      String(booking.user_id),
     order_id:     booking.order_id ? String(booking.order_id) : "",
-    booking_date: booking.booking_date,
+    booking_date: booking.booking_date.split('T')[0], // ← extract just the date part
     time_slot:    booking.time_slot,
     notes:        booking.notes ?? "",
   });
-
+   const timeSlots = vendor
+    ? generateTimeSlots(
+        vendor.business_start_time,
+        vendor.business_end_time,
+        vendor.slot_interval_minutes,
+      )
+    : [];
+console.log(booking, users, orders )
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     put(route("admin.bookings.update", booking.id));
@@ -91,9 +145,9 @@ export default function BookingEdit({ booking, users, orders }: Props) {
                   <div>
                     <label style={labelStyle}>Time Slot</label>
                     <select value={data.time_slot} onChange={e => setData("time_slot", e.target.value)} style={inputStyle}>
-                      <option value="">Select time…</option>
-                      {TIME_SLOTS.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
+  <option value="">Select time…</option>
+  {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+</select>
                     {errors.time_slot && <p style={errStyle}>{errors.time_slot}</p>}
                   </div>
                 </div>

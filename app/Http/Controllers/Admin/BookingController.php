@@ -127,7 +127,7 @@ class BookingController extends Controller
                 'id'    => $o->id,
                 'label' => "#$o->id — {$o->user?->name} (A\${$o->total_price})",
             ]);
-
+$vendor = \App\Models\Vendor::where('user_id', $booking->vendor_id ?? $booking->order?->vendor_user_id)->first();
         return Inertia::render('Admin/Bookings/Edit', [
             'booking' => [
                 'id'           => $booking->id,
@@ -138,6 +138,11 @@ class BookingController extends Controller
             ],
             'users'  => $users,
             'orders' => $orders,
+            'vendor'  => $vendor ? [
+            'business_start_time'  => $vendor->business_start_time,
+            'business_end_time'    => $vendor->business_end_time,
+            'slot_interval_minutes' => $vendor->slot_interval_minutes,
+        ] : null,
         ]);
     }
 

@@ -59,9 +59,27 @@ export default function OrdersIndex({
     );
   };
 
-  const handleRefund = (id: number) => {
-    if (!confirm("Process a full Stripe refund for this order?")) return;
-    router.post(route("admin.orders.refund", id), {}, { preserveScroll: true });
+  const handleRefund = (order: Order) => {
+    const method = order.payment_method ?? "stripe";
+    const isStripe = ["stripe", "card"].includes(method);
+
+    if (
+      !confirm(
+        `Process refund for Order #${order.id}?\n\n` +
+          `Total: A$${Number(order.total_price).toFixed(2)}\n` +
+          `Method: ${method.toUpperCase()}\n\n` +
+          (isStripe
+            ? "This will issue a Stripe refund automatically."
+            : "This is a manual refund — you will need to process it via your EFTPOS terminal."),
+      )
+    )
+      return;
+
+    router.post(
+      route("admin.orders.refund", order.id),
+      {},
+      { preserveScroll: true },
+    );
   };
 
   const handleDelete = () => {
@@ -269,17 +287,19 @@ export default function OrdersIndex({
                   >
                     <Icons.Edit />
                   </ActionBtn>
-                  {!o.refunded_at &&
-                    (o.payment_intent ||
-                      ["cash", "eftpos"].includes(o.payment_method ?? "")) && (
-                      <ActionBtn
-                        variant="delete"
-                        title="Refund"
-                        onClick={() => handleRefund(o.id)}
-                      >
-                        ↩
-                      </ActionBtn>
-                    )}
+                  {Boolean(
+                    !o.refunded_at &&
+                    o.is_paid &&
+                    ["stripe", "card"].includes(o.payment_method ?? ""),
+                  ) &&  !!o.payment_intent && (
+                    <ActionBtn
+                      variant="delete"
+                      title="Refund"
+                      onClick={() => handleRefund(o)}
+                    >
+                      ↩
+                    </ActionBtn>
+                  )}
                   <ActionBtn
                     variant="delete"
                     title="Delete"

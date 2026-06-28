@@ -271,6 +271,7 @@ class OrderController extends Controller
         $order->load('orderItems.product', 'booking');
         $products = Product::where('status', 'published')->get(['id', 'title', 'price']);
         $users    = User::orderBy('name')->get(['id', 'name', 'email', 'phone']);
+ $vendor = \App\Models\Vendor::where('user_id', $order->vendor_user_id)->first();
 
         $payload = [
             'order' => [
@@ -279,6 +280,7 @@ class OrderController extends Controller
                 'vendor_user_id' => $order->vendor_user_id,
                 'status'         => $order->status,
                 'is_paid'        => (bool) $order->is_paid,
+                'payment_intent'  => $order->payment_intent,
                 'payment_method' => $order->payment_method ?? 'cash',
                 'total_price'    => $order->total_price,
                 'notes'          => $order->notes ?? '',
@@ -294,6 +296,11 @@ class OrderController extends Controller
                     'price'      => $i->price,
                 ]),
             ],
+             'vendor' => $vendor ? [
+            'business_start_time'   => $vendor->business_start_time,
+            'business_end_time'     => $vendor->business_end_time,
+            'slot_interval_minutes' => $vendor->slot_interval_minutes,
+        ] : null,
             'products' => $products,
             'users'    => $users,
             'statuses' => ['draft', 'paid', 'shipped', 'delivered', 'cancelled'],

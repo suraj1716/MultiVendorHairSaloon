@@ -161,6 +161,7 @@ class StripeController extends Controller
 
                     $transactionId = $charge['balance_transaction'] ?? null;
                     $paymentIntent = $charge['payment_intent'] ?? null;
+                      $chargeId      = $charge['id'] ?? null;
 
                     if (!$transactionId || !$paymentIntent) {
                         Log::warning('Missing transactionId or paymentIntent in charge.updated event.');
@@ -197,7 +198,7 @@ class StripeController extends Controller
                         $order->online_payment_comission = $orderOnlinePaymentCommission;
                         $order->website_payment_comission = $orderWebsitePaymentCommission;
                         $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
-
+$order->stripe_charge_id = $chargeId;
                         $order->save();
 
                         Mail::to($order->vendorUser)->send(new NewOrderMail($order));
@@ -216,9 +217,10 @@ class StripeController extends Controller
                 $paymentMethodType = null;
                 try {
                     $paymentIntentObj = $stripe->paymentIntents->retrieve($paymentIntent, [
-                        'expand' => ['payment_method'],
+                         'expand' => ['payment_method', 'latest_charge'],
                     ]);
                     $paymentMethodType = $paymentIntentObj->payment_method->type ?? null;
+                     $chargeId          = $paymentIntentObj->latest_charge->id ?? null;
                 } catch (\Exception $e) {
                     Log::warning('Could not retrieve payment method type: ' . $e->getMessage());
                 }
@@ -233,6 +235,8 @@ class StripeController extends Controller
                 foreach ($orders as $order) {
                     $order->payment_intent = $paymentIntent;
                     $order->payment_method = $paymentMethodType;
+                    $order->stripe_amount    = $session['amount_total'] / 100;
+                     $order->stripe_charge_id = $chargeId;
                     $order->status = OrderStatusEnum::Paid;
                     $order->save();
 

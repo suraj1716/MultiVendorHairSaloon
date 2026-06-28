@@ -323,14 +323,16 @@ export function Td({
   muted,
   right,
   nowrap = true,
+   onClick,
 }: {
   children: React.ReactNode;
   muted?: boolean;
   right?: boolean;
   nowrap?: boolean;
+    onClick?: (e: React.MouseEvent) => void;
 }) {
   return (
-    <td style={{
+    <td onClick={onClick} style={{
       padding: "12px 16px",
       fontFamily: "var(--font-body)",
       fontSize: "13px",
@@ -417,7 +419,7 @@ export function ActionBtn({
   as: Tag = "button",
   href,
 }: {
-  onClick?: () => void;
+  onClick?: (e?: React.MouseEvent) => void;
   variant?: "edit" | "delete" | "view" | "default";
   title?: string;
   children: React.ReactNode;

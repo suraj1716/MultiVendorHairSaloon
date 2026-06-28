@@ -204,76 +204,75 @@ function Index({
 
   // ── Checkout ───────────────────────────────────────────────────────────────
 
-  const handleCheckout = async (e: React.FormEvent) => {
-    e.preventDefault();
+const handleCheckout = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // Prevent double submission — button is disabled while loading=true
-    if (loading) return;
+  if (loading) return;
 
-    if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
-      toast.error("Please select a booking date and time before proceeding.");
-      return;
-    }
+  if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
+    toast.error("Please select a booking date and time before proceeding.");
+    return;
+  }
 
-    setLoading(true);
+  setLoading(true);
 
-    const primitiveVendorId = Array.isArray(vendorId) ? vendorId[0] : vendorId;
+  const primitiveVendorId = Array.isArray(vendorId) ? vendorId[0] : vendorId;
 
+  // Step 1: Store booking
+  if (!allGiftCards && bookingConfirmed) {
     try {
-      // Store booking first (only for non-gift-card carts with a booking)
-      if (!allGiftCards && bookingConfirmed) {
-        await axios.post(route("bookings.store"), {
-          booking_date: bookingDate,
-          hasBooking: "1",
-          hasShipping: showShippingForm ? "1" : "0",
-          time_slot: timeSlot,
-          vendor_id: primitiveVendorId,
-          staff_id: selectedStaffId,
-        });
-      }
-
-      // Fire checkout — Inertia will follow the Stripe redirect
-      router.visit(route("cart.checkout"), {
-        method: "post",
-        data: {
-          shipping_address_id: selectedAddressId ?? null,
-          vendor_id: null,
-          total_price: getDiscountedTotal(),
-          voucher_id: promoDetails?.id ?? null,
-        },
-        onError: (errors) => {
-          const msg =
-            Object.values(errors)[0] ?? "Checkout failed. Please try again.";
-          toast.error(String(msg));
-          setLoading(false); // re-enable button on error
-        },
-        // onSuccess fires if Laravel returns a non-redirect (shouldn't happen
-        // in normal flow since Stripe redirects, but just in case)
-        onSuccess: () => {
-          setLoading(false);
-        },
+      await axios.post(route("bookings.store"), {
+        booking_date: bookingDate,
+        hasBooking: "1",
+        hasShipping: showShippingForm ? "1" : "0",
+        time_slot: timeSlot,
+        vendor_id: primitiveVendorId,
+        staff_id: selectedStaffId,
       });
-
-      // Clean up — fires before Stripe redirect, that's fine
-      [
-        "bookingDate",
-        "timeSlot",
-        "checkoutStep",
-        "selectedStaffId",
-        "selectedStaffName",
-      ].forEach((k) => localStorage.removeItem(k));
-      setBookingDate("");
-      setTimeSlot("");
-      setBookingConfirmed(false);
-      setSelectedStaffId(null);
-      setSelectedStaffName(null);
-      setStep(1);
     } catch (err: any) {
       console.error("Booking store failed:", err);
       toast.error("Could not save your booking. Please try again.");
       setLoading(false);
+      return;
     }
-  };
+  }
+
+  // Step 2: Fire checkout
+  router.post(
+    route("cart.checkout"),
+    {
+      shipping_address_id: selectedAddressId ?? null,
+      vendor_id: null,
+      total_price: getDiscountedTotal(),
+      voucher_id: promoDetails?.id ?? null,
+    },
+    {
+      onError: (errors) => {
+        const msg =
+          Object.values(errors)[0] ?? "Checkout failed. Please try again.";
+        toast.error(String(msg));
+        setLoading(false);
+      },
+      onSuccess: () => {
+        // Step 3: Clean up only after success
+        [
+          "bookingDate",
+          "timeSlot",
+          "checkoutStep",
+          "selectedStaffId",
+          "selectedStaffName",
+        ].forEach((k) => localStorage.removeItem(k));
+        setBookingDate("");
+        setTimeSlot("");
+        setBookingConfirmed(false);
+        setSelectedStaffId(null);
+        setSelectedStaffName(null);
+        setStep(1);
+        setLoading(false);
+      },
+    },
+  );
+};
 
   // ── Shared button styles ───────────────────────────────────────────────────
   const btnPrimary: React.CSSProperties = {
@@ -544,203 +543,269 @@ function Index({
             )}
 
             {/* ══════════════════ STEP 2: BOOKING ══════════════════ */}
-           {step === 2 && (
-  <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xl)" }}>
+            {step === 2 && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "var(--space-xl)",
+                }}
+              >
+                {hasAppointmentItems && (
+                  <>
+                    {Object.values(cartItems)
+                      .filter((g: any) => g.user.vendor_type === "appointment")
+                      .map((group: any) => (
+                        <div
+                          key={group.user.id}
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "var(--space-md)",
+                          }}
+                        >
+                          {/* ── PHASE 1: Not yet confirmed → show Book button only ── */}
+                          {!bookingConfirmed && (
+                            <div className="co-card-warm">
+                              <p
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "var(--text-sm)",
+                                  color: "var(--color-text-muted)",
+                                  marginBottom: "var(--space-md)",
+                                }}
+                              >
+                                A booking fee of{" "}
+                                <strong
+                                  style={{ color: "var(--color-primary)" }}
+                                >
+                                  $
+                                  {parseFloat(
+                                    group.user.booking_fee || "0",
+                                  ).toFixed(2)}
+                                </strong>{" "}
+                                will be added to your subtotal.
+                              </p>
+                              <button
+                                style={btnAccent}
+                                onClick={() => {
+                                  setBookingConfirmed(true);
+                                  setDialogOpen(true);
+                                }}
+                              >
+                                Book Appointment
+                              </button>
+                            </div>
+                          )}
 
-    {hasAppointmentItems && (
-      <>
-        {Object.values(cartItems)
-          .filter((g: any) => g.user.vendor_type === "appointment")
-          .map((group: any) => (
-            <div key={group.user.id} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+                          {/* ── PHASE 2: Confirmed → show staff selector ── */}
+                          {bookingConfirmed && bookingDate && timeSlot && (
+                            <div className="co-card">
+                              <StaffSelectStep
+                                vendorId={group.user.id}
+                                date={bookingDate}
+                                timeSlot={timeSlot}
+                                selectedStaffId={selectedStaffId}
+                                onSelect={handleSelectStaff}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </>
+                )}
 
-              {/* ── PHASE 1: Not yet confirmed → show Book button only ── */}
-              {!bookingConfirmed && (
-                <div className="co-card-warm">
-                  <p style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "var(--text-sm)",
-                    color: "var(--color-text-muted)",
-                    marginBottom: "var(--space-md)",
-                  }}>
-                    A booking fee of{" "}
-                    <strong style={{ color: "var(--color-primary)" }}>
-                      ${parseFloat(group.user.booking_fee || "0").toFixed(2)}
-                    </strong>{" "}
-                    will be added to your subtotal.
-                  </p>
-                  <button
-                    style={btnAccent}
-                    onClick={() => {
+                {/* ── Booking summary bar (date + time + staff) ── */}
+                {bookingConfirmed && bookingDate && timeSlot && (
+                  <div className="co-booking-bar">
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "4px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.15em",
+                          textTransform: "uppercase",
+                          color: "var(--color-accent)",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        Appointment Confirmed
+                      </span>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Date:
+                        </strong>{" "}
+                        {bookingDate}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Time:
+                        </strong>{" "}
+                        {timeSlot}
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <strong style={{ color: "var(--color-text)" }}>
+                          Staff:
+                        </strong>{" "}
+                        {selectedStaffName ||
+                          "No preference — vendor will assign"}
+                      </p>
+                    </div>
+                    <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+                      <button
+                        onClick={() => setDialogOpen(true)}
+                        style={{
+                          background: "transparent",
+                          color: "var(--color-primary)",
+                          border: "1px solid var(--color-primary)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          padding: "0.5rem 1.25rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => {
+                          setBookingConfirmed(false);
+                          setBookingDate("");
+                          setTimeSlot("");
+                          setSelectedStaffId(null);
+                          setSelectedStaffName(null);
+                          localStorage.removeItem("bookingDate");
+                          localStorage.removeItem("timeSlot");
+                          localStorage.removeItem("selectedStaffId");
+                          localStorage.removeItem("selectedStaffName");
+                        }}
+                        style={{
+                          background: "transparent",
+                          color: "var(--color-error)",
+                          border: "1px solid var(--color-error)",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-xs)",
+                          letterSpacing: "0.08em",
+                          textTransform: "uppercase",
+                          padding: "0.5rem 1.25rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* BookingWidget dialog */}
+                {showBookingWidget && (
+                  <BookingWidget
+                    bookingDate={bookingDate}
+                    setBookingDate={setBookingDate}
+                    timeSlot={timeSlot}
+                    setTimeSlot={setTimeSlot}
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    vendorId={
+                      Array.isArray(vendorId) && vendorId.length > 0
+                        ? vendorId[0]
+                        : (vendorId ?? null)
+                    }
+                    onSubmit={(date: string, slot: string) => {
+                      setBookingDate(date);
+                      setTimeSlot(slot);
                       setBookingConfirmed(true);
-                      setDialogOpen(true);
+                      setDialogOpen(false);
+                      // Reset staff when date/time changes
+                      setSelectedStaffId(null);
+                      setSelectedStaffName(null);
+                    }}
+                  />
+                )}
+
+                {/* Subtotal */}
+                <div
+                  style={{
+                    textAlign: "right",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "var(--text-lg)",
+                    color: "var(--color-text-muted)",
+                    borderTop: "1px solid var(--color-border)",
+                    paddingTop: "var(--space-lg)",
+                  }}
+                >
+                  Subtotal:{" "}
+                  <span
+                    style={{
+                      fontWeight: 500,
+                      color: "var(--color-primary)",
+                      fontFamily: "var(--font-display)",
+                      fontSize: "var(--text-xl)",
                     }}
                   >
-                    Book Appointment
+                    <CurrencyFormatter
+                      amount={
+                        bookingConfirmed ? subtotalWithBooking : totalPrice
+                      }
+                      currency="AUD"
+                    />
+                  </span>
+                </div>
+
+                {/* Nav buttons */}
+                <div style={{ display: "flex", gap: "var(--space-md)" }}>
+                  <button
+                    style={{ ...btnOutline, flex: 1 }}
+                    onClick={() => setStep(1)}
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    style={{ ...btnPrimary, flex: 1 }}
+                    onClick={() => {
+                      if (
+                        !allGiftCards &&
+                        hasAppointmentItems &&
+                        (!bookingDate || !timeSlot)
+                      ) {
+                        toast.error(
+                          "Please select a booking date and time before proceeding.",
+                        );
+                        return;
+                      }
+                      setStep(3);
+                    }}
+                  >
+                    Next: Review →
                   </button>
                 </div>
-              )}
-
-              {/* ── PHASE 2: Confirmed → show staff selector ── */}
-              {bookingConfirmed && bookingDate && timeSlot && (
-                <div className="co-card">
-                  <StaffSelectStep
-                    vendorId={group.user.id}
-                    date={bookingDate}
-                    timeSlot={timeSlot}
-                    selectedStaffId={selectedStaffId}
-                    onSelect={handleSelectStaff}
-                  />
-                </div>
-              )}
-
-            </div>
-          ))}
-      </>
-    )}
-
-    {/* ── Booking summary bar (date + time + staff) ── */}
-    {bookingConfirmed && bookingDate && timeSlot && (
-      <div className="co-booking-bar">
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "var(--text-xs)",
-            letterSpacing: "0.15em",
-            textTransform: "uppercase",
-            color: "var(--color-accent)",
-            marginBottom: "4px",
-          }}>
-            Appointment Confirmed
-          </span>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
-            <strong style={{ color: "var(--color-text)" }}>Date:</strong> {bookingDate}
-          </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
-            <strong style={{ color: "var(--color-text)" }}>Time:</strong> {timeSlot}
-          </p>
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-sm)", color: "var(--color-text-muted)" }}>
-            <strong style={{ color: "var(--color-text)" }}>Staff:</strong>{" "}
-            {selectedStaffName || "No preference — vendor will assign"}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-          <button
-            onClick={() => setDialogOpen(true)}
-            style={{
-              background: "transparent",
-              color: "var(--color-primary)",
-              border: "1px solid var(--color-primary)",
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--text-xs)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              padding: "0.5rem 1.25rem",
-              cursor: "pointer",
-            }}
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              setBookingConfirmed(false);
-              setBookingDate("");
-              setTimeSlot("");
-              setSelectedStaffId(null);
-              setSelectedStaffName(null);
-              localStorage.removeItem("bookingDate");
-              localStorage.removeItem("timeSlot");
-              localStorage.removeItem("selectedStaffId");
-              localStorage.removeItem("selectedStaffName");
-            }}
-            style={{
-              background: "transparent",
-              color: "var(--color-error)",
-              border: "1px solid var(--color-error)",
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--text-xs)",
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              padding: "0.5rem 1.25rem",
-              cursor: "pointer",
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    )}
-
-    {/* BookingWidget dialog */}
-    {showBookingWidget && (
-      <BookingWidget
-        bookingDate={bookingDate}
-        setBookingDate={setBookingDate}
-        timeSlot={timeSlot}
-        setTimeSlot={setTimeSlot}
-        open={dialogOpen}
-        onOpenChange={setDialogOpen}
-        vendorId={
-          Array.isArray(vendorId) && vendorId.length > 0
-            ? vendorId[0]
-            : (vendorId ?? null)
-        }
-        onSubmit={(date: string, slot: string) => {
-          setBookingDate(date);
-          setTimeSlot(slot);
-          setBookingConfirmed(true);
-          setDialogOpen(false);
-          // Reset staff when date/time changes
-          setSelectedStaffId(null);
-          setSelectedStaffName(null);
-        }}
-      />
-    )}
-
-    {/* Subtotal */}
-    <div style={{
-      textAlign: "right",
-      fontFamily: "var(--font-body)",
-      fontSize: "var(--text-lg)",
-      color: "var(--color-text-muted)",
-      borderTop: "1px solid var(--color-border)",
-      paddingTop: "var(--space-lg)",
-    }}>
-      Subtotal:{" "}
-      <span style={{
-        fontWeight: 500,
-        color: "var(--color-primary)",
-        fontFamily: "var(--font-display)",
-        fontSize: "var(--text-xl)",
-      }}>
-        <CurrencyFormatter
-          amount={bookingConfirmed ? subtotalWithBooking : totalPrice}
-          currency="AUD"
-        />
-      </span>
-    </div>
-
-    {/* Nav buttons */}
-    <div style={{ display: "flex", gap: "var(--space-md)" }}>
-      <button style={{ ...btnOutline, flex: 1 }} onClick={() => setStep(1)}>
-        ← Back
-      </button>
-      <button
-        style={{ ...btnPrimary, flex: 1 }}
-        onClick={() => {
-          if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
-            toast.error("Please select a booking date and time before proceeding.");
-            return;
-          }
-          setStep(3);
-        }}
-      >
-        Next: Review →
-      </button>
-    </div>
-
-  </div>
-)}
+              </div>
+            )}
 
             {/* ══════════════════ STEP 3: REVIEW ══════════════════ */}
             {step === 3 && (

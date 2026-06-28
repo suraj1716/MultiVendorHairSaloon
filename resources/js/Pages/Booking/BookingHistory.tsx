@@ -20,7 +20,6 @@ function ConfirmationModal({
 }) {
   if (!open) return null;
 
-
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
       <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
@@ -73,79 +72,85 @@ export default function BookingHistory() {
     setErrors({});
     setDialogOpen(true);
   };
-  const handleCancelBooking = (item: OrderItem, orderStatus: string, order: Order) => {
+  const handleCancelBooking = (
+    item: OrderItem,
+    orderStatus: string,
+    order: Order,
+  ) => {
     if (orderStatus !== "draft" && orderStatus !== "paid") {
-        console.warn("Booking can only be cancelled when order is draft or paid.");
-        return;
+      console.warn(
+        "Booking can only be cancelled when order is draft or paid.",
+      );
+      return;
     }
     if (!item.booking?.id) {
-        console.error("Booking ID is missing.");
-        return;
+      console.error("Booking ID is missing.");
+      return;
     }
 
     // Check 24-hour window
     const bookingDate = new Date(item.booking.booking_date);
     const now = new Date();
-    const hoursUntilBooking = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const hoursUntilBooking =
+      (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
     if (hoursUntilBooking < 24) {
-        alert("⚠️ Cancellations within 24 hours are not allowed. Please contact support.");
-        return;
+      alert(
+        "⚠️ Cancellations within 24 hours are not allowed. Please contact support.",
+      );
+      return;
     }
 
     const refundAmount = order.total_price - order.booking_fee;
 
     if (
-        confirm(
-            `⚠️ Are you sure?\n\n` +
-            `Total paid: $${order.total_price.toFixed(2)}\n` +
-            `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
-            `You'll receive: $${refundAmount.toFixed(2)}\n\n` +
-            `Alternatively, you can edit the booking to change the date/time.`
-        )
+      confirm(
+        `⚠️ Are you sure?\n\n` +
+          `Total paid: $${order.total_price.toFixed(2)}\n` +
+          `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
+          `You'll receive: $${refundAmount.toFixed(2)}\n\n` +
+          `Alternatively, you can edit the booking to change the date/time.`,
+      )
     ) {
-        router.post(
-            route("bookings.cancel", item.booking.id),
-            {},
-            {
-                onSuccess: () => {
-                    alert("Booking cancelled. Refund will be processed.");
-                },
-                onError: (errors) => {
-                    console.error("Failed to cancel booking", errors);
-                    alert("Cancellation failed. Please try again.");
-                },
-            }
-        );
+      router.post(
+        route("bookings.cancel", item.booking.id),
+        {},
+        {
+          onSuccess: () => {
+            alert("Booking cancelled. Refund will be processed.");
+          },
+          onError: (errors) => {
+            console.error("Failed to cancel booking", errors);
+            alert("Cancellation failed. Please try again.");
+          },
+        },
+      );
     }
-};
+  };
 
- const handleConfirmBooking = (date: string, slot: string) => {
-
-
-  if (!editingItem || !editingItem.booking) {
-    console.warn("Missing editingItem or booking");
-    return;
-  }
-
-  router.put(
-    route("bookings.update", editingItem.booking.id),
-    { booking_date: date, time_slot: slot },
-    {
-      onSuccess: () => {
-        setEditingItem(null);
-        setConfirmModalOpen(false);
-        setErrors({});
-      },
-      onError: (errorBag) => {
-        setErrors(errorBag);
-        setConfirmModalOpen(false);
-        setDialogOpen(true);
-      },
+  const handleConfirmBooking = (date: string, slot: string) => {
+    if (!editingItem || !editingItem.booking) {
+      console.warn("Missing editingItem or booking");
+      return;
     }
-  );
-};
 
+    router.put(
+      route("bookings.update", editingItem.booking.id),
+      { booking_date: date, time_slot: slot },
+      {
+        onSuccess: () => {
+          setEditingItem(null);
+          setConfirmModalOpen(false);
+          setErrors({});
+        },
+        onError: (errorBag) => {
+          setErrors(errorBag);
+          setConfirmModalOpen(false);
+          setDialogOpen(true);
+        },
+      },
+    );
+  };
 
   return (
     <AuthenticatedLayout
@@ -200,7 +205,7 @@ export default function BookingHistory() {
                             const itemToEdit = order.orderItems.find(
                               (item) =>
                                 item.booking &&
-                                today < item.booking.booking_date
+                                today < item.booking.booking_date,
                             );
                             if (itemToEdit) {
                               handleEditBooking(itemToEdit);
@@ -218,20 +223,20 @@ export default function BookingHistory() {
                       (() => {
                         const cancellableItem = order.orderItems.find(
                           (item) =>
-                            item.booking && today < item.booking.booking_date
+                            item.booking && today < item.booking.booking_date,
                         );
 
                         if (cancellableItem) {
                           return (
                             <div className="mt-1 p-1">
                               <button
-                              onClick={() =>
-    handleCancelBooking(
-        cancellableItem,
-        order.status,
-        order  // ← Pass full order object
-    )
-}
+                                onClick={() =>
+                                  handleCancelBooking(
+                                    cancellableItem,
+                                    order.status,
+                                    order, // ← Pass full order object
+                                  )
+                                }
                                 className="text-red-600 hover:underline"
                               >
                                 Cancel Booking
@@ -278,12 +283,14 @@ export default function BookingHistory() {
                               alt={item.product.title}
                               className="w-10 h-10 object-cover rounded"
                             />
-                         <Link
-  href={route("product.show",  { slug: item.product.slug })}  // use slug here and plural products
-  className="text-gray-800 hover:underline truncate max-w-xs"
->
-  {item.product.title}
-</Link>
+                            <Link
+                              href={route("product.show", {
+                                slug: item.product.slug,
+                              })} // use slug here and plural products
+                              className="text-gray-800 hover:underline truncate max-w-xs"
+                            >
+                              {item.product.title}
+                            </Link>
                           </td>
                           <td className="border p-2">
                             {(item.variation_summary ?? []).length > 0
@@ -336,7 +343,7 @@ export default function BookingHistory() {
                     </tbody>
                   </table>
                 </div>
-              )
+              ),
           )
         )}
 
@@ -356,11 +363,10 @@ export default function BookingHistory() {
             open={dialogOpen}
             onOpenChange={(open) => {
               setDialogOpen(open);
-
             }}
             vendorId={
               orders?.data.find((order) =>
-                order.orderItems.some((item) => item.id === editingItem.id)
+                order.orderItems.some((item) => item.id === editingItem.id),
               )?.vendor.id ?? null
             }
             onSubmit={() => {}}

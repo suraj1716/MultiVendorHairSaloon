@@ -92,7 +92,7 @@ export default function BookingsIndex({ bookings, filters }: Props) {
               <div>{b.customer}</div>
               <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-light)" }}>{b.email}</div>
             </Td>
-            <Td>{b.booking_date}</Td>
+           <Td>{b.booking_date.split('T')[0]}</Td>
             <Td muted>{b.time_slot}</Td>
             <Td muted>{b.order_id ? `#${b.order_id}` : "—"}</Td>
             <Td><StatusBadge status={b.order_status} /></Td>

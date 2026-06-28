@@ -62,40 +62,40 @@ class BookingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
-           if ($hasBooking) {
-    $validated = $request->validate([
-        'booking_date' => 'required|date',
-        'time_slot'    => 'required|string|max:255',
-        'staff_id'     => 'nullable|integer|exists:staff,id',
-        'vendor_id'    => 'required|integer|exists:vendors,user_id', // add this to your form submission
-    ]);
+            if ($hasBooking) {
+                $validated = $request->validate([
+                    'booking_date' => 'required|date',
+                    'time_slot'    => 'required|string|max:255',
+                    'staff_id'     => 'nullable|integer|exists:staff,id',
+                    'vendor_id'    => 'required|integer|exists:vendors,user_id', // add this to your form submission
+                ]);
 
-    $formattedDate  = \Carbon\Carbon::parse($validated['booking_date'])->format('Y-m-d');
-    $normalizedSlot = strtolower(trim($validated['time_slot']));
+                $formattedDate  = \Carbon\Carbon::parse($validated['booking_date'])->format('Y-m-d');
+                $normalizedSlot = strtolower(trim($validated['time_slot']));
 
-    // Match the same seat logic as getAvailableSlots
-    $vendor     = \App\Models\Vendor::find($validated['vendor_id']);
-    $totalSeats = max(1, (int) ($vendor->total_seats ?? 1));
+                // Match the same seat logic as getAvailableSlots
+                $vendor     = \App\Models\Vendor::find($validated['vendor_id']);
+                $totalSeats = max(1, (int) ($vendor->total_seats ?? 1));
 
-    $bookedCount = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
-        ->whereDate('bookings.booking_date', $formattedDate)
-        ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$normalizedSlot])
-        ->where('orders.status', '!=', 'cancelled')
-        ->count();
+                $bookedCount = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
+                    ->whereDate('bookings.booking_date', $formattedDate)
+                    ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$normalizedSlot])
+                    ->where('orders.status', '!=', 'cancelled')
+                    ->count();
 
-    if ($bookedCount >= $totalSeats) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Selected slot is already booked. Please choose a different time.'
-        ], 409);
-    }
+                if ($bookedCount >= $totalSeats) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Selected slot is already booked. Please choose a different time.'
+                    ], 409);
+                }
 
-    $booking = Booking::create([
-        'user_id'      => $user->id,
-        'booking_date' => $formattedDate,
-        'time_slot'    => $validated['time_slot'],
-        'staff_id'     => $validated['staff_id'] ?? null,
-    ]);
+                $booking = Booking::create([
+                    'user_id'      => $user->id,
+                    'booking_date' => $formattedDate,
+                    'time_slot'    => $validated['time_slot'],
+                    'staff_id'     => $validated['staff_id'] ?? null,
+                ]);
 
                 if ($user->google_access_token) {
                     try {
@@ -104,9 +104,9 @@ class BookingController extends Controller
                             $user->google_refresh_token
                         );
 
-                        $startDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[0]))->format(\DateTime::RFC3339);
-                        $endDateTime = (new \DateTime($booking->booking_date . ' ' . explode(' - ', $booking->time_slot)[1]))->format(\DateTime::RFC3339);
-
+                        $bookingDate = \Carbon\Carbon::parse($booking->booking_date)->format('Y-m-d');
+                        $startDateTime = (new \DateTime($bookingDate . ' ' . explode(' - ', $booking->time_slot)[0]))->format(\DateTime::RFC3339);
+                        $endDateTime   = (new \DateTime($bookingDate . ' ' . explode(' - ', $booking->time_slot)[1]))->format(\DateTime::RFC3339);
                         $event = $googleService->createEvent(
                             'Booking Appointment',
                             "Booking ID: {$booking->id}",
@@ -575,7 +575,7 @@ class BookingController extends Controller
 
         // Process refund
         try {
-            $refundAmount = $refundService->refundBookingFee($order);
+            $refundAmount = $refundService->refundExcludingBookingFee($order);
 
             return redirect()->back()->with(
                 'success',

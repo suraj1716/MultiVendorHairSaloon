@@ -12,7 +12,7 @@
 //     /**
 //      * Refund the booking fee based on cancellation timing.
 //      */
-//     public function refundBookingFee(Order $order): float
+//     public function refundExcludingBookingFee(Order $order): float
 //     {
 
 //         if (!$order->payment_intent || !$order->booking) return 0;
@@ -107,7 +107,7 @@
 
 //     // Step 1: Refund booking fee if not yet refunded
 //     if ($order->booking && !$order->booking->booking_fee_refunded) {
-//         $bookingRefund = $this->refundBookingFee($order); // e.g., returns 50
+//         $bookingRefund = $this->refundExcludingBookingFee($order); // e.g., returns 50
 //         $totalRefunded += $bookingRefund;
 //     }
 
@@ -165,7 +165,7 @@ use Stripe\Stripe;
 
 class RefundService
 {
- private function getBookingFee(Order $order): float
+    private function getBookingFee(Order $order): float
     {
         $vendor = Vendor::find($order->vendor_user_id);
         return $vendor?->booking_fee ?? 0;
@@ -174,7 +174,7 @@ class RefundService
     /**
      * Refund booking fee (total - booking_fee)
      */
-    public function refundBookingFee(Order $order): float
+    public function refundExcludingBookingFee(Order $order): float
     {
         Log::info("Starting booking fee refund for Order #{$order->id}");
 
@@ -184,7 +184,7 @@ class RefundService
         }
 
         // Get booking from order items
-        $booking = $order->orderItems()->whereHas('booking')->first()?->booking;
+        $booking = $order->booking;
 
         if (!$booking) {
             Log::warning("No booking found for Order #{$order->id}");
@@ -217,11 +217,20 @@ class RefundService
         try {
             Stripe::setApiKey(config('app.stripe_secret_key'));
 
-            Refund::create([
-                'charge' => $order->stripe_charge_id,  // Use charge ID, not payment_intent
+            $stripeParams = [
                 'amount' => intval($refundAmount * 100),
                 'reason' => 'requested_by_customer',
-            ]);
+            ];
+
+            if ($order->stripe_charge_id) {
+                $stripeParams['charge'] = $order->stripe_charge_id;
+            } elseif ($order->payment_intent) {
+                $stripeParams['payment_intent'] = $order->payment_intent;
+            } else {
+                throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
+            }
+
+            Refund::create($stripeParams);
 
             // Mark booking fee as refunded
             $booking->update([
@@ -269,7 +278,7 @@ class RefundService
         ]);
 
         // Mark booking fee as refunded
-        $booking = $order->orderItems()->whereHas('booking')->first()?->booking;
+        $booking = $order->booking;
         if ($booking && !$booking->booking_fee_refunded) {
             $booking->update([
                 'booking_fee_refunded' => true,
@@ -288,13 +297,18 @@ class RefundService
     public function refundOrder(Order $order): float
     {
         Log::info("Starting full order refund for Order #{$order->id}");
-dd('hit');
+
         if (!$order->stripe_charge_id) {
             throw new \Exception("Missing Stripe charge ID for Order #{$order->id}");
         }
 
         $bookingFee = $this->getBookingFee($order);
-        $refundAmount = $order->total_price - $bookingFee;
+        // What was actually charged to Stripe
+        $stripeCharged = $order->stripe_amount ?? $order->total_price;
+
+        // Can't refund more than what Stripe received
+        $refundAmount = min($order->total_price, $stripeCharged);
+
 
         if ($refundAmount <= 0) {
             Log::info("No refundable amount for Order #{$order->id}");
@@ -304,11 +318,20 @@ dd('hit');
         try {
             Stripe::setApiKey(config('app.stripe_secret_key'));
 
-            Refund::create([
-                'charge' => $order->stripe_charge_id,
+            $stripeParams = [
                 'amount' => intval($refundAmount * 100),
-                'reason' => 'requested_by_merchant',
-            ]);
+                'reason' => 'requested_by_customer',
+            ];
+
+            if ($order->stripe_charge_id) {
+                $stripeParams['charge'] = $order->stripe_charge_id;
+            } elseif ($order->payment_intent) {
+                $stripeParams['payment_intent'] = $order->payment_intent;
+            } else {
+                throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
+            }
+
+            Refund::create($stripeParams);
 
             $order->update([
                 'refund_amount' => $refundAmount,
@@ -375,7 +398,7 @@ dd('hit');
 
         // Step 1: Refund booking fee if applicable
         if ($order->booking && !$order->booking->booking_fee_refunded) {
-            $bookingRefund = $this->refundBookingFee($order);
+            $bookingRefund = $this->refundExcludingBookingFee($order);
             $totalRefunded += $bookingRefund;
             Log::info("Booking refund processed: A$ {$bookingRefund}");
         }
@@ -389,11 +412,21 @@ dd('hit');
         if ($remainingRefundable > 0) {
             try {
                 Stripe::setApiKey(config('app.stripe_secret_key'));
-
-                $refund = Refund::create([
-                    'payment_intent' => $order->payment_intent,
+                $stripeParams = [
                     'amount' => intval($remainingRefundable * 100),
-                ]);
+                    'reason' => 'requested_by_customer',
+                ];
+
+                if ($order->stripe_charge_id) {
+                    $stripeParams['charge'] = $order->stripe_charge_id;
+                } elseif ($order->payment_intent) {
+                    $stripeParams['payment_intent'] = $order->payment_intent;
+                } else {
+                    throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
+                }
+
+                Refund::create($stripeParams);
+
 
                 $order->refund_amount = $alreadyRefunded + $remainingRefundable;
                 $order->total_price = max(0, $order->total_price - $remainingRefundable);

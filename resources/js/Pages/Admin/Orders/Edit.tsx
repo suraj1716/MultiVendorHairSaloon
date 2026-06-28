@@ -27,6 +27,7 @@ interface LineItem {
 }
 
 interface OrderProp {
+  payment_intent: any;
   id: number;
   user_id: number;
   vendor_user_id: number;
@@ -46,6 +47,7 @@ interface Props {
   statuses: string[];
   flash: { success?: string; error?: string };
   errors: Record<string, string>;
+  vendor: { business_start_time: string; business_end_time: string; slot_interval_minutes: number } | null;
 }
 
 function buildTimeSlots() {
@@ -182,6 +184,35 @@ function Toggle({
     </button>
   );
 }
+
+
+function generateTimeSlots(start: string, end: string, intervalMinutes: number): string[] {
+  const slots: string[] = [];
+  const [startH, startM] = start.split(':').map(Number);
+  const [endH, endM] = end.split(':').map(Number);
+
+  let current = startH * 60 + startM;
+  const endTotal = endH * 60 + endM;
+
+  const fmt = (totalMinutes: number) => {
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    const ampm = h < 12 ? 'am' : 'pm';
+    const hour = h % 12 === 0 ? 12 : h % 12;
+    const min = String(m).padStart(2, '0');
+    return `${hour}:${min} ${ampm}`;
+  };
+
+  while (current < endTotal) {
+    const next = current + intervalMinutes;
+    slots.push(`${fmt(current)} - ${fmt(next)}`);
+    current = next;
+  }
+
+  return slots;
+}
+
+
 function getCsrfToken(): string {
   const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : "";
@@ -193,6 +224,7 @@ export default function OrderEdit({
   statuses,
   flash,
  errors = {},
+ vendor
 }: Props) {
 const { props } = usePage();
 console.log("ALL PROPS:", props);
@@ -238,12 +270,13 @@ const handlePhoneLookup = async () => {
     setLookupState("new");
   }
 };
-console.log("URL:", route("admin.orders.walkin.lookup"));
   // ── Items ──
   const [items, setItems] = useState<LineItem[]>(order.items);
   const [status, setStatus] = useState(order.status);
   const [isPaid, setIsPaid] = useState(order.is_paid);
-  const [payMethod, setPayMethod] = useState(order.payment_method || "cash");
+  const [payMethod, setPayMethod] = useState(
+  order.payment_method || (order.payment_intent ? "stripe" : "cash")
+);
   const [notes, setNotes] = useState(order.notes || "");
   const [productSearch, setProductSearch] = useState("");
   const [selectedPid, setSelectedPid] = useState("");
@@ -252,12 +285,16 @@ console.log("URL:", route("admin.orders.walkin.lookup"));
   // ── Booking ──
   const [hasBooking, setHasBooking] = useState(!!order.booking);
   const [bookingDate, setBookingDate] = useState(
-    order.booking?.booking_date ?? new Date().toISOString().split("T")[0],
-  );
+  order.booking?.booking_date
+    ? order.booking.booking_date.split('T')[0]
+    : new Date().toISOString().split("T")[0],
+);
   const [bookingSlot, setBookingSlot] = useState(
     order.booking?.time_slot ?? "09:00 - 09:30",
   );
-  const timeSlots = buildTimeSlots();
+  const timeSlots = vendor
+    ? generateTimeSlots(vendor.business_start_time, vendor.business_end_time, vendor.slot_interval_minutes)
+    : generateTimeSlots("09:00", "20:00", 30); // fallback
 
   const filtered = products.filter((p) =>
     p.title.toLowerCase().includes(productSearch.toLowerCase()),
@@ -843,9 +880,11 @@ if (!order) {
                       marginTop: 2,
                     }}
                   >
-                    {order.booking
-                      ? `Currently: ${order.booking.booking_date} · ${order.booking.time_slot}`
-                      : "No booking linked"}
+
+
+{order.booking
+  ? `Currently: ${order.booking.booking_date.split('T')[0]} · ${order.booking.time_slot}`
+  : "No booking linked"}
                   </div>
                 </div>
                 <Toggle checked={hasBooking} onChange={setHasBooking} />
@@ -957,43 +996,45 @@ if (!order) {
             </Card>
 
             <Card title="Payment Method">
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 8,
-                }}
-              >
-                {(["cash", "eftpos", "stripe", "other"] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() => setPayMethod(m)}
-                    style={{
-                      padding: "9px 0",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "10px",
-                      letterSpacing: "0.12em",
-                      textTransform: "uppercase",
-                      cursor: "pointer",
-                      border: `1px solid ${payMethod === m ? "var(--color-accent)" : "var(--color-border)"}`,
-                      background:
-                        payMethod === m
-                          ? "rgba(201,169,110,0.1)"
-                          : "transparent",
-                      color:
-                        payMethod === m
-                          ? "var(--color-accent)"
-                          : "var(--color-text-muted)",
-                      borderRadius: "var(--radius-sm)",
-                      transition: "all 150ms",
-                    }}
-                  >
-                    {m}
-                  </button>
-                ))}
-              </div>
-            </Card>
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+    {(order.payment_intent
+      ? (["stripe", "card"] as const)
+      : (["cash", "eftpos", "other"] as const)
+    ).map((m) => (
+      <button
+        key={m}
+        type="button"
+        onClick={() => setPayMethod(m)}
+        style={{
+          padding: "9px 0",
+          fontFamily: "var(--font-body)",
+          fontSize: "10px",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          cursor: "pointer",
+          border: `1px solid ${payMethod === m ? "var(--color-accent)" : "var(--color-border)"}`,
+          background: payMethod === m ? "rgba(201,169,110,0.1)" : "transparent",
+          color: payMethod === m ? "var(--color-accent)" : "var(--color-text-muted)",
+          borderRadius: "var(--radius-sm)",
+          transition: "all 150ms",
+        }}
+      >
+        {m}
+      </button>
+    ))}
+  </div>
+  {order.payment_intent && (
+    <p style={{
+      fontFamily: "var(--font-body)",
+      fontSize: "10px",
+      color: "var(--color-text-muted)",
+      marginTop: 8,
+      letterSpacing: "0.05em",
+    }}>
+      This order was paid via Stripe — method is locked to card/stripe.
+    </p>
+  )}
+</Card>
 
             <Card title="Summary">
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

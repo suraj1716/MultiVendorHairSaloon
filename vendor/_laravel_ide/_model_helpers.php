@@ -3199,6 +3199,7 @@ namespace App\Models {
      * @property \Illuminate\Support\Carbon|null $manual_paid_at
      * @property string|null $payment_method
      * @property bool $is_manual
+     * @property string|null $stripe_charge_id
      * @property string|null $stripe_session_id
      * @property float $discount_amount
      * @property mixed $voucher_id
@@ -3234,6 +3235,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereVoucherId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereDiscountAmount($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereStripeSessionId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereStripeChargeId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereIsManual($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order wherePaymentMethod($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereManualPaidAt($value)
@@ -7096,6 +7098,7 @@ namespace App\Models {
      *
      * @property array|null $closed_dates
      * @property array|null $recurring_closed_days
+     * @property mixed $total_seats
      * @property mixed $slot_interval_minutes
      * @property string $business_end_time
      * @property string $business_start_time
@@ -7126,6 +7129,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereBusinessStartTime($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereBusinessEndTime($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereSlotIntervalMinutes($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereTotalSeats($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereRecurringClosedDays($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereClosedDates($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor newModelQuery()

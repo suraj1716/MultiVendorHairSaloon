@@ -152,9 +152,13 @@ class CartController extends Controller
         return back()->with('success', 'Product removed from cart successfully.');
     }
 
-  public function checkout(Request $request, CartService $cartService)
+    public function checkout(Request $request, CartService $cartService)
     {
-
+        Log::info('Checkout hit', [
+            'user_id'    => $request->user()?->id,
+            'voucher_id' => $request->input('voucher_id'),
+            'cart_count' => count($cartService->getCartItemsGrouped()),
+        ]);
         $request->validate([
             'vendor_id' => ['nullable', 'integer'],
             'shipping_address_id' => ['nullable', 'exists:shipping_addresses,id'],
@@ -313,9 +317,9 @@ class CartController extends Controller
                         );
 
                         try {
-                            $startDateTime = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
-                            $endDateTime   = (new \DateTime($latestBooking->booking_date . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
-
+                           $bookingDateStr = \Carbon\Carbon::parse($latestBooking->booking_date)->format('Y-m-d');
+$startDateTime  = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
+$endDateTime    = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
                             $vendorEmail = $vendor['email'] ?? null;
 
                             $googleEvent = $googleService->createEvent(
@@ -449,7 +453,13 @@ class CartController extends Controller
                     'orders' => OrderViewResource::collection($orders)->collection->toArray(),
                 ]);
             }
-
+            Log::info('Checkout totals', [
+                'combinedTotal'    => $combinedTotal,
+                'discountToApply'  => $discountToApply,
+                'combinedTotalDue' => $combinedTotalDue,
+                'voucher_type'     => $voucher?->type,
+                'orders_built'     => count($orders),
+            ]);
             // ── Otherwise, charge the remainder through Stripe ──
             $session = Session::create([
                 'customer_email' => $user->email,
@@ -469,7 +479,7 @@ class CartController extends Controller
             return Inertia::location($session->url);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Checkout failed: ' . $e->getMessage());
+            Log::error('Checkout failed: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return back()->withErrors('Checkout failed. Please try again.');
         }
     }
