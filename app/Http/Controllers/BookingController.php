@@ -62,32 +62,40 @@ class BookingController extends Controller
                 return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
             }
 
-            if ($hasBooking) {
-                $validated = $request->validate([
-                    'booking_date' => 'required|date',
-                    'time_slot' => 'required|string|max:255',
-                    'staff_id' => 'nullable|integer|exists:staff,id',
-                ]);
+           if ($hasBooking) {
+    $validated = $request->validate([
+        'booking_date' => 'required|date',
+        'time_slot'    => 'required|string|max:255',
+        'staff_id'     => 'nullable|integer|exists:staff,id',
+        'vendor_id'    => 'required|integer|exists:vendors,user_id', // add this to your form submission
+    ]);
 
-                $existingBooking = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
-                    ->where('bookings.booking_date', $validated['booking_date'])
-                    ->where('bookings.time_slot', $validated['time_slot'])
-                    ->where('orders.status', '!=', 'cancelled')
-                    ->exists();
+    $formattedDate  = \Carbon\Carbon::parse($validated['booking_date'])->format('Y-m-d');
+    $normalizedSlot = strtolower(trim($validated['time_slot']));
 
-                if ($existingBooking) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Selected slot is already booked. Please choose a different time.'
-                    ], 409);
-                }
+    // Match the same seat logic as getAvailableSlots
+    $vendor     = \App\Models\Vendor::find($validated['vendor_id']);
+    $totalSeats = max(1, (int) ($vendor->total_seats ?? 1));
 
-                $booking = Booking::create([
-                    'user_id' => $user->id,
-                    'booking_date' => $validated['booking_date'],
-                    'time_slot' => $validated['time_slot'],
-                    'staff_id' => $validated['staff_id'] ?? null,
-                ]);
+    $bookedCount = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
+        ->whereDate('bookings.booking_date', $formattedDate)
+        ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$normalizedSlot])
+        ->where('orders.status', '!=', 'cancelled')
+        ->count();
+
+    if ($bookedCount >= $totalSeats) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Selected slot is already booked. Please choose a different time.'
+        ], 409);
+    }
+
+    $booking = Booking::create([
+        'user_id'      => $user->id,
+        'booking_date' => $formattedDate,
+        'time_slot'    => $validated['time_slot'],
+        'staff_id'     => $validated['staff_id'] ?? null,
+    ]);
 
                 if ($user->google_access_token) {
                     try {
@@ -138,7 +146,38 @@ class BookingController extends Controller
         }
     }
 
+    public function getStaffAvailability(Request $request)
+    {
+        $request->validate([
+            'vendor_id' => 'required|integer',
+            'date'      => 'required|date',
+            'time_slot' => 'required|string',
+        ]);
 
+        $vendorId = $request->input('vendor_id');
+        $date     = \Carbon\Carbon::parse($request->input('date'))->format('Y-m-d');
+        $timeSlot = strtolower(trim($request->input('time_slot')));
+
+        $staffMembers = \App\Models\Staff::where('vendor_id', $vendorId)
+            ->where('is_active', true)
+            ->get();
+
+        $bookedStaffIds = DB::table('bookings')
+            ->whereDate('booking_date', $date)
+            ->whereRaw('LOWER(TRIM(time_slot)) = ?', [$timeSlot])
+            ->pluck('staff_id')
+            ->toArray();
+
+        $staffList = $staffMembers->map(function ($staff) use ($bookedStaffIds) {
+            return [
+                'id'        => $staff->id,
+                'name'      => $staff->name,
+                'available' => !in_array($staff->id, $bookedStaffIds),
+            ];
+        });
+
+        return response()->json(['staff' => $staffList]);
+    }
 
     public function getAvailableSlots(Request $request)
     {
@@ -327,22 +366,40 @@ class BookingController extends Controller
         }
 
         // Fetch booked slots for the date from DB
-        $bookedSlots = DB::table('bookings')
+        // Total seats this vendor has available per slot
+        $totalSeats = max(1, (int) ($vendor->total_seats ?? 1));
+        Log::info("Vendor {$appointmentVendorId} total seats: {$totalSeats}");
+
+        // Count how many bookings exist per time_slot for this date (excluding cancelled)
+        $bookedCounts = DB::table('bookings')
             ->join('orders', 'bookings.order_id', '=', 'orders.id')
             ->whereDate('bookings.booking_date', $formattedDate)
-            ->where('orders.status', '!=', 'cancelled') // Exclude cancelled orders
-            ->pluck('bookings.time_slot')
-            ->map(fn($slot) => strtolower(trim($slot)))
+            ->where('orders.status', '!=', 'cancelled')
+            ->groupBy('bookings.time_slot')
+            ->selectRaw('LOWER(TRIM(bookings.time_slot)) as time_slot, COUNT(*) as booked_count')
+            ->pluck('booked_count', 'time_slot')
             ->toArray();
 
-        Log::info("Booked slots for {$formattedDate}: " . json_encode($bookedSlots));
+        Log::info("Booked counts per slot for {$formattedDate}: " . json_encode($bookedCounts));
 
-        // Filter out booked slots
+        // A slot is available if booked_count < total_seats
         $availableSlots = array_values(array_filter(
             $allSlots,
-            fn($slot) => !in_array(strtolower($slot), $bookedSlots)
+            function ($slot) use ($bookedCounts, $totalSeats) {
+                $key = strtolower(trim($slot));
+                $bookedCount = $bookedCounts[$key] ?? 0;
+                $seatsLeft = $totalSeats - $bookedCount;
+
+                if ($seatsLeft <= 0) {
+                    Log::info("Slot {$slot} is FULL ({$bookedCount}/{$totalSeats} seats booked)");
+                    return false;
+                }
+
+                Log::info("Slot {$slot} available ({$seatsLeft}/{$totalSeats} seats left)");
+                return true;
+            }
         ));
-        // dd($availableSlots);
+
         Log::info("Available slots for {$formattedDate}: " . json_encode($availableSlots));
 
         if ($request->wantsJson()) {
@@ -374,70 +431,70 @@ class BookingController extends Controller
 
 
 
-   public function update(Request $request, Booking $booking)
-{
-    $validated = $request->validate([
-        'booking_date' => 'required|date',
-        'time_slot' => 'required|string|max:255',
-        'staff_id' => 'nullable|integer|exists:staff,id',
-    ]);
-
-    // Authorization: user must own booking or vendor
-    $vendorUserId = $booking->order?->vendor_user_id;
-
-    if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
-        abort(403);
-    }
-
-    // Update booking details
-    $booking->update([
-        'booking_date' => $validated['booking_date'],
-        'time_slot' => $validated['time_slot'],
-        'staff_id' => $validated['staff_id'] ?? $booking->staff_id,
-    ]);
-
-    $user = Auth::user();
-
-    // If user has Google token and booking has an event ID, update Google Calendar
-    if ($user->google_access_token && $booking->google_event_id) {
-        try {
-            $googleService = new \App\Services\GoogleCalendarService([
-                'access_token' => $user->google_access_token,
-                'refresh_token' => $user->google_refresh_token,
-            ]);
-
-            $startTime = explode(' - ', $booking->time_slot)[0];
-            $endTime = explode(' - ', $booking->time_slot)[1];
-            $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
-            $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
-
-            $googleService->updateEvent(
-                $booking->google_event_id,
-                'Booking Appointment',
-                "Updated Booking ID: {$booking->id}",
-                $startDateTime,
-                $endDateTime,
-                'Australia/Sydney'
-            );
-
-            if ($googleService->newAccessToken) {
-                $user->google_access_token = $googleService->newAccessToken;
-                $user->save();
-            }
-        } catch (\Exception $e) {
-            Log::error('Google Calendar update failed: ' . $e->getMessage());
-        }
-    }
-
-    if ($request->wantsJson()) {
-        return response()->json([
-            'message' => 'Booking updated successfully.',
-            'booking' => $booking->fresh(),
+    public function update(Request $request, Booking $booking)
+    {
+        $validated = $request->validate([
+            'booking_date' => 'required|date',
+            'time_slot' => 'required|string|max:255',
+            'staff_id' => 'nullable|integer|exists:staff,id',
         ]);
-    }
 
-    return redirect()->back()->with('success', 'Booking updated successfully.');
-}
+        // Authorization: user must own booking or vendor
+        $vendorUserId = $booking->order?->vendor_user_id;
+
+        if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
+            abort(403);
+        }
+
+        // Update booking details
+        $booking->update([
+            'booking_date' => $validated['booking_date'],
+            'time_slot' => $validated['time_slot'],
+            'staff_id' => $validated['staff_id'] ?? $booking->staff_id,
+        ]);
+
+        $user = Auth::user();
+
+        // If user has Google token and booking has an event ID, update Google Calendar
+        if ($user->google_access_token && $booking->google_event_id) {
+            try {
+                $googleService = new \App\Services\GoogleCalendarService([
+                    'access_token' => $user->google_access_token,
+                    'refresh_token' => $user->google_refresh_token,
+                ]);
+
+                $startTime = explode(' - ', $booking->time_slot)[0];
+                $endTime = explode(' - ', $booking->time_slot)[1];
+                $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
+                $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
+
+                $googleService->updateEvent(
+                    $booking->google_event_id,
+                    'Booking Appointment',
+                    "Updated Booking ID: {$booking->id}",
+                    $startDateTime,
+                    $endDateTime,
+                    'Australia/Sydney'
+                );
+
+                if ($googleService->newAccessToken) {
+                    $user->google_access_token = $googleService->newAccessToken;
+                    $user->save();
+                }
+            } catch (\Exception $e) {
+                Log::error('Google Calendar update failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Booking updated successfully.',
+                'booking' => $booking->fresh(),
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Booking updated successfully.');
+    }
 
 
 
@@ -481,31 +538,30 @@ class BookingController extends Controller
     public function cancel(Booking $booking, RefundService $refundService)
     {
         $user = Auth::user();
-
-        $vendorUserId = $booking->order?->vendor_user_id;
-
-        if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
-            abort(403);
-        }
-
         $order = $booking->order;
 
         if (!$order || $order->status === 'cancelled') {
             return redirect()->back()->with('error', 'Invalid order for cancellation.');
         }
 
+        // Check if past booking date
         if (now()->gt($booking->booking_date)) {
             return redirect()->back()->with('error', 'Past bookings cannot be cancelled.');
         }
 
-        // Cancel Google Calendar
+        // Check 24-hour window
+        $hoursUntilBooking = now()->diffInHours($booking->booking_date, false);
+        if ($hoursUntilBooking < 24) {
+            return redirect()->back()->with('error', 'Bookings within 24 hours cannot be cancelled.');
+        }
+
+        // Delete Google Calendar
         if ($booking->google_event_id && $user->google_access_token) {
             try {
                 $googleService = new GoogleCalendarService(
                     ['access_token' => $user->google_access_token],
                     $user->google_refresh_token
                 );
-
                 $googleService->deleteEvent($booking->google_event_id);
 
                 if ($googleService->newAccessToken) {
@@ -513,24 +569,21 @@ class BookingController extends Controller
                     $user->save();
                 }
             } catch (\Exception $e) {
-                Log::error('Failed to delete Google Calendar event: ' . $e->getMessage());
+                Log::error('Google Calendar delete failed: ' . $e->getMessage());
             }
         }
 
-        // Refund booking fee
+        // Process refund
         try {
             $refundAmount = $refundService->refundBookingFee($order);
+
+            return redirect()->back()->with(
+                'success',
+                "Booking cancelled. Refund of \${$refundAmount} processed."
+            );
         } catch (\Exception $e) {
-            Log::error('RefundService error: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Booking cancelled but refund failed.');
+            Log::error("Cancellation failed: " . $e->getMessage());
+            return redirect()->back()->with('error', 'Cancellation failed.');
         }
-
-        // Optionally mark status as cancelled
-        if ($refundAmount >= 0) {
-            $order->status = 'cancelled';
-            $order->save();
-        }
-
-        return redirect()->back()->with('success', 'Booking cancelled and refund processed if applicable.');
     }
 }

@@ -14,18 +14,19 @@ class Vendor extends Model
     use HasFactory;
     protected $primaryKey = 'user_id';
     protected $fillable = [
-        'user_id',
-        'status',
-        'store_name',
-        'store_address',
-        'vendor_type',
-        'booking_fee',
-        'business_start_time',
-        'business_end_time',
-        'slot_interval_minutes',
-        'recurring_closed_days',
-        'closed_dates',
-    ];
+    'user_id',
+    'status',
+    'store_name',
+    'store_address',
+    'vendor_type',
+    'booking_fee',
+    'business_start_time',
+    'business_end_time',
+    'slot_interval_minutes',
+    'total_seats',
+    'recurring_closed_days',
+    'closed_dates',
+];
 
     protected $casts = [
         'vendor_type' => VendorType::class,

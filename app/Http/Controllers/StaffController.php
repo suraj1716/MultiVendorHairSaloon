@@ -7,7 +7,7 @@ use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
-
+use Illuminate\Support\Facades\DB;
 class StaffController extends Controller
 {
     // ── Vendor admin CRUD (scoped to logged-in vendor only) ──────
@@ -90,29 +90,47 @@ class StaffController extends Controller
 
     // ── Public endpoint used by the checkout staff-selection step ──
 
-    public function forBooking(Request $request)
-    {
-        $request->validate([
-            'vendor_id' => 'required|exists:vendors,user_id',
-            'category_id' => 'nullable|exists:categories,id',
-        ]);
+   public function forBooking(Request $request)
+{
+    $request->validate([
+        'vendor_id'   => 'required|exists:vendors,user_id',
+        'category_id' => 'nullable|exists:categories,id',
+        'date'        => 'nullable|date',
+        'time_slot'   => 'nullable|string',
+    ]);
 
-        $staff = Staff::forVendor($request->vendor_id)
-            ->active()
-            ->when($request->category_id, fn ($q) => $q->whereHas(
-                'categories',
-                fn ($q2) => $q2->where('categories.id', $request->category_id)
-            ))
-            ->get()
-            ->map(fn ($s) => [
-                'id' => $s->id,
-                'name' => $s->name,
-                'position' => $s->position,
-                'photo_url' => $s->getFirstMediaUrl('photo'),
-            ]);
+    $staff = Staff::forVendor($request->vendor_id)
+        ->active()
+        ->when($request->category_id, fn ($q) => $q->whereHas(
+            'categories',
+            fn ($q2) => $q2->where('categories.id', $request->category_id)
+        ))
+        ->get();
 
-        return response()->json($staff);
+    // Only check booking conflicts if a date+time has actually been chosen
+    $bookedStaffIds = [];
+    if ($request->date && $request->time_slot) {
+        $formattedDate = \Carbon\Carbon::parse($request->date)->format('Y-m-d');
+        $normalizedSlot = strtolower(trim($request->time_slot));
+
+        $bookedStaffIds = DB::table('bookings')
+            ->whereDate('booking_date', $formattedDate)
+            ->whereRaw('LOWER(TRIM(time_slot)) = ?', [$normalizedSlot])
+            ->whereNotNull('staff_id')
+            ->pluck('staff_id')
+            ->toArray();
     }
+
+    $result = $staff->map(fn ($s) => [
+        'id'        => $s->id,
+        'name'      => $s->name,
+        'position'  => $s->position,
+        'photo_url' => $s->getFirstMediaUrl('photo'),
+        'available' => !in_array($s->id, $bookedStaffIds),
+    ]);
+
+    return response()->json($result);
+}
 
     // ── Shared helpers ───────────────────────────────────────
 

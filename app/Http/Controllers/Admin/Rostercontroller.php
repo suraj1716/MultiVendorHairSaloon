@@ -23,7 +23,7 @@ class RosterController extends Controller
             ->whereBetween('booking_date', [$from, $to])
             ->whereHas(
                 'order',
-                fn($q) => $q->where('status', 'paid') // adjust value to match your statuses
+                // fn($q) => $q->where('status', 'paid') // adjust value to match your statuses
             )
             ->with([
                 'order:id,status,payment_method',

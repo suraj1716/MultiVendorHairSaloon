@@ -263,6 +263,7 @@ export type OrderItem = {
 
 
 export type Order = {
+  booking_fee: number;
   id: number;
   total_price: number;
   status: string;

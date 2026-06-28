@@ -51,68 +51,70 @@ class VendorController extends Controller
         ]);
     }
 
-  public function store(Request $request)
-{
-    $data = $request->validate([
-        'name'                   => 'nullable|string|max:255',
-        'email'                  => 'required|email',
-        'phone'                  => 'required|string|max:30',
-        'password'               => 'nullable|string|min:8',
-        'store_name'             => 'required|string|max:255',
-        'store_address'          => 'nullable|string|max:500',
-        'vendor_type'            => ['required', Rule::in(collect(VendorType::cases())->map->value)],
-        'booking_fee'            => 'required|numeric|min:0',
-        'status'                 => ['required', Rule::in(['active', 'approved', 'rejected'])],
-        'business_start_time'    => 'required|date_format:H:i',
-        'business_end_time'      => 'required|date_format:H:i',
-        'slot_interval_minutes'  => 'required|integer|min:5',
-        'recurring_closed_days'  => 'nullable|array',
-        'closed_dates'           => 'nullable|array',
-    ]);
-
-    DB::transaction(function () use ($data) {
-        $user = User::where('email', $data['email'])->first();
-
-        if (! $user) {
-            $user = User::create([
-                'name'          => $data['name'],
-                'email'         => $data['email'],
-                'phone'         => $data['phone'],
-                'password'      => Hash::make($data['password']),
-                'referral_code' => $this->generateUniqueReferralCode(),
-            ]);
-        } else {
-            // Existing user being upgraded to vendor — keep phone in sync
-            $user->update(['phone' => $data['phone']]);
-        }
-
-        if (Vendor::where('user_id', $user->id)->exists()) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'email' => 'This user is already registered as a vendor.',
-            ]);
-        }
-
-        Vendor::create([
-            'user_id'               => $user->id,
-            'store_name'            => $data['store_name'],
-            'store_address'         => $data['store_address'] ?? null,
-            'vendor_type'           => $data['vendor_type'],
-            'booking_fee'           => $data['booking_fee'],
-            'status'                => $data['status'],
-            'business_start_time'   => $data['business_start_time'],
-            'business_end_time'     => $data['business_end_time'],
-            'slot_interval_minutes' => $data['slot_interval_minutes'],
-            'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
-            'closed_dates'          => $data['closed_dates'] ?? [],
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'name'                   => 'nullable|string|max:255',
+            'email'                  => 'required|email',
+            'phone'                  => 'required|string|max:30',
+            'password'               => 'nullable|string|min:8',
+            'store_name'             => 'required|string|max:255',
+            'store_address'          => 'nullable|string|max:500',
+            'vendor_type'            => ['required', Rule::in(collect(VendorType::cases())->map->value)],
+            'booking_fee'            => 'required|numeric|min:0',
+            'status'                 => ['required', Rule::in(['active', 'approved', 'rejected'])],
+            'business_start_time'    => 'required|date_format:H:i',
+            'business_end_time'      => 'required|date_format:H:i',
+            'slot_interval_minutes'  => 'required|integer|min:5',
+            'total_seats'            => 'required|integer|min:1',
+            'recurring_closed_days'  => 'nullable|array',
+            'closed_dates'           => 'nullable|array',
         ]);
 
-        if (! $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
-            $user->assignRole(\App\Enums\RolesEnum::Vendor->value);
-        }
-    });
+        DB::transaction(function () use ($data) {
+            $user = User::where('email', $data['email'])->first();
 
-    return back()->with('success', 'Vendor created.');
-}
+            if (! $user) {
+                $user = User::create([
+                    'name'          => $data['name'],
+                    'email'         => $data['email'],
+                    'phone'         => $data['phone'],
+                    'password'      => Hash::make($data['password']),
+                    'referral_code' => $this->generateUniqueReferralCode(),
+                ]);
+            } else {
+                // Existing user being upgraded to vendor — keep phone in sync
+                $user->update(['phone' => $data['phone']]);
+            }
+
+            if (Vendor::where('user_id', $user->id)->exists()) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'email' => 'This user is already registered as a vendor.',
+                ]);
+            }
+
+            Vendor::create([
+                'user_id'               => $user->id,
+                'store_name'            => $data['store_name'],
+                'store_address'         => $data['store_address'] ?? null,
+                'vendor_type'           => $data['vendor_type'],
+                'booking_fee'           => $data['booking_fee'],
+                'status'                => $data['status'],
+                'business_start_time'   => $data['business_start_time'],
+                'business_end_time'     => $data['business_end_time'],
+                'slot_interval_minutes' => $data['slot_interval_minutes'],
+                'total_seats'            => $data['total_seats'],
+                'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
+                'closed_dates'          => $data['closed_dates'] ?? [],
+            ]);
+
+            if (! $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
+                $user->assignRole(\App\Enums\RolesEnum::Vendor->value);
+            }
+        });
+
+        return back()->with('success', 'Vendor created.');
+    }
 
     private function generateUniqueReferralCode(): string
     {
@@ -141,6 +143,7 @@ class VendorController extends Controller
                 'business_start_time'    => $vendor->business_start_time,
                 'business_end_time'      => $vendor->business_end_time,
                 'slot_interval_minutes'  => $vendor->slot_interval_minutes,
+                'total_seats'             => $vendor->total_seats,
                 'recurring_closed_days'  => is_array($vendor->recurring_closed_days) ? $vendor->recurring_closed_days : [],
                 'closed_dates'           => is_array($vendor->closed_dates) ? $vendor->closed_dates : [],
             ],
@@ -163,6 +166,7 @@ class VendorController extends Controller
             'business_start_time'   => 'nullable|date_format:H:i',
             'business_end_time'     => 'nullable|date_format:H:i',
             'slot_interval_minutes' => 'nullable|integer|min:5',
+            'total_seats'            => 'nullable|integer|min:1',
             'recurring_closed_days' => 'nullable|array',
             'closed_dates'          => 'nullable|array',
         ]);
@@ -183,6 +187,7 @@ class VendorController extends Controller
                 'business_start_time'   => $data['business_start_time'] ?? null,
                 'business_end_time'     => $data['business_end_time'] ?? null,
                 'slot_interval_minutes' => $data['slot_interval_minutes'] ?? null,
+                'total_seats'            => $data['total_seats'] ?? 1,
                 'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
                 'closed_dates'          => $data['closed_dates'] ?? [],
             ]);

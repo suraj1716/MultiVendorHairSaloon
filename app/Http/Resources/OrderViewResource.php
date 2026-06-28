@@ -17,6 +17,7 @@ class OrderViewResource extends JsonResource
             'status' => $this->status,
             'created_at' => $this->created_at,
             'total_price' => $this->total_price,
+            'booking_fee' => (float) ($this->vendorUser->vendor->booking_fee ?? 0), // ← Add this
             'payment_method' => $this->payment_method,
             'booking_date' => optional($this->booking)->booking_date,
             'time_slot' => optional($this->booking)->time_slot,

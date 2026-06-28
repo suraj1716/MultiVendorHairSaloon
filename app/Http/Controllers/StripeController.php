@@ -32,93 +32,100 @@ class StripeController extends Controller
 {
 
 
-    public function success(Request $request)
-    {
-        $user = Auth::user();
-        $session_id = $request->get('session_id');
+   public function success(Request $request)
+{
+    $user = Auth::user();
+    $session_id = $request->get('session_id');
 
-        $orders = Order::where('stripe_session_id', $session_id)
-            ->with('vendor', 'orderItems.product') // eager load orderItems and their products
-            ->get();
+    $orders = Order::where('stripe_session_id', $session_id)
+        ->with('vendor', 'orderItems.product')
+        ->get();
 
-        if ($orders->count() === 0) {
-            abort(404);
+    if ($orders->count() === 0) {
+        abort(404);
+    }
+
+    foreach ($orders as $order) {
+        if ($order->user_id !== $user->id) {
+            abort(403);
         }
+    }
 
-        foreach ($orders as $order) {
-            if ($order->user_id !== $user->id) {
-                abort(403);
-            }
+    // ── Clear cart items for this checkout, regardless of webhook timing ──
+    $productIds = $orders->flatMap(fn($order) => $order->orderItems->pluck('product_id'))->unique()->values();
+
+    if ($productIds->isNotEmpty()) {
+        CartItem::where('user_id', $user->id)
+            ->whereIn('product_id', $productIds)
+            ->where('saved_for_later', false)
+            ->delete();
+    }
+
+    // ✅ Referral logic (unchanged)
+    if ($user->referred_by && !$user->has_received_referral_bonus) {
+        $totalSpent = $user->orders()
+            ->where(function ($q) {
+                $q->where('status', 'Paid')
+                    ->orWhere('payment_status', 'paid');
+            })
+            ->sum('total_price');
+
+        if ($totalSpent >= 100) {
+            Voucher::create([
+                'code' => strtoupper(Str::random(10)),
+                'type' => 'gift',
+                'amount' => 30,
+                'discount_type' => 'fixed',
+                'remaining_amount' => 30,
+                'max_uses' => 1,
+                'used_count' => 0,
+                'user_id' => $user->referred_by,
+                'active' => true,
+                'expires_at' => now()->addDays(30),
+            ]);
+
+            Voucher::create([
+                'code' => strtoupper(Str::random(10)),
+                'type' => 'gift',
+                'amount' => 30,
+                'discount_type' => 'fixed',
+                'remaining_amount' => 30,
+                'max_uses' => 1,
+                'used_count' => 0,
+                'user_id' => $user->id,
+                'active' => true,
+                'expires_at' => now()->addDays(30),
+            ]);
+
+            $user->update(['has_received_referral_bonus' => true]);
         }
+    }
 
-        // ✅ Referral logic (as you already have)
-        if ($user->referred_by && !$user->has_received_referral_bonus) {
-            $totalSpent = $user->orders()
-                ->where(function ($q) {
-                    $q->where('status', 'Paid')
-                        ->orWhere('payment_status', 'paid');
-                })
-                ->sum('total_price');
-
-            if ($totalSpent >= 100) {
-                // Referrer
+    // ✅ Voucher generation for "voucher" products (unchanged)
+    foreach ($orders as $order) {
+        foreach ($order->orderItems as $item) {
+            if ($item->product && $item->product->product_type === 'voucher') {
                 Voucher::create([
-                    'code' => strtoupper(Str::random(10)),
+                    'code' => strtoupper(Str::random(12)),
                     'type' => 'gift',
-                    'amount' => 30,
+                    'amount' => $item->price,
                     'discount_type' => 'fixed',
-                    'remaining_amount' => 30,
-                    'max_uses' => 1,
-                    'used_count' => 0,
-                    'user_id' => $user->referred_by,
-                    'active' => true,
-                    'expires_at' => now()->addDays(30),
-                ]);
-
-                // Referred user
-                Voucher::create([
-                    'code' => strtoupper(Str::random(10)),
-                    'type' => 'gift',
-                    'amount' => 30,
-                    'discount_type' => 'fixed',
-                    'remaining_amount' => 30,
+                    'remaining_amount' => $item->price,
                     'max_uses' => 1,
                     'used_count' => 0,
                     'user_id' => $user->id,
+                    'product_id' => $item->product_id,
                     'active' => true,
-                    'expires_at' => now()->addDays(30),
+                    'expires_at' => now()->addDays(365),
                 ]);
-
-                $user->update(['has_received_referral_bonus' => true]);
             }
         }
-
-        // ✅ 🎁 Generate a voucher for each "voucher" product purchased
-        foreach ($orders as $order) {
-            foreach ($order->orderItems  as $item) {
-                if ($item->product && $item->product->product_type === 'voucher') {
-                    // Make new redeemable voucher worth the product's value
-                    Voucher::create([
-                        'code' => strtoupper(Str::random(12)),
-                        'type' => 'gift',
-                        'amount' => $item->price,
-                        'discount_type' => 'fixed',
-                        'remaining_amount' => $item->price,
-                        'max_uses' => 1,
-                        'used_count' => 0,
-                        'user_id' => $user->id,
-                        'product_id' => $item->product_id, // Optional: to track source
-                        'active' => true,
-                        'expires_at' => now()->addDays(365), // or any custom validity
-                    ]);
-                }
-            }
-        }
-
-        return Inertia::render('Stripe/Success', [
-            'orders' => OrderViewResource::collection($orders)->collection->toArray()
-        ]);
     }
+
+    return Inertia::render('Stripe/Success', [
+        'orders' => OrderViewResource::collection($orders)->collection->toArray()
+    ]);
+}
 
 
     public function failure()

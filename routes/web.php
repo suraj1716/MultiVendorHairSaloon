@@ -180,6 +180,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/{booking}/cancel', [BookingController::class, 'cancel'])->name('bookings.cancel');
     Route::get('/booking/available-slots', [BookingController::class, 'getAvailableSlots'])
         ->name('available-slots');
+        Route::get('/staff-availability', [BookingController::class, 'getStaffAvailability'])->name('staff.availability');
 });
 
 // ── Reviews ──────────────────────────────────────────────────────────────────

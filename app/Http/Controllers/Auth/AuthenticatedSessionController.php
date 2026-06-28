@@ -35,7 +35,7 @@ class AuthenticatedSessionController extends Controller
     $cartService->moveCartItemsToDatabase($user->id);
 
     if ($user->hasRole(RolesEnum::Admin)) {
-        return redirect()->route('home');
+        return redirect()->route('admin.home');
     }
 
     if ($user->hasRole(RolesEnum::Vendor)) {

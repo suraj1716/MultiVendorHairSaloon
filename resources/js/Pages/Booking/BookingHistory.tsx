@@ -73,36 +73,52 @@ export default function BookingHistory() {
     setErrors({});
     setDialogOpen(true);
   };
-  const handleCancelBooking = (item: OrderItem, orderStatus: string) => {
+  const handleCancelBooking = (item: OrderItem, orderStatus: string, order: Order) => {
     if (orderStatus !== "draft" && orderStatus !== "paid") {
-      console.warn(
-        "Booking can only be cancelled when order is draft or paid."
-      );
-      return;
+        console.warn("Booking can only be cancelled when order is draft or paid.");
+        return;
     }
     if (!item.booking?.id) {
-      console.error("Booking ID is missing.");
-      return;
+        console.error("Booking ID is missing.");
+        return;
     }
+
+    // Check 24-hour window
+    const bookingDate = new Date(item.booking.booking_date);
+    const now = new Date();
+    const hoursUntilBooking = (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursUntilBooking < 24) {
+        alert("⚠️ Cancellations within 24 hours are not allowed. Please contact support.");
+        return;
+    }
+
+    const refundAmount = order.total_price - order.booking_fee;
+
     if (
-      orderStatus === "draft" ||
-      (orderStatus === "paid" && today < item.booking.booking_date)
+        confirm(
+            `⚠️ Are you sure?\n\n` +
+            `Total paid: $${order.total_price.toFixed(2)}\n` +
+            `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
+            `You'll receive: $${refundAmount.toFixed(2)}\n\n` +
+            `Alternatively, you can edit the booking to change the date/time.`
+        )
     ) {
-      if (confirm("Are you sure you want to cancel this booking?")) {
         router.post(
-          route("bookings.cancel", item.booking.id),
-          {},
-          {
-            onSuccess: () => {
-            },
-            onError: (errors) => {
-              console.error("Failed to cancel booking", errors);
-            },
-          }
+            route("bookings.cancel", item.booking.id),
+            {},
+            {
+                onSuccess: () => {
+                    alert("Booking cancelled. Refund will be processed.");
+                },
+                onError: (errors) => {
+                    console.error("Failed to cancel booking", errors);
+                    alert("Cancellation failed. Please try again.");
+                },
+            }
         );
-      }
     }
-  };
+};
 
  const handleConfirmBooking = (date: string, slot: string) => {
 
@@ -209,12 +225,13 @@ export default function BookingHistory() {
                           return (
                             <div className="mt-1 p-1">
                               <button
-                                onClick={() =>
-                                  handleCancelBooking(
-                                    cancellableItem,
-                                    order.status
-                                  )
-                                }
+                              onClick={() =>
+    handleCancelBooking(
+        cancellableItem,
+        order.status,
+        order  // ← Pass full order object
+    )
+}
                                 className="text-red-600 hover:underline"
                               >
                                 Cancel Booking
