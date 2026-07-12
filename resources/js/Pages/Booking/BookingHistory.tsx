@@ -3,43 +3,154 @@ import { Link, router, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order, OrderItem } from "@/types";
 import BookingWidget from "./BookingWidget";
-import { title } from "process";
+import StaffSelectStep from "@/Components/App/StaffSelectStep";
+import dayjs from "dayjs";
+
+const STATUS_COLORS: Record<string, string> = {
+  paid: "var(--color-success, #3a7d44)",
+  draft: "var(--color-warning, #c9a96e)",
+  cancelled: "var(--color-error, #c0392b)",
+  refunded: "var(--color-error, #c0392b)",
+};
 
 function ConfirmationModal({
   open,
   bookingDate,
   timeSlot,
+  vendorId,
+  selectedStaffId,
+  onSelectStaff,
   onSave,
   onCancel,
 }: {
   open: boolean;
   bookingDate: string;
   timeSlot: string;
+  vendorId: number | null;
+  selectedStaffId: number | null;
+  onSelectStaff: (staffId: number | null, staffName?: string | null) => void;
   onSave: () => void;
   onCancel: () => void;
 }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-      <div className="bg-white p-6 rounded shadow-lg max-w-sm w-full">
-        <h3 className="text-lg font-semibold mb-4">Confirm Booking</h3>
-        <p className="mb-2">
-          <strong>Date:</strong> {bookingDate}
-        </p>
-        <p className="mb-4">
-          <strong>Time:</strong> {timeSlot}
-        </p>
-        <div className="flex justify-end gap-3">
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        background: "rgba(12,10,8,0.72)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(4px)",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--color-surface)",
+          border: "1px solid var(--color-border)",
+          borderRadius: "var(--radius-md, 4px)",
+          padding: "28px 32px",
+          maxWidth: 420,
+          width: "90%",
+          maxHeight: "85vh",
+          overflowY: "auto",
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "1.2rem",
+            fontWeight: 300,
+            color: "var(--color-text)",
+            margin: "0 0 18px",
+          }}
+        >
+          Confirm Booking
+        </h3>
+
+        <div
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--text-sm)",
+            color: "var(--color-text)",
+            marginBottom: 6,
+          }}
+        >
+          <strong style={{ fontWeight: 500 }}>Date:</strong> {bookingDate}
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--text-sm)",
+            color: "var(--color-text)",
+            marginBottom: 20,
+          }}
+        >
+          <strong style={{ fontWeight: 500 }}>Time:</strong> {timeSlot}
+        </div>
+
+        {vendorId && (
+          <div style={{ marginBottom: 20 }}>
+            <label
+              style={{
+                display: "block",
+                fontFamily: "var(--font-body)",
+                fontSize: "11px",
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--color-text-muted)",
+                marginBottom: 8,
+              }}
+            >
+              Staff Member
+            </label>
+            <StaffSelectStep
+              vendorId={vendorId}
+              date={bookingDate}
+              timeSlot={timeSlot}
+              selectedStaffId={selectedStaffId}
+              onSelect={onSelectStaff}
+            />
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
           <button
             onClick={onCancel}
-            className="px-4 py-2 border rounded hover:bg-gray-100"
+            style={{
+              background: "transparent",
+              border: "1px solid var(--color-border)",
+              color: "var(--color-text-muted)",
+              padding: "9px 18px",
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              borderRadius: "var(--radius-sm, 3px)",
+            }}
           >
             Cancel
           </button>
           <button
             onClick={onSave}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            style={{
+              background: "var(--color-primary)",
+              border: "1px solid var(--color-primary)",
+              color: "#fff",
+              padding: "9px 18px",
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              cursor: "pointer",
+              borderRadius: "var(--radius-sm, 3px)",
+            }}
           >
             Save
           </button>
@@ -58,75 +169,96 @@ export default function BookingHistory() {
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [bookingDate, setBookingDate] = useState("");
   const [timeSlot, setTimeSlot] = useState("");
+  const [selectedStaffId, setSelectedStaffId] = useState<number | null>(null);
+  const [selectedStaffName, setSelectedStaffName] = useState<string | null>(
+    null,
+  );
   const [errors, setErrors] = useState<{
     booking_date?: string;
     time_slot?: string;
   }>({});
   const today = new Date().toISOString().split("T")[0];
 
+  const appointmentOrders = orders.data.filter(
+    (o) => o.vendor.vendor_type === "appointment",
+  );
+
+  // The vendor for whichever booking is currently being edited
+  const editingVendorId =
+    orders?.data.find((order) =>
+      order.orderItems.some((item) => item.id === editingItem?.id),
+    )?.vendor.user_id ?? null;
+
   const handleEditBooking = (item: OrderItem) => {
     if (!item.booking) return;
     setEditingItem(item);
-    setBookingDate(item.booking.booking_date);
+    setBookingDate(dayjs(item.booking.booking_date).format("YYYY-MM-DD"));
     setTimeSlot(item.booking.time_slot);
+    setSelectedStaffId(item.booking.staff_id ?? null);
+    setSelectedStaffName(null); // resolved by StaffSelectStep once loaded
     setErrors({});
     setDialogOpen(true);
   };
-  const handleCancelBooking = (
-    item: OrderItem,
-    orderStatus: string,
-    order: Order,
+
+  const handleSelectStaff = (
+    staffId: number | null,
+    staffName?: string | null,
   ) => {
-    if (orderStatus !== "draft" && orderStatus !== "paid") {
-      console.warn(
-        "Booking can only be cancelled when order is draft or paid.",
-      );
-      return;
-    }
-    if (!item.booking?.id) {
-      console.error("Booking ID is missing.");
-      return;
-    }
-
-    // Check 24-hour window
-    const bookingDate = new Date(item.booking.booking_date);
-    const now = new Date();
-    const hoursUntilBooking =
-      (bookingDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    if (hoursUntilBooking < 24) {
-      alert(
-        "⚠️ Cancellations within 24 hours are not allowed. Please contact support.",
-      );
-      return;
-    }
-
-    const refundAmount = order.total_price - order.booking_fee;
-
-    if (
-      confirm(
-        `⚠️ Are you sure?\n\n` +
-          `Total paid: $${order.total_price.toFixed(2)}\n` +
-          `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
-          `You'll receive: $${refundAmount.toFixed(2)}\n\n` +
-          `Alternatively, you can edit the booking to change the date/time.`,
-      )
-    ) {
-      router.post(
-        route("bookings.cancel", item.booking.id),
-        {},
-        {
-          onSuccess: () => {
-            alert("Booking cancelled. Refund will be processed.");
-          },
-          onError: (errors) => {
-            console.error("Failed to cancel booking", errors);
-            alert("Cancellation failed. Please try again.");
-          },
-        },
-      );
-    }
+    setSelectedStaffId(staffId);
+    setSelectedStaffName(staffName ?? null);
   };
+
+ const handleCancelBooking = (item: OrderItem, orderStatus: string, order: Order) => {
+  if (orderStatus !== "draft" && orderStatus !== "paid") {
+    console.warn("Booking can only be cancelled when order is draft or paid.");
+    return;
+  }
+  if (!item.booking?.id) {
+    console.error("Booking ID is missing.");
+    return;
+  }
+
+  const bookingDateObj = new Date(item.booking.booking_date);
+  const now = new Date();
+  const hoursUntilBooking = (bookingDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
+  const isFullRefund = hoursUntilBooking >= 24;
+
+  const grossTotal = order.total_price + (order.voucher_discount ?? 0);
+  const refundAmount = isFullRefund ? grossTotal : grossTotal - order.booking_fee;
+
+  const giftCardNote =
+    Number(order.voucher_discount) > 0
+      ? `\nGift card used ($${Number(order.voucher_discount).toFixed(2)}) will be fully restored to your balance, regardless of timing.\n`
+      : "";
+
+  const confirmMessage = isFullRefund
+    ? `⚠️ Cancel this booking?\n\n` +
+      `More than 24 hours until your appointment — full refund applies.\n\n` +
+      `Total paid: $${grossTotal.toFixed(2)}\n` +
+      `You'll receive: $${refundAmount.toFixed(2)}\n` +
+      giftCardNote
+    : `⚠️ Cancel this booking?\n\n` +
+      `This is within 24 hours of your appointment — the booking fee is non-refundable.\n\n` +
+      `Total paid: $${grossTotal.toFixed(2)}\n` +
+      `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
+      `You'll receive: $${refundAmount.toFixed(2)}\n` +
+      giftCardNote +
+      `\nAlternatively, you can edit the booking to change the date/time instead.`;
+
+  if (confirm(confirmMessage)) {
+    router.post(
+      route("bookings.cancel", item.booking.id),
+      {},
+      {
+        onSuccess: () => alert("Booking cancelled. Refund will be processed."),
+        onError: (errs) => {
+          console.error("Failed to cancel booking", errs);
+          alert("Cancellation failed. Please try again.");
+        },
+      },
+    );
+  }
+};
 
   const handleConfirmBooking = (date: string, slot: string) => {
     if (!editingItem || !editingItem.booking) {
@@ -136,11 +268,13 @@ export default function BookingHistory() {
 
     router.put(
       route("bookings.update", editingItem.booking.id),
-      { booking_date: date, time_slot: slot },
+      { booking_date: date, time_slot: slot, staff_id: selectedStaffId },
       {
         onSuccess: () => {
           setEditingItem(null);
           setConfirmModalOpen(false);
+          setSelectedStaffId(null);
+          setSelectedStaffName(null);
           setErrors({});
         },
         onError: (errorBag) => {
@@ -155,199 +289,396 @@ export default function BookingHistory() {
   return (
     <AuthenticatedLayout
       header={
-        <h2 className="text-lg font-semibold text-gray-800">Order History</h2>
+        <h2
+          style={{
+            fontFamily: "var(--font-display)",
+            color: "var(--color-text)",
+            fontSize: "var(--text-2xl)",
+            fontWeight: 300,
+          }}
+        >
+          Booking History
+        </h2>
       }
     >
-      <div className="max-w-4xl mx-auto p-4 overflow-auto">
-        {orders?.data?.length === 0 ? (
-          <p className="text-gray-600 text-sm">You have no orders yet.</p>
-        ) : (
-          orders.data.map(
-            (order) =>
-              order.vendor.vendor_type === "appointment" && (
-                <div
-                  key={order.id}
-                  className="bg-white shadow rounded-md mb-6 p-4 overflow-auto"
-                >
-                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-2 border-b border-gray-200 pb-1 text-sm text-gray-700">
-                    <div>
-                      <span className="font-semibold">Order #</span>
-                      {order.id} |{" "}
-                      <span className="font-semibold">Status:</span>{" "}
-                      <span className="capitalize">{order.status}</span> |{" "}
-                      <span className="font-semibold">Date:</span>{" "}
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </div>
-                    <div className="font-semibold text-gray-900">
-                      ${Number(order.total_price).toFixed(2)}
-                    </div>
-                  </div>
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "var(--color-bg)" }}
+      >
+        <div className="max-w-3xl mx-auto px-4 py-16">
+          {appointmentOrders.length === 0 ? (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "80px 20px",
+                fontFamily: "var(--font-display)",
+                fontSize: "var(--text-xl)",
+                fontWeight: 300,
+                color: "var(--color-text-muted)",
+              }}
+            >
+              ✦ No bookings yet
+            </div>
+          ) : (
+            <div style={{ position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  left: 7,
+                  top: 8,
+                  bottom: 8,
+                  width: 1,
+                  background: "var(--color-border)",
+                }}
+              />
 
-                  <div className="mb-3 text-sm text-gray-600">
-                    <div>
-                      <span className="font-semibold">Vendor:</span>{" "}
-                      {order.vendor.store_address}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Store:</span>{" "}
-                      {order.vendor.store_name}
-                    </div>
-                    <div>
-                      <span className="font-semibold">Address:</span>{" "}
-                      {order.vendor.store_address}
+              {appointmentOrders.map((order, idx) => {
+                const statusColor =
+                  STATUS_COLORS[order.status] ?? "var(--color-text-muted)";
+                const grossTotal =
+                  Number(order.total_price) +
+                  Number(order.voucher_discount ?? 0);
+
+                const cancellableItem = order.orderItems.find(
+                  (item) => item.booking && today < item.booking.booking_date,
+                );
+
+                return (
+                  <div
+                    key={order.id}
+                    style={{
+                      position: "relative",
+                      paddingLeft: 40,
+                      marginBottom:
+                        idx === appointmentOrders.length - 1 ? 0 : 48,
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 6,
+                        width: 15,
+                        height: 15,
+                        borderRadius: "50%",
+                        background: "var(--color-surface)",
+                        border: `2px solid ${statusColor}`,
+                        boxShadow: "0 0 0 4px var(--color-bg)",
+                      }}
+                    />
+
+                    <div
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "11px",
+                        letterSpacing: "0.1em",
+                        textTransform: "uppercase",
+                        color: "var(--color-text-muted)",
+                        marginBottom: 8,
+                      }}
+                    >
+                      {new Date(order.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )}
                     </div>
 
-                    {(order.status === "draft" || order.status === "draft") && (
-                      <div className="mt-1 p-1 flex gap-2">
-                        <button
-                          className="inline-block px-3 py-1.5 text-sm font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
-                          onClick={() => {
-                            const itemToEdit = order.orderItems.find(
-                              (item) =>
-                                item.booking &&
-                                today < item.booking.booking_date,
-                            );
-                            if (itemToEdit) {
-                              handleEditBooking(itemToEdit);
-                            } else {
-                              alert("No editable booking found in this order.");
-                            }
+                    <div
+                      style={{
+                        background: "var(--color-surface)",
+                        border: "1px solid var(--color-border)",
+                        borderRadius: "var(--radius-md, 4px)",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "18px 24px",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "flex-start",
+                          gap: 16,
+                          flexWrap: "wrap",
+                          borderBottom: "1px solid var(--color-border)",
+                          background: "var(--color-bg-alt)",
+                        }}
+                      >
+                        <div>
+                          <div
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--text-lg)",
+                              fontWeight: 400,
+                              color: "var(--color-text)",
+                              marginBottom: 4,
+                            }}
+                          >
+                            Order #{order.id}
+                          </div>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 5,
+                              fontFamily: "var(--font-body)",
+                              fontSize: "10px",
+                              letterSpacing: "0.1em",
+                              textTransform: "uppercase",
+                              color: statusColor,
+                            }}
+                          >
+                            <span
+                              style={{
+                                width: 5,
+                                height: 5,
+                                borderRadius: "50%",
+                                background: statusColor,
+                                display: "inline-block",
+                              }}
+                            />
+                            {order.status}
+                          </span>
+                        </div>
+
+                        <div style={{ textAlign: "right" }}>
+                          <div
+                            style={{
+                              fontFamily: "var(--font-display)",
+                              fontSize: "var(--text-lg)",
+                              fontWeight: 400,
+                              color:
+                                "var(--color-accent-dark, var(--color-primary))",
+                            }}
+                          >
+                            ${grossTotal.toFixed(2)}
+                          </div>
+                          {Number(order.voucher_discount) > 0 && (
+                            <div
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "11px",
+                                color: "var(--color-text-muted)",
+                                marginTop: 2,
+                              }}
+                            >
+                              Gift card −$
+                              {Number(order.voucher_discount).toFixed(2)}
+                              {Number(order.total_price) === 0 &&
+                                " · fully covered"}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                     <div
+  style={{
+    padding: "14px 24px",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-sm)",
+    color: "var(--color-text-muted)",
+  }}
+>
+  <span style={{ color: "var(--color-text)" }}>
+    {order.vendor.store_name}
+  </span>
+  {" · "}
+  {order.vendor.store_address}
+
+  {order.orderItems.map(
+    (item) =>
+      item.booking && (
+        <div
+          key={item.id}
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "12px",
+            color: "var(--color-text)",
+            marginTop: 4,
+          }}
+        >
+          {new Date(item.booking.booking_date).toLocaleDateString()} · {item.booking.time_slot}
+          {" · "}
+          <span style={{ color: "var(--color-text-muted)" }}>
+            {item.booking.staff ? `with ${item.booking.staff.name}` : "No staff preference"}
+          </span>
+        </div>
+      ),
+  )}
+</div>
+                      {order.orderItems.map((item, i) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 14,
+                            padding: "14px 24px",
+                            borderTop: "1px solid var(--color-border)",
+                            flexWrap: "wrap",
                           }}
                         >
-                          Edit Booking
-                        </button>
-                      </div>
-                    )}
+                          <img
+                            src={
+                              item.product.image || "/images/placeholder.png"
+                            }
+                            alt={item.product.title}
+                            style={{
+                              width: 44,
+                              height: 44,
+                              objectFit: "cover",
+                              borderRadius: "var(--radius-sm, 3px)",
+                              flexShrink: 0,
+                            }}
+                          />
 
-                    {order.status === "paid" || order.status === "draft" ? (
-                      (() => {
-                        const cancellableItem = order.orderItems.find(
-                          (item) =>
-                            item.booking && today < item.booking.booking_date,
-                        );
+                          <div style={{ flex: 1, minWidth: 160 }}>
+                            <Link
+                              href={route("product.show", {
+                                slug: item.product.slug,
+                              })}
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "var(--text-sm)",
+                                color: "var(--color-text)",
+                                textDecoration: "none",
+                              }}
+                              className="hover:underline"
+                            >
+                              {item.product.title}
+                            </Link>
+                            {(item.variation_summary ?? []).length > 0 && (
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "12px",
+                                  color: "var(--color-text-muted)",
+                                  marginTop: 2,
+                                }}
+                              >
+                                {(item.variation_summary ?? [])
+                                  .map((v) => `${v.type}: ${v.option}`)
+                                  .join(" · ")}
+                              </div>
+                            )}
 
-                        if (cancellableItem) {
-                          return (
-                            <div className="mt-1 p-1">
+                          </div>
+
+                          <div
+                            style={{
+                              fontFamily: "var(--font-body)",
+                              fontSize: "var(--text-sm)",
+                              color: "var(--color-text-muted)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {item.quantity} × ${Number(item.price).toFixed(2)}
+                          </div>
+                        </div>
+                      ))}
+
+                      {(order.status === "draft" ||
+                        order.status === "paid" ||
+                        order.status === "cancelled") && (
+                        <div
+                          style={{
+                            padding: "14px 24px",
+                            borderTop: "1px solid var(--color-border)",
+                            display: "flex",
+                            gap: 10,
+                            flexWrap: "wrap",
+                            alignItems: "center",
+                          }}
+                        >
+                          {order.status === "cancelled" ? (
+                            <span
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "12px",
+                                color: "var(--color-error, #c0392b)",
+                              }}
+                            >
+                              Cancelled
+                            </span>
+                          ) : cancellableItem ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  const itemToEdit = order.orderItems.find(
+                                    (item) =>
+                                      item.booking &&
+                                      today < item.booking.booking_date,
+                                  );
+                                  if (itemToEdit) handleEditBooking(itemToEdit);
+                                  else
+                                    alert(
+                                      "No editable booking found in this order.",
+                                    );
+                                }}
+                                style={{
+                                  background: "var(--color-primary)",
+                                  color: "#fff",
+                                  border: "none",
+                                  padding: "8px 16px",
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "11px",
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  borderRadius: "var(--radius-sm, 3px)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Edit Booking
+                              </button>
                               <button
                                 onClick={() =>
                                   handleCancelBooking(
                                     cancellableItem,
                                     order.status,
-                                    order, // ← Pass full order object
+                                    order,
                                   )
                                 }
-                                className="text-red-600 hover:underline"
+                                style={{
+                                  background: "transparent",
+                                  color: "var(--color-error, #c0392b)",
+                                  border:
+                                    "1px solid var(--color-error, #c0392b)",
+                                  padding: "8px 16px",
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "11px",
+                                  letterSpacing: "0.08em",
+                                  textTransform: "uppercase",
+                                  borderRadius: "var(--radius-sm, 3px)",
+                                  cursor: "pointer",
+                                }}
                               >
                                 Cancel Booking
                               </button>
-                            </div>
-                          );
-                        }
-                        return <span className="text-gray-500">Completed</span>;
-                      })()
-                    ) : order.status === "cancelled" ? (
-                      <button
-                        disabled
-                        className="text-red-600 cursor-not-allowed"
-                      >
-                        Cancelled
-                      </button>
-                    ) : (
-                      <span className="text-gray-500">Completed</span>
-                    )}
-                  </div>
-
-                  <table className="w-full text-sm border-collapse table-auto">
-                    <thead>
-                      <tr className="bg-gray-100">
-                        <th className="border p-2 text-left">Product</th>
-                        <th className="border p-2 text-left">
-                          Product Variation
-                        </th>
-                        <th className="border p-2 text-left">Booking Date</th>
-                        <th className="border p-2 text-left">Booking Time</th>
-                        <th className="border p-2 text-left w-12">Qty</th>
-                        <th className="border p-2 text-left w-24">Price</th>
-                        {/* <th className="border p-2 text-left w-32">Actions</th> */}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {order.orderItems.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="border p-2 flex items-center gap-2">
-                            <img
-                              src={
-                                item.product.image || "/images/placeholder.png"
-                              }
-                              alt={item.product.title}
-                              className="w-10 h-10 object-cover rounded"
-                            />
-                            <Link
-                              href={route("product.show", {
-                                slug: item.product.slug,
-                              })} // use slug here and plural products
-                              className="text-gray-800 hover:underline truncate max-w-xs"
+                            </>
+                          ) : (
+                            <span
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "12px",
+                                color: "var(--color-text-muted)",
+                              }}
                             >
-                              {item.product.title}
-                            </Link>
-                          </td>
-                          <td className="border p-2">
-                            {(item.variation_summary ?? []).length > 0
-                              ? (item.variation_summary ?? []).map((v, i) => (
-                                  <div key={i}>
-                                    <span className="font-semibold">
-                                      {v.type}:
-                                    </span>{" "}
-                                    {v.option}
-                                  </div>
-                                ))
-                              : "—"}
-                          </td>
-                          <td className="border p-2">
-                            {item.booking?.booking_date || "—"}
-                          </td>
-                          <td className="border p-2">
-                            {item.booking?.time_slot || "—"}
-                          </td>
-                          <td className="border p-2">{item.quantity}</td>
-                          <td className="border p-2">
-                            ${Number(item.price).toFixed(2)}
-                          </td>
-                          {/* <td className="border p-2">
-                            {(order.status === "paid" ||
-                              order.status === "draft") &&
-                            item.booking &&
-                            today < item.booking.booking_date ? (
-                              <button
-                                onClick={() =>
-                                  handleCancelBooking(item, order.status)
-                                }
-                                className="text-red-600 hover:underline"
-                              >
-                                Cancel Booking
-                              </button>
-                            ) : order.status === "cancelled" ? (
-                              <button
-                                disabled
-                                className="text-red-600 cursor-not-allowed"
-                              >
-                                Cancelled
-                              </button>
-                            ) : (
-                              <span className="text-gray-500">Completed</span>
-                            )}
-                          </td> */}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ),
-          )
-        )}
+                              Completed
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
-        {/* BookingWidget modal */}
         {editingItem && (
           <BookingWidget
             bookingDate={bookingDate}
@@ -361,23 +692,19 @@ export default function BookingHistory() {
               }
             }}
             open={dialogOpen}
-            onOpenChange={(open) => {
-              setDialogOpen(open);
-            }}
-            vendorId={
-              orders?.data.find((order) =>
-                order.orderItems.some((item) => item.id === editingItem.id),
-              )?.vendor.id ?? null
-            }
+            onOpenChange={(open) => setDialogOpen(open)}
+            vendorId={editingVendorId}
             onSubmit={() => {}}
           />
         )}
 
-        {/* Confirmation modal */}
         <ConfirmationModal
           open={confirmModalOpen}
           bookingDate={bookingDate}
           timeSlot={timeSlot}
+          vendorId={editingVendorId}
+          selectedStaffId={selectedStaffId}
+          onSelectStaff={handleSelectStaff}
           onCancel={() => {
             setConfirmModalOpen(false);
             setDialogOpen(true);

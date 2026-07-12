@@ -14,7 +14,7 @@ import {
   useState,
 } from "react";
 import NavbarBottom from "@/Components/App/NavbarBottom";
-import LoginModal from "@/Pages/Auth/Login";
+import { useAuthModal } from "@/Contexts/AuthModalContext";
 
 export default function AuthenticatedLayout({
   header,
@@ -31,8 +31,7 @@ export default function AuthenticatedLayout({
   };
 
   const [visible, setVisible] = useState(false);
-  const [loginOpen, setLoginOpen] = useState(false);
-  const [registerOpen, setRegisterOpen] = useState(false);
+const { openLogin } = useAuthModal();
 
   useEffect(() => {
     const timeout = setTimeout(() => setVisible(true), 1000); // delay show
@@ -93,10 +92,9 @@ export default function AuthenticatedLayout({
             showBar ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <NavbarBottom onLogin={() => setLoginOpen(true)} />
         </div>
 
-        <LoginModal
+        {/* <LoginModal
           isOpen={loginOpen}
           onClose={() => setLoginOpen(false)}
           canResetPassword
@@ -104,7 +102,7 @@ export default function AuthenticatedLayout({
             setLoginOpen(false);
             setRegisterOpen(true);
           }}
-        />
+        /> */}
       </div>
 
       {successMessages.length > 0 && (

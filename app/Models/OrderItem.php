@@ -13,8 +13,18 @@ class OrderItem extends Model
 ];
     public $timestamps=false;
 
-    protected $fillable=['order_id','product_id','quantity','price',
-    'variation_type_option_ids', 'designer'];
+   protected $fillable = [
+    'order_id',
+    'product_id',
+    'quantity',
+    'price',
+    'variation_type_option_ids',
+    'designer',
+    'gift_card_template_id',
+    'item_type',
+    'attachment_path',
+    'attachment_name',
+];
 
     public function order(): BelongsTo
     {

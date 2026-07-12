@@ -2,63 +2,98 @@ import React from "react";
 import { Link } from "@inertiajs/react";
 
 interface ErrorPageProps {
-    statusCode?: number;
-    message?: string;
-    componentStack?: string;
+  statusCode?: number;
+  message?: string;
+  componentStack?: string;
 }
 
 const ERROR_META: Record<number, { title: string; subtitle: string }> = {
-    400: { title: "Bad Request",        subtitle: "The request could not be understood." },
-    401: { title: "Unauthorised",       subtitle: "Please sign in to continue." },
-    403: { title: "Forbidden",          subtitle: "You don't have permission to view this." },
-    404: { title: "Page Not Found",     subtitle: "This page may have moved or no longer exists." },
-    419: { title: "Session Expired",    subtitle: "Your session has expired. Please refresh." },
-    422: { title: "Unprocessable",      subtitle: "The submitted data could not be processed." },
-    429: { title: "Too Many Requests",  subtitle: "Please wait a moment before trying again." },
-    500: { title: "Server Error",       subtitle: "Something went wrong on our end." },
-    503: { title: "Unavailable",        subtitle: "We'll be back shortly." },
+  400: {
+    title: "Bad Request",
+    subtitle: "The request could not be understood.",
+  },
+  401: { title: "Unauthorised", subtitle: "Please sign in to continue." },
+  403: {
+    title: "Forbidden",
+    subtitle: "You don't have permission to view this.",
+  },
+  404: {
+    title: "Page Not Found",
+    subtitle: "This page may have moved or no longer exists.",
+  },
+  419: {
+    title: "Session Expired",
+    subtitle: "Your session has expired. Please refresh.",
+  },
+  422: {
+    title: "Unprocessable",
+    subtitle: "The submitted data could not be processed.",
+  },
+  429: {
+    title: "Too Many Requests",
+    subtitle: "Please wait a moment before trying again.",
+  },
+  500: { title: "Server Error", subtitle: "Something went wrong on our end." },
+  503: { title: "Unavailable", subtitle: "We'll be back shortly." },
 };
 
 export default function ErrorPage({
-    statusCode = 500,
-    message,
-    componentStack,
+  statusCode = 500,
+  message,
+  componentStack,
 }: ErrorPageProps) {
-    const meta = ERROR_META[statusCode] ?? {
-        title: "Unexpected Error",
-        subtitle: "Something went wrong.",
-    };
+  const meta = ERROR_META[statusCode] ?? {
+    title: "Unexpected Error",
+    subtitle: "Something went wrong.",
+  };
 
-    const displayMessage = message && message !== meta.subtitle ? message : meta.subtitle;
+  const displayMessage =
+    message && message !== meta.subtitle ? message : meta.subtitle;
+const handleAction = () => {
+    switch (statusCode) {
+        case 404:
+            // Route doesn't exist
+            if (window.history.length > 1) {
+                window.history.back();
+            } else {
+                window.location.href = "/dashboard";
+            }
+            break;
 
-    return (
-        <div className="error-page">
-            <div className="error-page__inner">
-                {/* Decorative rule */}
-                <div className="error-page__rule" />
+        default:
+            // 500, 419, etc.
+            window.location.reload();
+            break;
+    }
+};
+  return (
+    <div className="error-page">
+      <div className="error-page__inner">
+        {/* Decorative rule */}
+        <div className="error-page__rule" />
 
-                <p className="error-page__eyebrow">Maison Éclat</p>
+        <p className="error-page__eyebrow">Maison Éclat</p>
 
-                <h1 className="error-page__code">{statusCode}</h1>
-                <h2 className="error-page__title">{meta.title}</h2>
-                <p className="error-page__message">{displayMessage}</p>
+        <h1 className="error-page__code">{statusCode}</h1>
+        <h2 className="error-page__title">{meta.title}</h2>
+        <p className="error-page__message">{displayMessage}</p>
 
-                {/* Stack trace — dev only */}
-                {componentStack && import.meta.env.DEV && (
-                    <details className="error-page__stack">
-                        <summary>Component stack trace</summary>
-                        <pre>{componentStack}</pre>
-                    </details>
-                )}
+        {/* Stack trace — dev only */}
+        {componentStack && import.meta.env.DEV && (
+          <details className="error-page__stack">
+            <summary>Component stack trace</summary>
+            <pre>{componentStack}</pre>
+          </details>
+        )}
 
-                <Link href="/" className="error-page__cta">
-                    Return Home
-                </Link>
+      <button onClick={handleAction} className="error-page__cta">
+    {statusCode === 404 ? "Go Back" : "Try Again"}
+</button>
 
-                <div className="error-page__rule error-page__rule--bottom" />
-            </div>
+        <div className="error-page__rule error-page__rule--bottom" />
+      </div>
 
-            <style>{`
+      <style>{`
                 .error-page {
                     min-height: 100vh;
                     display: flex;
@@ -175,6 +210,6 @@ export default function ErrorPage({
                     line-height: 1.6;
                 }
             `}</style>
-        </div>
-    );
+    </div>
+  );
 }

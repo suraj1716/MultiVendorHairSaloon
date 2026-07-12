@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatusEnum;
 use App\Models\GiftCardTemplate;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Voucher;
 use App\Models\VoucherUsage;
 use App\Services\CartService;
@@ -67,8 +70,6 @@ class VoucherController extends Controller
      */
     public function purchase(Request $request)
     {
-
-        Log::info($request);
         $request->validate([
             'gift_card_template_id' => 'required|exists:gift_card_templates,id',
             'gifted_to_email'       => 'nullable|email',
@@ -87,16 +88,16 @@ class VoucherController extends Controller
         DB::beginTransaction();
         try {
             $vouchers = collect(range(1, $qty))->map(fn() => Voucher::create([
-                'code'                   => strtoupper(Str::random(12)),
-                'type'                   => 'gift',
-                'amount'                 => $template->amount,
-                'remaining_amount'       => $template->amount,
-                'discount_type'          => 'fixed',
-                'purchased_by'           => $user->id,
-                'gifted_to_email'        => $request->gifted_to_email,
-                'gift_card_template_id'  => $template->id,
-                'active'                 => false,
-                'expires_at'             => now()->addYear(),
+                'code'                  => strtoupper(Str::random(12)),
+                'type'                  => 'gift',
+                'amount'                => $template->amount,
+                'remaining_amount'      => $template->amount,
+                'discount_type'         => 'fixed',
+                'purchased_by'          => $user->id,
+                'gifted_to_email'       => $request->gifted_to_email,
+                'gift_card_template_id' => $template->id,
+                'active'                => false,
+                'expires_at'            => now()->addYear(),
             ]));
 
             $voucherIds = $vouchers->pluck('id')->implode(',');
@@ -112,15 +113,17 @@ class VoucherController extends Controller
                     'quantity' => $qty,
                 ]],
                 'mode'        => 'payment',
-                'success_url' => route('gift-voucher.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                'success_url' => route('stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url'  => route('gift-voucher.shop'),
                 'metadata'    => [
-                    'voucher_ids'     => $voucherIds,
-                    'purchased_by'    => $user->id,
-                    'gifted_to_email' => $request->gifted_to_email ?? '',
+                    'voucher_ids'            => $voucherIds,
+                    'gift_card_template_id'  => $template->id,
+                    'purchased_by'           => $user->id,
+                    'gifted_to_email'        => $request->gifted_to_email ?? '',
+                    'quantity'               => $qty,
                 ],
             ]);
-            Log::info('Stripe session URL: ' . $session->url);
+
             $vouchers->each(fn($v) => $v->update(['stripe_session_id' => $session->id]));
 
             DB::commit();
@@ -131,6 +134,9 @@ class VoucherController extends Controller
             return back()->withErrors('Purchase failed. Please try again.');
         }
     }
+
+
+
 
     /**
      * Stripe success — activate vouchers after payment confirmed.

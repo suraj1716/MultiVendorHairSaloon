@@ -1,7 +1,9 @@
+import { JSX } from "react/jsx-runtime";
 import { Config } from "ziggy-js";
 
 
 export interface Vendor {
+  user_id: number
 id: number;
    status: string;
     booking_fee: string,
@@ -139,6 +141,8 @@ export type Image = {
 };
 
 export interface Booking {
+  staff_id: null;
+  staff: { id: number; name: string } | null
   id: number | string;
   booking_date: string;
   time_slot: string;
@@ -176,6 +180,8 @@ export type PaginationProps<T> = {
 
   // object with first / last / prev / next (rarely used for page buttons)
   links: {
+    length: number;
+    map(arg0: (link: any, i: any) => JSX.Element): import("react").ReactNode;
     first: string | null;
     last: string | null;
     prev: string | null;
@@ -236,6 +242,7 @@ export type VariationSummary = {
 };
 
 export type OrderItem = {
+  vouchers: any;
   id: number;
   quantity: number;
   price: number;
@@ -263,6 +270,10 @@ export type OrderItem = {
 
 
 export type Order = {
+  payment_method: import("react/jsx-runtime").JSX.Element;
+  booking_date: boolean;
+  time_slot: ReactNode;
+  voucher_discount: number;
   booking_fee: number;
   id: number;
   total_price: number;

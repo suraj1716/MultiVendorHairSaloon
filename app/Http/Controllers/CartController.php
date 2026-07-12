@@ -301,6 +301,7 @@ class CartController extends Controller
                     'online_payment_comission' => $onlineFee,
                     'website_payment_comission' => $platformFee,
                     'vendor_subtotal' => $vendorSubtotal,
+                    'voucher_id' => $voucher?->id,
                 ]);
 
                 $orders[] = $order;
@@ -317,9 +318,9 @@ class CartController extends Controller
                         );
 
                         try {
-                           $bookingDateStr = \Carbon\Carbon::parse($latestBooking->booking_date)->format('Y-m-d');
-$startDateTime  = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
-$endDateTime    = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
+                            $bookingDateStr = \Carbon\Carbon::parse($latestBooking->booking_date)->format('Y-m-d');
+                            $startDateTime  = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[0]))->format(\DateTime::RFC3339);
+                            $endDateTime    = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestBooking->time_slot)[1]))->format(\DateTime::RFC3339);
                             $vendorEmail = $vendor['email'] ?? null;
 
                             $googleEvent = $googleService->createEvent(
@@ -407,35 +408,6 @@ $endDateTime    = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestB
                 }
             }
 
-            // ── Redeem the voucher synchronously, once, for the combined discount ──
-            if ($voucher && $discountToApply > 0) {
-                foreach ($orders as $idx => $order) {
-                    $orderDiscountUsed = $order->voucher_discount ?? 0;
-                    if ($orderDiscountUsed > 0) {
-                        VoucherUsage::create([
-                            'voucher_id' => $voucher->id,
-                            'user_id' => $user->id,
-                            'order_id' => $order->id,
-                            'amount_used' => $orderDiscountUsed,
-                        ]);
-                    }
-                }
-
-                if ($voucher->type === 'gift') {
-                    $voucher->remaining_amount = max(0, ($voucher->remaining_amount ?? 0) - $discountToApply);
-                    if ($voucher->remaining_amount <= 0) {
-                        $voucher->remaining_amount = 0;
-                        $voucher->active = false;
-                    }
-                } elseif ($voucher->type === 'promo') {
-                    $voucher->used_count += 1;
-                    if ($voucher->max_uses && $voucher->used_count >= $voucher->max_uses) {
-                        $voucher->active = false;
-                    }
-                }
-
-                $voucher->save();
-            }
 
             $combinedTotalDue = round($combinedTotal - $discountToApply, 2);
 
@@ -444,6 +416,7 @@ $endDateTime    = (new \DateTime($bookingDateStr . ' ' . explode(' - ', $latestB
                 foreach ($orders as $order) {
                     $order->status = OrderStatusEnum::Paid->value;
                     $order->payment_method = 'gift_card';
+                     $order->is_paid = true;
                     $order->save();
                 }
 

@@ -62,38 +62,50 @@ class OrderController extends Controller
      */
     public function refund(Order $order)
     {
-        if (!$order->payment_intent) {
-            return redirect()->back()->with('error', 'This order was not paid online or has no payment intent.');
-        }
-
         if ($order->refunded_at) {
-            return redirect()->back()->with('error', 'This order has already been refunded.');
+            return back()->withErrors(['error' => 'Already refunded.']);
         }
 
         try {
-            $amount = $this->refundService->refundOrder($order);
+            $refundService = app(RefundService::class);
 
-            if ($amount <= 0) {
-                return redirect()->back()->with('error', 'No refundable amount left on this order.');
+            $stripePaymentMethods = ['stripe', 'card', 'link', 'afterpay_clearpay', 'klarna', 'zip'];
+
+            if (in_array($order->payment_method, $stripePaymentMethods)) {
+                if (empty($order->payment_intent)) {
+                    return back()->withErrors(['error' => 'Stripe order missing payment intent — cannot refund.']);
+                }
+                $amount = $order->booking
+                    ? $refundService->refundBookingAndOrder($order)
+                    : $refundService->refundOrder($order);
+            } elseif (in_array($order->payment_method, ['cash', 'eftpos'])) {
+                $amount = $refundService->refundManual($order);
+            } elseif ($order->payment_method === 'gift_card') {
+                $amount = $order->total_price;
+                $order->update(['refunded_at' => now(), 'status' =>  OrderStatusEnum::Refunded->value]);
+            } else {
+                return back()->withErrors(['error' => 'No valid payment method for refund.']);
             }
 
-            // 🟢 Update refund details
-            $order->refund_amount = $amount;
-            $order->refunded_at = now();
+            // Always restore any voucher amount used on this order, regardless of how the
+            // remainder was paid (stripe/cash/eftpos/gift_card).
+            $voucherRestored = $refundService->restoreVoucherForOrder($order);
 
-            // 🟢 Subtract refund from total price, ensuring it doesn't go negative
-            $order->total_price = max(0, $order->total_price - $amount);
+            Log::info("Order #{$order->id} refund returned amount: {$amount}, voucher restored: {$voucherRestored}");
 
-            // (Optional) update status and reason
-            $order->status = 'cancelled';
-            $order->refund_reason = 'Admin refund via panel';
+            if ($amount <= 0 && $voucherRestored <= 0) {
+                return back()->withErrors(['error' => 'Refund failed — nothing was refunded.']);
+            }
 
-            $order->save();
+            $message = "Refunded \${$amount}";
+            if ($voucherRestored > 0) {
+                $message .= " and restored \${$voucherRestored} to voucher balance";
+            }
 
-            return redirect()->back()->with('success', "Successfully refunded \${$amount} for order #{$order->id}.");
+            return back()->with('success', $message . ' successfully.');
         } catch (\Exception $e) {
-            Log::error("Admin refund failed for Order #{$order->id}: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Refund failed. Please check logs for details.');
+            Log::error("Refund exception for Order #{$order->id}: " . $e->getMessage());
+            return back()->withErrors(['error' => 'Refund failed: ' . $e->getMessage()]);
         }
     }
 }

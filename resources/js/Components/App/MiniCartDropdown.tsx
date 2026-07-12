@@ -1,17 +1,15 @@
 import { productRoute } from "@/helper";
-import LoginModal from "@/Pages/Auth/Login";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
 import { ShoppingBagIcon } from "@heroicons/react/24/outline";
 import { Link, usePage } from "@inertiajs/react";
 import React, { useState, useRef, useEffect } from "react";
-
+import { useAuthModal } from "@/Contexts/AuthModalContext";
 function MiniCartDropdown() {
   const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props as any;
   const user = (auth as any)?.user ?? null;
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const [loginOpen, setLoginOpen] = useState(false);
-
+const { openLogin } = useAuthModal();
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -368,7 +366,7 @@ function MiniCartDropdown() {
                 </Link>
               ) : (
                 <button
-                  onClick={() => setLoginOpen(true)}
+                  onClick={openLogin}
                   style={{
                     display: "block",
                     width: "100%",
@@ -401,11 +399,7 @@ function MiniCartDropdown() {
       </div>
 
       {/* Login Modal */}
-      <LoginModal
-        isOpen={loginOpen}
-        onClose={() => setLoginOpen(false)}
-        canResetPassword={true}
-      />
+
     </div>
   );
 }

@@ -18,7 +18,7 @@ class BookingController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$s%")
-                                                   ->orWhere('email', 'like', "%$s%"));
+                ->orWhere('email', 'like', "%$s%"));
         }
 
         if ($request->filled('date')) {
@@ -50,8 +50,8 @@ class BookingController extends Controller
     public function show(Booking $booking)
     {
         if (!$booking->is_read) {
-        $booking->update(['is_read' => true]);
-    }
+            $booking->update(['is_read' => true]);
+        }
         $booking->load('user', 'order.orderItems.product', 'order.vendor');
 
         return Inertia::render('Admin/Bookings/Show', [
@@ -122,12 +122,12 @@ class BookingController extends Controller
         $users  = User::orderBy('name')->get(['id', 'name', 'email']);
         $orders = Order::with('user')
             ->where(fn($q) => $q->whereDoesntHave('booking')
-                                ->orWhereHas('booking', fn($q) => $q->where('id', $booking->id)))
+                ->orWhereHas('booking', fn($q) => $q->where('id', $booking->id)))
             ->latest()->get()->map(fn($o) => [
                 'id'    => $o->id,
                 'label' => "#$o->id — {$o->user?->name} (A\${$o->total_price})",
             ]);
-$vendor = \App\Models\Vendor::where('user_id', $booking->vendor_id ?? $booking->order?->vendor_user_id)->first();
+        $vendor = \App\Models\Vendor::where('user_id', $booking->vendor_id ?? $booking->order?->vendor_user_id)->first();
         return Inertia::render('Admin/Bookings/Edit', [
             'booking' => [
                 'id'           => $booking->id,
@@ -139,10 +139,10 @@ $vendor = \App\Models\Vendor::where('user_id', $booking->vendor_id ?? $booking->
             'users'  => $users,
             'orders' => $orders,
             'vendor'  => $vendor ? [
-            'business_start_time'  => $vendor->business_start_time,
-            'business_end_time'    => $vendor->business_end_time,
-            'slot_interval_minutes' => $vendor->slot_interval_minutes,
-        ] : null,
+                'business_start_time'  => $vendor->business_start_time,
+                'business_end_time'    => $vendor->business_end_time,
+                'slot_interval_minutes' => $vendor->slot_interval_minutes,
+            ] : null,
         ]);
     }
 

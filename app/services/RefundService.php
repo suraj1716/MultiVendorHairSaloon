@@ -154,6 +154,7 @@
 
 namespace App\Services;
 
+use App\Enums\OrderStatusEnum;
 use App\Mail\RefundProcessedForUser;
 use App\Mail\RefundProcessedForVendor;
 use App\Models\Order;
@@ -162,6 +163,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Stripe\Refund;
 use Stripe\Stripe;
+use App\Models\VoucherUsage;
+use App\Models\Refund as RefundRecord;
 
 class RefundService
 {
@@ -169,6 +172,47 @@ class RefundService
     {
         $vendor = Vendor::find($order->vendor_user_id);
         return $vendor?->booking_fee ?? 0;
+    }
+
+
+
+
+
+    /**
+     * Restore any voucher/gift-card amount used on this order back to the voucher.
+     * Safe to call even if no voucher was used (does nothing).
+     */
+    public function restoreVoucherForOrder(Order $order): float
+    {
+        $usages = VoucherUsage::where('order_id', $order->id)->get();
+
+        if ($usages->isEmpty()) {
+            return 0;
+        }
+
+        $totalRestored = 0;
+
+        foreach ($usages as $usage) {
+            $voucher = $usage->voucher;
+            if (!$voucher) continue;
+
+            if ($voucher->type === 'gift') {
+                $voucher->remaining_amount = ($voucher->remaining_amount ?? 0) + $usage->amount_used;
+                if ($voucher->remaining_amount > 0 && !$voucher->active) {
+                    $voucher->active = true; // reactivate if it had been exhausted
+                }
+            } elseif ($voucher->type === 'promo') {
+                $voucher->used_count = max(0, $voucher->used_count - 1);
+                $voucher->active = true;
+            }
+
+            $voucher->save();
+            $totalRestored += $usage->amount_used;
+
+            Log::info("Restored voucher #{$voucher->id} by {$usage->amount_used} for refunded Order #{$order->id}");
+        }
+
+        return $totalRestored;
     }
 
     /**
@@ -242,7 +286,8 @@ class RefundService
             $order->update([
                 'refund_amount' => ($order->refund_amount ?? 0) + $refundAmount,
                 'refunded_at' => now(),
-                'status' => 'refunded',
+                'status' => OrderStatusEnum::Refunded->value,
+                'is_paid' => false,
             ]);
 
             Log::info("Booking fee refund successful: A\$ {$refundAmount} for Order #{$order->id}");
@@ -273,7 +318,7 @@ class RefundService
             'refund_amount' => $refundAmount,
             'refunded_at' => now(),
             'refund_reason' => 'Manual refund (' . $order->payment_method . ')',
-            'status' => 'refunded',
+            'status' => OrderStatusEnum::Refunded->value,
             'is_paid' => false,
         ]);
 
@@ -298,20 +343,18 @@ class RefundService
     {
         Log::info("Starting full order refund for Order #{$order->id}");
 
-        if (!$order->stripe_charge_id) {
-            throw new \Exception("Missing Stripe charge ID for Order #{$order->id}");
+        if (!$order->stripe_charge_id && !$order->payment_intent) {
+            throw new \Exception("Missing Stripe charge or payment intent for Order #{$order->id}");
         }
 
-        $bookingFee = $this->getBookingFee($order);
-        // What was actually charged to Stripe
+        $alreadyRefunded = $order->refund_amount ?? 0;
         $stripeCharged = $order->stripe_amount ?? $order->total_price;
 
-        // Can't refund more than what Stripe received
-        $refundAmount = min($order->total_price, $stripeCharged);
+        // Never try to refund more than what's actually left unrefunded
+        $remaining = round(min($order->total_price, $stripeCharged) - $alreadyRefunded, 2);
 
-
-        if ($refundAmount <= 0) {
-            Log::info("No refundable amount for Order #{$order->id}");
+        if ($remaining <= 0) {
+            Log::info("Nothing left to refund for Order #{$order->id} (already refunded: {$alreadyRefunded})");
             return 0;
         }
 
@@ -319,29 +362,27 @@ class RefundService
             Stripe::setApiKey(config('app.stripe_secret_key'));
 
             $stripeParams = [
-                'amount' => intval($refundAmount * 100),
+                'amount' => intval($remaining * 100),
                 'reason' => 'requested_by_customer',
             ];
 
             if ($order->stripe_charge_id) {
                 $stripeParams['charge'] = $order->stripe_charge_id;
-            } elseif ($order->payment_intent) {
-                $stripeParams['payment_intent'] = $order->payment_intent;
             } else {
-                throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
+                $stripeParams['payment_intent'] = $order->payment_intent;
             }
 
             Refund::create($stripeParams);
 
             $order->update([
-                'refund_amount' => $refundAmount,
+                'refund_amount' => $alreadyRefunded + $remaining,
                 'refunded_at' => now(),
-                'status' => 'refunded',
+                'status' => OrderStatusEnum::Refunded->value,
+                'is_paid' => false,
             ]);
 
-            Log::info("Order refund successful: A\$ {$refundAmount} for Order #{$order->id}");
+            Log::info("Order refund successful: A\$ {$remaining} for Order #{$order->id} (total refunded now: " . ($alreadyRefunded + $remaining) . ")");
 
-            // Send emails
             try {
                 Mail::to($order->user)->send(new RefundProcessedForUser($order));
                 Mail::to($order->vendor->user)->send(new RefundProcessedForVendor($order));
@@ -349,38 +390,13 @@ class RefundService
                 Log::error("Failed to send refund emails: " . $e->getMessage());
             }
 
-            return $refundAmount;
+            return $remaining;
         } catch (\Exception $e) {
             Log::error("Order refund failed for Order #{$order->id}: " . $e->getMessage());
             throw $e;
         }
     }
-    /**
-     * Refund the rest of the order excluding the booking fee.
-     */
-    public function refund(Order $order)
-    {
-        if (!$order->payment_intent) {
-            return redirect()->back()->with('error', 'This order was not paid online or has no payment intent.');
-        }
 
-        if ($order->refunded_at) {
-            return redirect()->back()->with('error', 'This order has already been refunded.');
-        }
-
-        try {
-            $amount = $this->refundService->refundOrder($order);
-
-            if ($amount <= 0) {
-                return redirect()->back()->with('error', 'No refundable amount left on this order.');
-            }
-
-            return redirect()->back()->with('success', "Successfully refunded \${$amount} for order #{$order->id}.");
-        } catch (\Exception $e) {
-            Log::error("Admin refund failed for Order #{$order->id}: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Refund failed. Please check logs for details.');
-        }
-    }
 
     /**
      * Refund both booking fee and remaining order amount.
@@ -425,15 +441,15 @@ class RefundService
                     throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
                 }
 
-                Refund::create($stripeParams);
-
+                $refund = Refund::create($stripeParams);
 
                 $order->refund_amount = $alreadyRefunded + $remainingRefundable;
                 $order->total_price = max(0, $order->total_price - $remainingRefundable);
                 $order->refunded_at = now();
                 $order->refund_id = $refund->id;
                 $order->refund_reason = 'Admin refund (partial or full)';
-                $order->status = 'cancelled';
+                $order->status =  OrderStatusEnum::Refunded->value;
+                $order->is_paid = false;
                 $order->save();
 
                 Log::info("Refund successful for Order #{$order->id}. New total: {$order->total_price}");
@@ -446,5 +462,73 @@ class RefundService
         }
 
         return $totalRefunded;
+    }
+
+
+
+    /**
+     * Refund ONLY the booking fee (customer visited & completed service).
+     */
+    public function refundBookingFeeOnly(Order $order): float
+    {
+        $booking = $order->booking;
+        if (!$booking || $booking->booking_fee_refunded) {
+            return 0;
+        }
+
+        $bookingFee = $this->getBookingFee($order);
+        if ($bookingFee <= 0) {
+            return 0;
+        }
+
+        try {
+            Stripe::setApiKey(config('app.stripe_secret_key'));
+            $stripeParams = ['amount' => intval($bookingFee * 100), 'reason' => 'requested_by_customer'];
+            $stripeParams[$order->stripe_charge_id ? 'charge' : 'payment_intent']
+                = $order->stripe_charge_id ?: $order->payment_intent;
+
+            Refund::create($stripeParams);
+
+            $booking->update([
+                'booking_fee_refunded' => true,
+                'booking_fee_refund_amount' => $bookingFee,
+            ]);
+            $order->update([
+                'refund_amount' => ($order->refund_amount ?? 0) + $bookingFee,
+            ]);
+
+            return $bookingFee;
+        } catch (\Exception $e) {
+            Log::error("Booking fee only refund failed for Order #{$order->id}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Full refund including booking fee — for a genuine full cancellation.
+     */
+    public function refundBookingFeeAndOrder(Order $order): float
+    {
+        return $this->refundOrder($order); // total_price already includes booking fee, so a straight full refund covers both
+    }
+
+
+
+    public function recordRefund(Order $order, string $type, float $amount, ?string $stripeRefundId = null, ?string $reason = null, bool $isMarker = false): void
+    {
+        RefundRecord::create([
+            'order_id' => $order->id,
+            'type' => $type,
+            'amount' => $amount,
+            'stripe_refund_id' => $stripeRefundId,
+            'reason' => $reason,
+            'refunded_by' => auth()->id(),
+            'is_marker' => $isMarker,
+        ]);
+    }
+
+    public function hasRefundType(Order $order, string $type): bool
+    {
+        return RefundRecord::where('order_id', $order->id)->where('type', $type)->exists();
     }
 }

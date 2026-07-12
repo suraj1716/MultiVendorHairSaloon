@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\OrderStatusEnum;
 use App\Http\Resources\OrderViewResource;
 use App\Models\Booking;
 use App\Models\Order;
@@ -36,7 +37,7 @@ class BookingController extends Controller
             ->orders()
             ->with([
                 'orderItems.product.variationTypes.options',
-                'orderItems.booking' // will return null for orders without bookings
+                'orderItems.booking.staff'
             ])
             ->latest()
             ->get();
@@ -208,14 +209,11 @@ class BookingController extends Controller
             ]);
         }
 
-
         // Set timezone to Sydney (fallback if not set in config)
         $timezone = config('app.timezone', 'Australia/Sydney');
         $now = now()->timezone($timezone);
         $formattedDate = \Carbon\Carbon::parse($date, $timezone)->format('Y-m-d');
 
-
-        // Business hours: 9 AM to 10 PM on the requested date
         $user = Auth::user();
 
         if (!$user) {
@@ -243,19 +241,26 @@ class BookingController extends Controller
             ]);
         }
 
+        // ── Resolve which vendor's slots to check ──
+        // Prefer an explicitly-provided vendor id (used by the "Edit Booking" flow,
+        // where the user's cart is empty since they already checked out).
+        // Fall back to deriving it from the cart (used by the checkout flow).
+        $requestedVendorId = $request->input('vendorId') ?? $request->input('vendor_id');
 
-        // Get cart items with vendors
-        $cartItems = \App\Models\CartItem::where('user_id', $user->id)
-            ->with('product.vendor')
-            ->get();
+        if ($requestedVendorId) {
+            $appointmentVendorId = $requestedVendorId;
+        } else {
+            $cartItems = \App\Models\CartItem::where('user_id', $user->id)
+                ->with('product.vendor')
+                ->get();
 
-        // Get the first appointment vendor ID from cart
-        $appointmentVendorId = $cartItems
-            ->pluck('product.vendor')
-            ->filter(fn($vendor) => $vendor !== null && $vendor->vendor_type->value === \App\Enums\VendorType::APPOINTMENT->value)
-            ->pluck('user_id')
-            ->unique()
-            ->first();
+            $appointmentVendorId = $cartItems
+                ->pluck('product.vendor')
+                ->filter(fn($vendor) => $vendor !== null && $vendor->vendor_type->value === \App\Enums\VendorType::APPOINTMENT->value)
+                ->pluck('user_id')
+                ->unique()
+                ->first();
+        }
 
         if (!$appointmentVendorId) {
             if ($request->wantsJson()) {
@@ -282,7 +287,6 @@ class BookingController extends Controller
             ]);
         }
 
-
         $vendor = \App\Models\Vendor::find($appointmentVendorId);
 
         if (!$vendor) {
@@ -298,15 +302,12 @@ class BookingController extends Controller
             ]);
         }
 
-
-
         // Build Carbon instances for business start/end times on that date
         $businessStart = \Carbon\Carbon::parse($formattedDate . ' ' . $vendor->business_start_time, $timezone);
         $businessEnd = \Carbon\Carbon::parse($formattedDate . ' ' . $vendor->business_end_time, $timezone);
         $slotIntervalMinutes = $vendor->slot_interval_minutes;
 
         // Parse closed dates and recurring closed days from vendor
-        // If stored as JSON in DB, decode to array
         $closedDates = is_array($vendor->closed_dates)
             ? $vendor->closed_dates
             : json_decode($vendor->closed_dates ?? '[]', true) ?? [];
@@ -315,8 +316,6 @@ class BookingController extends Controller
             : json_decode($vendor->recurring_closed_days ?? '[]', true) ?? [];
 
         $dayOfWeek = \Carbon\Carbon::parse($formattedDate, $timezone)->dayOfWeek;
-
-
 
         // Check if the date is closed
         if (in_array($formattedDate, $closedDates) || in_array($dayOfWeek, $recurringClosedDays)) {
@@ -344,7 +343,6 @@ class BookingController extends Controller
         $isToday = $formattedDate === $now->format('Y-m-d');
         $cutoffTime = $now->copy()->addHours(2);
 
-
         $current = $businessStart->copy();
 
         while ($current->lt($businessEnd)) {
@@ -366,11 +364,9 @@ class BookingController extends Controller
         }
 
         // Fetch booked slots for the date from DB
-        // Total seats this vendor has available per slot
         $totalSeats = max(1, (int) ($vendor->total_seats ?? 1));
         Log::info("Vendor {$appointmentVendorId} total seats: {$totalSeats}");
 
-        // Count how many bookings exist per time_slot for this date (excluding cancelled)
         $bookedCounts = DB::table('bookings')
             ->join('orders', 'bookings.order_id', '=', 'orders.id')
             ->whereDate('bookings.booking_date', $formattedDate)
@@ -382,7 +378,6 @@ class BookingController extends Controller
 
         Log::info("Booked counts per slot for {$formattedDate}: " . json_encode($bookedCounts));
 
-        // A slot is available if booked_count < total_seats
         $availableSlots = array_values(array_filter(
             $allSlots,
             function ($slot) use ($bookedCounts, $totalSeats) {
@@ -431,70 +426,78 @@ class BookingController extends Controller
 
 
 
-    public function update(Request $request, Booking $booking)
-    {
-        $validated = $request->validate([
-            'booking_date' => 'required|date',
-            'time_slot' => 'required|string|max:255',
-            'staff_id' => 'nullable|integer|exists:staff,id',
-        ]);
+public function update(Request $request, Booking $booking)
+{
+    $validated = $request->validate([
+        'booking_date' => 'required|date',
+        'time_slot' => 'required|string|max:255',
+        'staff_id' => 'nullable|integer|exists:staff,id',
+    ]);
 
-        // Authorization: user must own booking or vendor
-        $vendorUserId = $booking->order?->vendor_user_id;
+    // Authorization: user must own booking or vendor
+    $vendorUserId = $booking->order?->vendor_user_id;
+    $isOwner = $booking->user_id === Auth::id();
+    $isVendor = $vendorUserId === Auth::id();
 
-        if ($booking->user_id !== Auth::id() && $vendorUserId !== Auth::id()) {
-            abort(403);
-        }
-
-        // Update booking details
-        $booking->update([
-            'booking_date' => $validated['booking_date'],
-            'time_slot' => $validated['time_slot'],
-            'staff_id' => $validated['staff_id'] ?? $booking->staff_id,
-        ]);
-
-        $user = Auth::user();
-
-        // If user has Google token and booking has an event ID, update Google Calendar
-        if ($user->google_access_token && $booking->google_event_id) {
-            try {
-                $googleService = new \App\Services\GoogleCalendarService([
-                    'access_token' => $user->google_access_token,
-                    'refresh_token' => $user->google_refresh_token,
-                ]);
-
-                $startTime = explode(' - ', $booking->time_slot)[0];
-                $endTime = explode(' - ', $booking->time_slot)[1];
-                $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
-                $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
-
-                $googleService->updateEvent(
-                    $booking->google_event_id,
-                    'Booking Appointment',
-                    "Updated Booking ID: {$booking->id}",
-                    $startDateTime,
-                    $endDateTime,
-                    'Australia/Sydney'
-                );
-
-                if ($googleService->newAccessToken) {
-                    $user->google_access_token = $googleService->newAccessToken;
-                    $user->save();
-                }
-            } catch (\Exception $e) {
-                Log::error('Google Calendar update failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => 'Booking updated successfully.',
-                'booking' => $booking->fresh(),
-            ]);
-        }
-
-        return redirect()->back()->with('success', 'Booking updated successfully.');
+    if (!$isOwner && !$isVendor) {
+        abort(403);
     }
+
+    // Customers may only edit a booking once — vendors/admins are exempt
+    if ($isOwner && !$isVendor && $booking->edited_at) {
+        return redirect()->back()->with('error', 'This booking has already been edited once. Please contact support for further changes.');
+    }
+
+    // Update booking details
+    $booking->update([
+        'booking_date' => $validated['booking_date'],
+        'time_slot' => $validated['time_slot'],
+        'staff_id' => array_key_exists('staff_id', $validated) ? $validated['staff_id'] : $booking->staff_id,
+        'edited_at' => $isOwner && !$isVendor ? now() : $booking->edited_at,
+    ]);
+
+    $user = Auth::user();
+
+    // If user has Google token and booking has an event ID, update Google Calendar
+    if ($user->google_access_token && $booking->google_event_id) {
+        try {
+            $googleService = new \App\Services\GoogleCalendarService([
+                'access_token' => $user->google_access_token,
+                'refresh_token' => $user->google_refresh_token,
+            ]);
+
+            $startTime = explode(' - ', $booking->time_slot)[0];
+            $endTime = explode(' - ', $booking->time_slot)[1];
+            $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
+            $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
+
+            $googleService->updateEvent(
+                $booking->google_event_id,
+                'Booking Appointment',
+                "Updated Booking ID: {$booking->id}",
+                $startDateTime,
+                $endDateTime,
+                'Australia/Sydney'
+            );
+
+            if ($googleService->newAccessToken) {
+                $user->google_access_token = $googleService->newAccessToken;
+                $user->save();
+            }
+        } catch (\Exception $e) {
+            Log::error('Google Calendar update failed: ' . $e->getMessage());
+        }
+    }
+
+    if ($request->wantsJson()) {
+        return response()->json([
+            'message' => 'Booking updated successfully.',
+            'booking' => $booking->fresh(),
+        ]);
+    }
+
+    return redirect()->back()->with('success', 'Booking updated successfully.');
+}
 
 
 
@@ -535,55 +538,96 @@ class BookingController extends Controller
 
 
 
-    public function cancel(Booking $booking, RefundService $refundService)
-    {
-        $user = Auth::user();
-        $order = $booking->order;
+  public function cancel(Booking $booking, RefundService $refundService)
+{
+    $user = Auth::user();
+    $order = $booking->order;
 
-        if (!$order || $order->status === 'cancelled') {
-            return redirect()->back()->with('error', 'Invalid order for cancellation.');
-        }
+    if (!$order || $order->status === 'cancelled') {
+        return redirect()->back()->with('error', 'Invalid order for cancellation.');
+    }
 
-        // Check if past booking date
-        if (now()->gt($booking->booking_date)) {
-            return redirect()->back()->with('error', 'Past bookings cannot be cancelled.');
-        }
+    // Ownership check — customer can only cancel their own booking
+    if ($order->user_id !== $user->id) {
+        abort(403);
+    }
 
-        // Check 24-hour window
-        $hoursUntilBooking = now()->diffInHours($booking->booking_date, false);
-        if ($hoursUntilBooking < 24) {
-            return redirect()->back()->with('error', 'Bookings within 24 hours cannot be cancelled.');
-        }
+    // Check if past booking date
+    if (now()->gt($booking->booking_date)) {
+        return redirect()->back()->with('error', 'Past bookings cannot be cancelled.');
+    }
 
-        // Delete Google Calendar
-        if ($booking->google_event_id && $user->google_access_token) {
-            try {
-                $googleService = new GoogleCalendarService(
-                    ['access_token' => $user->google_access_token],
-                    $user->google_refresh_token
-                );
-                $googleService->deleteEvent($booking->google_event_id);
+    $hoursUntilBooking = now()->diffInHours($booking->booking_date, false);
+    $isFullRefund = $hoursUntilBooking >= 24;
+    $refundType = $isFullRefund ? 'full' : 'except_booking_fee';
 
-                if ($googleService->newAccessToken) {
-                    $user->google_access_token = $googleService->newAccessToken;
-                    $user->save();
-                }
-            } catch (\Exception $e) {
-                Log::error('Google Calendar delete failed: ' . $e->getMessage());
-            }
-        }
+    // Guard against double-processing
+    if ($refundService->hasRefundType($order, 'full') || $refundService->hasRefundType($order, $refundType)) {
+        return redirect()->back()->with('error', 'This booking has already been refunded.');
+    }
 
-        // Process refund
+    // Delete Google Calendar event
+    if ($booking->google_event_id && $user->google_access_token) {
         try {
-            $refundAmount = $refundService->refundExcludingBookingFee($order);
-
-            return redirect()->back()->with(
-                'success',
-                "Booking cancelled. Refund of \${$refundAmount} processed."
+            $googleService = new GoogleCalendarService(
+                ['access_token' => $user->google_access_token],
+                $user->google_refresh_token
             );
+            $googleService->deleteEvent($booking->google_event_id);
+            if ($googleService->newAccessToken) {
+                $user->google_access_token = $googleService->newAccessToken;
+                $user->save();
+            }
         } catch (\Exception $e) {
-            Log::error("Cancellation failed: " . $e->getMessage());
-            return redirect()->back()->with('error', 'Cancellation failed.');
+            Log::error('Google Calendar delete failed: ' . $e->getMessage());
         }
     }
+
+    try {
+        $stripePaymentMethods = ['stripe', 'card', 'link', 'afterpay_clearpay', 'klarna', 'zip'];
+        $isStripe = in_array($order->payment_method, $stripePaymentMethods);
+        $isManual = in_array($order->payment_method, ['cash', 'eftpos']);
+
+        // Stripe-held portion: full amount (incl. booking fee) if >=24hrs out,
+        // otherwise everything except the non-refundable booking fee.
+        $refundAmount = match (true) {
+            $isStripe && $isFullRefund  => $order->booking
+                ? $refundService->refundBookingFeeAndOrder($order)
+                : $refundService->refundOrder($order),
+            $isStripe && !$isFullRefund => $refundService->refundExcludingBookingFee($order),
+            $isManual                   => 0, // manual payments need staff to process
+            default                     => 0, // gift-card-only order — nothing charged to Stripe
+        };
+
+        // Gift card / voucher portion is always restored in full, regardless of
+        // the 24-hour window — the booking fee split only applies to the Stripe amount.
+        $voucherRestored = $refundService->restoreVoucherForOrder($order);
+
+        if ($refundAmount <= 0 && $voucherRestored <= 0) {
+            return redirect()->back()->with('error', 'Nothing was refunded for this booking.');
+        }
+
+        $order->update([
+            'status' => OrderStatusEnum::Cancelled->value,
+            'refunded_at' => now(),
+            'refund_amount' => ($order->refund_amount ?? 0) + $refundAmount,
+        ]);
+
+        $refundService->recordRefund($order, $refundType, $refundAmount, reason: 'Customer-initiated booking cancellation');
+
+        $message = $isFullRefund
+            ? "Booking cancelled. Full refund of \${$refundAmount} processed"
+            : "Booking cancelled within 24 hours — refund of \${$refundAmount} processed (booking fee non-refundable)";
+
+        if ($voucherRestored > 0) {
+            $message .= " and \${$voucherRestored} restored to your gift card balance";
+        }
+        $message .= '.';
+
+        return redirect()->back()->with('success', $message);
+    } catch (\Exception $e) {
+        Log::error("Cancellation failed for Order #{$order->id}: " . $e->getMessage());
+        return redirect()->back()->with('error', 'Cancellation failed.');
+    }
+}
 }

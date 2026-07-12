@@ -17,6 +17,7 @@ class OrderViewResource extends JsonResource
             'status' => $this->status,
             'created_at' => $this->created_at,
             'total_price' => $this->total_price,
+            'voucher_discount' => (float) ($this->voucher_discount ?? 0),
             'booking_fee' => (float) ($this->vendorUser->vendor->booking_fee ?? 0), // ← Add this
             'payment_method' => $this->payment_method,
             'booking_date' => optional($this->booking)->booking_date,
@@ -24,8 +25,10 @@ class OrderViewResource extends JsonResource
             'refunded_at' => $this->refunded_at,
             'refund_amount' => $this->refund_amount,
             'refund_reason' => $this->refund_reason,
-
+            'refunded_types' => $this->refunds->pluck('type'),
             'vendor' => [
+                'user_id' => $this->vendor_user_id,   // ← this is what BookingWidget's vendorId should be
+                'id' => $this->vendorUser->vendor->id ?? null,
                 'name' => $this->vendorUser->name ?? '',
                 'store_name' => $this->vendorUser->vendor->store_name ?? '',
                 'store_address' => $this->vendorUser->vendor->store_address ?? '',
@@ -61,6 +64,10 @@ class OrderViewResource extends JsonResource
                         'id' => $this->booking->id,
                         'booking_date' => $this->booking->booking_date,
                         'time_slot' => $this->booking->time_slot,
+                        'staff' => $this->booking->staff ? [
+                            'id' => $this->booking->staff->id,
+                            'name' => $this->booking->staff->name,
+                        ] : null,
                     ] : null,
 
                     'id' => $item->id,
@@ -73,14 +80,28 @@ class OrderViewResource extends JsonResource
                     'product' => $item->product ? [
                         'id'    => $item->product->id,
                         'title' => $item->product->title,
-                        'image' => $item->product->getImageForOptions($item->variation_type_option_ids ?: []),
+                        'image' => $item->product->getImageForOptions($variationOptionIds ?: []), // ← fixed
                         'slug'  => $item->product->slug,
-                    ] : ($item->item_type === 'gift_card' ? [
+                    ] : ($item->gift_card_template_id ? [
                         'id'    => null,
                         'title' => 'Gift Card',
                         'image' => null,
                         'slug'  => null,
                     ] : null),
+
+                    'vouchers' => $item->gift_card_template_id
+    ? \App\Models\Voucher::where('stripe_session_id', $this->stripe_session_id)
+        ->get()
+        ->map(fn($v) => [
+            'code'             => $v->code,
+            'amount'           => $v->amount,
+            'remaining_amount' => $v->remaining_amount,
+            'expires_at'       => $v->expires_at?->toDateString(),
+            'gifted_to_email'  => $v->gifted_to_email,
+            'active'           => $v->active,
+        ])
+    : [],
+
                 ];
             }),
         ];

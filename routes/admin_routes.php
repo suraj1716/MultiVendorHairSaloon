@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AdminCategoriesController;
 use App\Http\Controllers\Admin\AdminContactController;
 use App\Http\Controllers\Admin\AdminDepartmentsController;
+use App\Http\Controllers\Admin\AdminGiftCardTemplateController;
 use App\Http\Controllers\Admin\AdminProductController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -101,6 +102,14 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
         Route::put('/vouchers/{voucher}',         [AdminVoucherController::class, 'update'])->name('vouchers.update');
         Route::patch('/vouchers/{voucher}/toggle', [AdminVoucherController::class, 'toggle'])->name('vouchers.toggle');
         Route::delete('/vouchers/{voucher}',      [AdminVoucherController::class, 'destroy'])->name('vouchers.destroy');
+
+
+        // Gift Card Templates
+        Route::get('/gift-card-templates',                    [AdminGiftCardTemplateController::class, 'index'])->name('gift-card-templates.index');
+        Route::post('/gift-card-templates',                   [AdminGiftCardTemplateController::class, 'store'])->name('gift-card-templates.store');
+        Route::post('/gift-card-templates/{giftCardTemplate}', [AdminGiftCardTemplateController::class, 'update'])->name('gift-card-templates.update');
+        Route::patch('/gift-card-templates/{giftCardTemplate}/toggle', [AdminGiftCardTemplateController::class, 'toggle'])->name('gift-card-templates.toggle');
+        Route::delete('/gift-card-templates/{giftCardTemplate}', [AdminGiftCardTemplateController::class, 'destroy'])->name('gift-card-templates.destroy');
 
 
         Route::resource('gallery', GalleryController::class);

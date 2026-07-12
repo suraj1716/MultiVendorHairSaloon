@@ -10,7 +10,9 @@ use App\Mail\NewOrderMail;
 use App\Mail\RefundProcessedForUser;
 use App\Mail\RefundProcessedForVendor;
 use App\Models\CartItem;
+use App\Models\GiftCardTemplate;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Models\VoucherUsage;
@@ -27,105 +29,13 @@ use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 use UnexpectedValueException;
+use Stripe\Checkout\Session as StripeSession;
 
 class StripeController extends Controller
 {
 
 
-   public function success(Request $request)
-{
-    $user = Auth::user();
-    $session_id = $request->get('session_id');
 
-    $orders = Order::where('stripe_session_id', $session_id)
-        ->with('vendor', 'orderItems.product')
-        ->get();
-
-    if ($orders->count() === 0) {
-        abort(404);
-    }
-
-    foreach ($orders as $order) {
-        if ($order->user_id !== $user->id) {
-            abort(403);
-        }
-    }
-
-    // ── Clear cart items for this checkout, regardless of webhook timing ──
-    $productIds = $orders->flatMap(fn($order) => $order->orderItems->pluck('product_id'))->unique()->values();
-
-    if ($productIds->isNotEmpty()) {
-        CartItem::where('user_id', $user->id)
-            ->whereIn('product_id', $productIds)
-            ->where('saved_for_later', false)
-            ->delete();
-    }
-
-    // ✅ Referral logic (unchanged)
-    if ($user->referred_by && !$user->has_received_referral_bonus) {
-        $totalSpent = $user->orders()
-            ->where(function ($q) {
-                $q->where('status', 'Paid')
-                    ->orWhere('payment_status', 'paid');
-            })
-            ->sum('total_price');
-
-        if ($totalSpent >= 100) {
-            Voucher::create([
-                'code' => strtoupper(Str::random(10)),
-                'type' => 'gift',
-                'amount' => 30,
-                'discount_type' => 'fixed',
-                'remaining_amount' => 30,
-                'max_uses' => 1,
-                'used_count' => 0,
-                'user_id' => $user->referred_by,
-                'active' => true,
-                'expires_at' => now()->addDays(30),
-            ]);
-
-            Voucher::create([
-                'code' => strtoupper(Str::random(10)),
-                'type' => 'gift',
-                'amount' => 30,
-                'discount_type' => 'fixed',
-                'remaining_amount' => 30,
-                'max_uses' => 1,
-                'used_count' => 0,
-                'user_id' => $user->id,
-                'active' => true,
-                'expires_at' => now()->addDays(30),
-            ]);
-
-            $user->update(['has_received_referral_bonus' => true]);
-        }
-    }
-
-    // ✅ Voucher generation for "voucher" products (unchanged)
-    foreach ($orders as $order) {
-        foreach ($order->orderItems as $item) {
-            if ($item->product && $item->product->product_type === 'voucher') {
-                Voucher::create([
-                    'code' => strtoupper(Str::random(12)),
-                    'type' => 'gift',
-                    'amount' => $item->price,
-                    'discount_type' => 'fixed',
-                    'remaining_amount' => $item->price,
-                    'max_uses' => 1,
-                    'used_count' => 0,
-                    'user_id' => $user->id,
-                    'product_id' => $item->product_id,
-                    'active' => true,
-                    'expires_at' => now()->addDays(365),
-                ]);
-            }
-        }
-    }
-
-    return Inertia::render('Stripe/Success', [
-        'orders' => OrderViewResource::collection($orders)->collection->toArray()
-    ]);
-}
 
 
     public function failure()
@@ -161,7 +71,7 @@ class StripeController extends Controller
 
                     $transactionId = $charge['balance_transaction'] ?? null;
                     $paymentIntent = $charge['payment_intent'] ?? null;
-                      $chargeId      = $charge['id'] ?? null;
+                    $chargeId      = $charge['id'] ?? null;
 
                     if (!$transactionId || !$paymentIntent) {
                         Log::warning('Missing transactionId or paymentIntent in charge.updated event.');
@@ -198,7 +108,7 @@ class StripeController extends Controller
                         $order->online_payment_comission = $orderOnlinePaymentCommission;
                         $order->website_payment_comission = $orderWebsitePaymentCommission;
                         $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
-$order->stripe_charge_id = $chargeId;
+                        $order->stripe_charge_id = $chargeId;
                         $order->save();
 
                         Mail::to($order->vendorUser)->send(new NewOrderMail($order));
@@ -213,17 +123,30 @@ $order->stripe_charge_id = $chargeId;
             case 'checkout.session.completed':
                 $session = $event->data->object;
                 $paymentIntent = $session['payment_intent'];
-
                 $paymentMethodType = null;
+                $chargeId = null;
+
                 try {
                     $paymentIntentObj = $stripe->paymentIntents->retrieve($paymentIntent, [
-                         'expand' => ['payment_method', 'latest_charge'],
+                        'expand' => ['payment_method', 'latest_charge'],
                     ]);
                     $paymentMethodType = $paymentIntentObj->payment_method->type ?? null;
-                     $chargeId          = $paymentIntentObj->latest_charge->id ?? null;
+                    $chargeId          = $paymentIntentObj->latest_charge->id ?? null;
                 } catch (\Exception $e) {
                     Log::warning('Could not retrieve payment method type: ' . $e->getMessage());
                 }
+
+                // ── Gift-card-shop purchases: no Order row exists yet, create it now ──
+                $metadata = $session->metadata ? $session->metadata->toArray() : [];
+
+                Log::info('checkout.session.completed metadata', ['metadata' => $metadata]);
+
+                if (!empty($metadata['voucher_ids']) && !empty($metadata['gift_card_template_id'])) {
+                    $this->fulfillGiftCardOrder($session);
+                } else {
+                    Log::warning('Gift card fulfillment skipped — metadata missing', ['metadata' => $metadata]);
+                }
+
 
                 $orders = Order::with('orderItems')
                     ->where('stripe_session_id', $session['id'])
@@ -233,13 +156,49 @@ $order->stripe_charge_id = $chargeId;
                 $userId = null;
 
                 foreach ($orders as $order) {
-                    $order->payment_intent = $paymentIntent;
-                    $order->payment_method = $paymentMethodType;
+                    $order->payment_intent   = $paymentIntent;
+                    $order->payment_method   = $paymentMethodType;
                     $order->stripe_amount    = $session['amount_total'] / 100;
-                     $order->stripe_charge_id = $chargeId;
-                    $order->status = OrderStatusEnum::Paid;
+                    $order->stripe_charge_id = $chargeId;
+                    $order->status           = OrderStatusEnum::Paid->value;
+                    $order->is_paid          = true;
                     $order->save();
 
+                    // Redeem voucher only now that payment is confirmed
+                    if ($order->voucher_id && $order->voucher_discount > 0) {
+                        $orderVoucher = Voucher::lockForUpdate()->find($order->voucher_id);
+                        if ($orderVoucher) {
+                            $alreadyRedeemed = VoucherUsage::where('order_id', $order->id)
+                                ->where('voucher_id', $orderVoucher->id)
+                                ->exists();
+
+                            if (!$alreadyRedeemed) {
+                                VoucherUsage::create([
+                                    'voucher_id'  => $orderVoucher->id,
+                                    'user_id'     => $order->user_id,
+                                    'order_id'    => $order->id,
+                                    'amount_used' => $order->voucher_discount,
+                                ]);
+
+                                if ($orderVoucher->type === 'gift') {
+                                    $orderVoucher->remaining_amount = max(0, ($orderVoucher->remaining_amount ?? 0) - $order->voucher_discount);
+                                    if ($orderVoucher->remaining_amount <= 0) {
+                                        $orderVoucher->remaining_amount = 0;
+                                        $orderVoucher->active = false;
+                                    }
+                                } elseif ($orderVoucher->type === 'promo') {
+                                    $orderVoucher->used_count += 1;
+                                    if ($orderVoucher->max_uses && $orderVoucher->used_count >= $orderVoucher->max_uses) {
+                                        $orderVoucher->active = false;
+                                    }
+                                }
+
+                                $orderVoucher->save();
+                            }
+                        }
+                    }
+
+                    $userId = $order->user_id;
 
                     $userId = $order->user_id;
 
@@ -267,54 +226,53 @@ $order->stripe_charge_id = $chargeId;
                         }
                     }
 
-                    $voucherId = $session->metadata->voucher_id ?? null;
+                    // Single-voucher redemption applied against a product order (not gift-card-shop purchase)
+                    // $voucherId = $session->metadata->voucher_id ?? null;
 
-                    if ($voucherId) {
-                        DB::transaction(function () use ($order, $voucherId) {
-                            $voucher = Voucher::lockForUpdate()->find($voucherId);
-                            if ($voucher && $voucher->active) {
-                                $discountToApply = 0;
+                    // if ($voucherId) {
+                    //     DB::transaction(function () use ($order, $voucherId) {
+                    //         $voucher = Voucher::lockForUpdate()->find($voucherId);
+                    //         if ($voucher && $voucher->active) {
+                    //             $discountToApply = 0;
 
-                                if ($voucher->type === 'gift' && $voucher->remaining_amount > 0) {
-                                    $discountToApply = min($voucher->remaining_amount, $order->total_price);
+                    //             if ($voucher->type === 'gift' && $voucher->remaining_amount > 0) {
+                    //                 $discountToApply = min($voucher->remaining_amount, $order->total_price);
 
-                                    VoucherUsage::create([
-                                        'voucher_id' => $voucher->id,
-                                        'user_id' => $order->user_id,
-                                        'order_id' => $order->id,
-                                        'amount_used' => $discountToApply,
-                                    ]);
+                    //                 VoucherUsage::create([
+                    //                     'voucher_id'   => $voucher->id,
+                    //                     'user_id'      => $order->user_id,
+                    //                     'order_id'     => $order->id,
+                    //                     'amount_used'  => $discountToApply,
+                    //                 ]);
 
-                                    $voucher->remaining_amount -= $discountToApply;
-                                    if ($voucher->remaining_amount <= 0) {
-                                        $voucher->remaining_amount = 0;
-                                        $voucher->active = false;
-                                    }
-                                } elseif ($voucher->type === 'promo') {
-                                    $discountToApply = min($voucher->amount, $order->total_price);
+                    //                 $voucher->remaining_amount -= $discountToApply;
+                    //                 if ($voucher->remaining_amount <= 0) {
+                    //                     $voucher->remaining_amount = 0;
+                    //                     $voucher->active = false;
+                    //                 }
+                    //             } elseif ($voucher->type === 'promo') {
+                    //                 $discountToApply = min($voucher->amount, $order->total_price);
 
-                                    VoucherUsage::create([
-                                        'voucher_id' => $voucher->id,
-                                        'user_id' => $order->user_id,
-                                        'order_id' => $order->id,
-                                        'amount_used' => $discountToApply,
-                                    ]);
+                    //                 VoucherUsage::create([
+                    //                     'voucher_id'   => $voucher->id,
+                    //                     'user_id'      => $order->user_id,
+                    //                     'order_id'     => $order->id,
+                    //                     'amount_used'  => $discountToApply,
+                    //                 ]);
 
-                                    $voucher->used_count += 1;
-                                    if ($voucher->max_uses && $voucher->used_count >= $voucher->max_uses) {
-                                        $voucher->active = false;
-                                    }
-                                }
+                    //                 $voucher->used_count += 1;
+                    //                 if ($voucher->max_uses && $voucher->used_count >= $voucher->max_uses) {
+                    //                     $voucher->active = false;
+                    //                 }
+                    //             }
 
-                                $voucher->save();
-                            }
-                        });
-                    }
+                    //             $voucher->save();
+                    //         }
+                    //     });
+                    // }
                 }
 
-                // Gift card vouchers purchased via gift card shop (from the second implementation)
-                $metadata = (array) $session->metadata;
-
+                // Gift card vouchers purchased via gift card shop — activate them now that payment is confirmed
                 if (!empty($metadata['voucher_ids'])) {
                     $ids = explode(',', $metadata['voucher_ids']);
                     Voucher::whereIn('id', $ids)
@@ -358,9 +316,9 @@ $order->stripe_charge_id = $chargeId;
                     break;
                 }
 
-                $order->refund_id = $refund['id'];
+                $order->refund_id     = $refund['id'];
                 $order->refund_amount = $refund['amount'] / 100;
-                $order->refunded_at = now();
+                $order->refunded_at   = now();
                 $order->refund_reason = $order->refund_reason ?? 'Refund via Stripe webhook';
                 $order->save();
 
@@ -380,9 +338,177 @@ $order->stripe_charge_id = $chargeId;
         return response('', 200);
     }
 
+    public function success(Request $request)
+    {
+        $user = Auth::user();
+        $session_id = $request->get('session_id');
 
+        if (!$session_id) {
+            abort(404);
+        }
 
+        $orders = Order::where('stripe_session_id', $session_id)
+            ->with('vendor', 'orderItems.product')
+            ->get();
 
+        if ($orders->count() === 0) {
+            // Fallback: webhook may not have fired yet, or this is a gift-card-only
+            // checkout whose Order row is created lazily via fulfillGiftCardOrder().
+            Stripe::setApiKey(config('app.stripe_secret_key'));
+
+            try {
+                $stripeSession = StripeSession::retrieve($session_id);
+            } catch (\Exception $e) {
+                Log::error("Could not retrieve Stripe session {$session_id}: " . $e->getMessage());
+                abort(404);
+            }
+
+            if ($stripeSession->payment_status !== 'paid') {
+                abort(404);
+            }
+
+            $order = $this->fulfillGiftCardOrder($stripeSession);
+
+            if (!$order) {
+                abort(404);
+            }
+
+            $orders = Order::where('stripe_session_id', $session_id)
+                ->with('vendor', 'orderItems.product')
+                ->get();
+        }
+
+        foreach ($orders as $order) {
+            if ($order->user_id !== $user->id) {
+                abort(403);
+            }
+        }
+
+        // ── Clear cart items for this checkout, regardless of webhook timing ──
+        $productIds = $orders->flatMap(fn($order) => $order->orderItems->pluck('product_id'))->unique()->values();
+
+        if ($productIds->isNotEmpty()) {
+            CartItem::where('user_id', $user->id)
+                ->whereIn('product_id', $productIds)
+                ->where('saved_for_later', false)
+                ->delete();
+        }
+
+        // ✅ Referral logic (unchanged)
+        if ($user->referred_by && !$user->has_received_referral_bonus) {
+            $totalSpent = $user->orders()
+                ->where(function ($q) {
+                    $q->where('status', 'Paid')
+                        ->orWhere('payment_status', 'paid');
+                })
+                ->sum('total_price');
+
+            if ($totalSpent >= 100) {
+                Voucher::create([
+                    'code' => strtoupper(Str::random(10)),
+                    'type' => 'gift',
+                    'amount' => 30,
+                    'discount_type' => 'fixed',
+                    'remaining_amount' => 30,
+                    'max_uses' => 1,
+                    'used_count' => 0,
+                    'user_id' => $user->referred_by,
+                    'active' => true,
+                    'expires_at' => now()->addDays(30),
+                ]);
+
+                Voucher::create([
+                    'code' => strtoupper(Str::random(10)),
+                    'type' => 'gift',
+                    'amount' => 30,
+                    'discount_type' => 'fixed',
+                    'remaining_amount' => 30,
+                    'max_uses' => 1,
+                    'used_count' => 0,
+                    'user_id' => $user->id,
+                    'active' => true,
+                    'expires_at' => now()->addDays(30),
+                ]);
+
+                $user->update(['has_received_referral_bonus' => true]);
+            }
+        }
+
+        // ✅ Voucher generation for "voucher" products (unchanged)
+        foreach ($orders as $order) {
+            foreach ($order->orderItems as $item) {
+                if ($item->product && $item->product->product_type === 'voucher') {
+                    Voucher::create([
+                        'code' => strtoupper(Str::random(12)),
+                        'type' => 'gift',
+                        'amount' => $item->price,
+                        'discount_type' => 'fixed',
+                        'remaining_amount' => $item->price,
+                        'max_uses' => 1,
+                        'used_count' => 0,
+                        'user_id' => $user->id,
+                        'product_id' => $item->product_id,
+                        'active' => true,
+                        'expires_at' => now()->addDays(365),
+                    ]);
+                }
+            }
+        }
+
+        return Inertia::render('Stripe/Success', [
+            'orders' => OrderViewResource::collection($orders)->collection->toArray()
+        ]);
+    }
+
+    private function fulfillGiftCardOrder(StripeSession $session): ?Order
+    {
+        // Idempotency guard — webhook and success() fallback can both call this
+        $existing = Order::where('stripe_session_id', $session->id)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        $vouchers = Voucher::where('stripe_session_id', $session->id)->get();
+        if ($vouchers->isEmpty()) {
+            Log::warning("No vouchers found for Stripe session {$session->id}");
+            return null;
+        }
+
+        $template = GiftCardTemplate::find($session->metadata->gift_card_template_id);
+        $userId   = $session->metadata->purchased_by;
+        $qty      = (int) ($session->metadata->quantity ?? $vouchers->count());
+        $total    = $vouchers->sum('amount');
+
+        return DB::transaction(function () use ($vouchers, $template, $userId, $qty, $total, $session) {
+            $order = Order::create([
+                'user_id'           => $userId,
+                'vendor_user_id'    => null,
+                'payment_method'    => 'card',
+                'total_price'       => $total,
+                'status'            => OrderStatusEnum::Paid->value,
+                'is_paid'           => true,
+                'payment_intent'    => $session->payment_intent,
+                'stripe_charge_id'  => $session->payment_intent,
+                'stripe_session_id' => $session->id,
+            ]);
+
+            OrderItem::create([
+                'order_id'              => $order->id,
+                'product_id'            => null,
+                'gift_card_template_id' => $template?->id,
+                'quantity'   => $qty,
+                'price'      => $template?->amount ?? ($total / max($qty, 1)),
+            ]);
+
+            // $vouchers->each(fn($v) => $v->update([
+            //     'active'   => true,
+            // ]));
+
+            Log::info("Gift card order #{$order->id} created for Stripe session {$session->id}");
+
+            return $order;
+        });
+    }
 
 
 

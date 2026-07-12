@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Order;
@@ -9,6 +10,8 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Models\Voucher;
+use App\Models\VoucherUsage;
 use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,7 +28,7 @@ class OrderController extends Controller
     ══════════════════════════════════════════ */
     public function index(Request $request)
     {
-        $query = Order::with('user', 'vendorUser.vendor', 'booking')->latest();
+        $query = Order::with('user', 'vendorUser.vendor', 'booking', 'refunds')->latest();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -54,6 +57,7 @@ class OrderController extends Controller
             'vendor'         => $o->vendorUser?->vendor?->store_name ?? '—',
             'vendor_type'    => $o->vendorUser?->vendor?->vendor_type?->value ?? '—',
             'total_price'    => $o->total_price,
+            'voucher_discount' => $o->voucher_discount ?? 0,
             'status'         => $o->status,
             'is_paid'        => $o->is_paid,
             'payment_method' => $o->payment_method ?? null,
@@ -62,12 +66,13 @@ class OrderController extends Controller
             'refund_amount'  => $o->refund_amount,
             'has_booking'    => !is_null($o->booking),
             'created_at'     => $o->created_at?->format('d M Y H:i'),
+            'refunded_types' => $o->refunds()->pluck('type')->values()->all(),
         ]);
 
         return Inertia::render('Admin/Orders/Index', [
             'orders'   => $orders,
             'filters'  => $request->only(['search', 'status', 'is_paid', 'date_from', 'date_to']),
-            'statuses' => ['draft', 'paid', 'shipped', 'delivered', 'cancelled'],
+            'statuses' => ['draft', 'paid', 'delivered', 'cancelled', 'refunded'],
             'flash'    => ['success' => session('success'), 'error' => session('error')],
         ]);
     }
@@ -80,7 +85,13 @@ class OrderController extends Controller
         if (!$order->is_read) {
             $order->update(['is_read' => true]);
         }
-        $order->load('user', 'vendorUser.vendor', 'booking', 'orderItems.product');
+        $order->load(
+            'user',
+            'vendorUser.vendor',
+            'booking',
+            'orderItems.product',
+            'refunds'
+        );
 
         return Inertia::render('Admin/Orders/Show', [
             'order' => [
@@ -97,6 +108,7 @@ class OrderController extends Controller
                 'payment_method' => $order->payment_method ?? null,
                 'manual_paid_at' => $order->manual_paid_at?->format('d M Y H:i'),
                 'payment_intent' => $order->payment_intent,
+                'refunded_types' => $order->refunds->pluck('type')->values()->all(),
                 'refunded_at'    => $order->refunded_at?->format('d M Y H:i'),
                 'refund_amount'  => $order->refund_amount,
                 'created_at'     => $order->created_at?->format('d M Y H:i'),
@@ -114,7 +126,7 @@ class OrderController extends Controller
                     'subtotal' => $i->quantity * $i->price,
                 ]),
             ],
-            'statuses' => ['draft', 'paid', 'shipped', 'delivered', 'cancelled'],
+            'statuses' => ['draft', 'paid', 'delivered', 'cancelled', 'refunded'],
             'flash'    => ['success' => session('success'), 'error' => session('error')],
         ]);
     }
@@ -143,9 +155,9 @@ class OrderController extends Controller
         $statuses = [
             'draft',
             'paid',
-            'shipped',
             'delivered',
             'cancelled',
+            'refunded',
         ];
 
         return Inertia::render('Admin/Orders/Create', [
@@ -271,7 +283,7 @@ class OrderController extends Controller
         $order->load('orderItems.product', 'booking');
         $products = Product::where('status', 'published')->get(['id', 'title', 'price']);
         $users    = User::orderBy('name')->get(['id', 'name', 'email', 'phone']);
- $vendor = \App\Models\Vendor::where('user_id', $order->vendor_user_id)->first();
+        $vendor = \App\Models\Vendor::where('user_id', $order->vendor_user_id)->first();
 
         $payload = [
             'order' => [
@@ -296,14 +308,14 @@ class OrderController extends Controller
                     'price'      => $i->price,
                 ]),
             ],
-             'vendor' => $vendor ? [
-            'business_start_time'   => $vendor->business_start_time,
-            'business_end_time'     => $vendor->business_end_time,
-            'slot_interval_minutes' => $vendor->slot_interval_minutes,
-        ] : null,
+            'vendor' => $vendor ? [
+                'business_start_time'   => $vendor->business_start_time,
+                'business_end_time'     => $vendor->business_end_time,
+                'slot_interval_minutes' => $vendor->slot_interval_minutes,
+            ] : null,
             'products' => $products,
             'users'    => $users,
-            'statuses' => ['draft', 'paid', 'shipped', 'delivered', 'cancelled'],
+            'statuses' => ['draft', 'paid', 'delivered', 'cancelled', 'refunded'],
             'flash'    => ['success' => session('success'), 'error' => session('error')],
         ];
 
@@ -314,113 +326,220 @@ class OrderController extends Controller
     /* ══════════════════════════════════════════
        UPDATE
     ══════════════════════════════════════════ */
-  public function update(Request $request, Order $order)
-{
-    $request->validate([
-        'status'            => 'required|in:draft,paid,shipped,delivered,cancelled',
-        'is_paid'           => 'boolean',
-        'payment_method' => 'nullable|in:cash,eftpos,other,stripe,card',
-        'notes'             => 'nullable|string|max:500',
-        'user_id'           => 'nullable|exists:users,id',   // ← add validation
-        'items'             => 'required|array|min:1',
-        'items.*.product_id' => 'required|exists:products,id',
-        'items.*.quantity'  => 'required|integer|min:1',
-        'items.*.price'     => 'required|numeric|min:0',
-        'booking_date'      => 'nullable|date',
-        'booking_time_slot' => 'nullable|string',
-    ]);
-
-    $total = collect($request->items)->sum(fn($i) => $i['quantity'] * $i['price']);
-
-    $order->update([
-        'status'         => $request->status,
-        'is_paid'        => $request->boolean('is_paid'),
-        'payment_method' => $request->payment_method,
-        'total_price'    => $total,
-        'user_id'        => $request->user_id ?? $order->user_id,  // ← add this line
-        'manual_paid_at' => $request->boolean('is_paid') && !$order->manual_paid_at ? now() : $order->manual_paid_at,
-    ]);
-
-    // Rebuild items
-    $order->orderItems()->delete();
-    foreach ($request->items as $item) {
-        OrderItem::create([
-            'order_id'   => $order->id,
-            'product_id' => $item['product_id'],
-            'quantity'   => $item['quantity'],
-            'price'      => $item['price'],
+    public function update(Request $request, Order $order)
+    {
+        $request->validate([
+            'status'            => 'required|in:draft,paid,shipped,delivered,cancelled',
+            'is_paid'           => 'boolean',
+            'payment_method' => 'nullable|in:cash,eftpos,other,stripe,card',
+            'notes'             => 'nullable|string|max:500',
+            'user_id'           => 'nullable|exists:users,id',   // ← add validation
+            'items'             => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.quantity'  => 'required|integer|min:1',
+            'items.*.price'     => 'required|numeric|min:0',
+            'booking_date'      => 'nullable|date',
+            'booking_time_slot' => 'nullable|string',
         ]);
-    }
 
-    // Update or create booking
-    if ($request->filled('booking_date') && $request->filled('booking_time_slot')) {
-        $order->booking()->updateOrCreate(
-            ['order_id' => $order->id],
-            [
-                'user_id'        => $request->user_id ?? $order->user_id,  // ← also fix here, was using stale $order->user_id
-                'booking_date'   => $request->booking_date,
-                'time_slot'      => $request->booking_time_slot,
-            ]
-        );
-    }
+        $total = collect($request->items)->sum(fn($i) => $i['quantity'] * $i['price']);
 
-    return redirect()->route('admin.orders.show', $order->id)
-        ->with('success', "Order #{$order->id} updated.");
-}
+        $order->update([
+            'status'         => $request->status,
+            'is_paid'        => $request->boolean('is_paid'),
+            'payment_method' => $request->payment_method,
+            'total_price'    => $total,
+            'user_id'        => $request->user_id ?? $order->user_id,  // ← add this line
+            'manual_paid_at' => $request->boolean('is_paid') && !$order->manual_paid_at ? now() : $order->manual_paid_at,
+        ]);
+
+        // Rebuild items
+        $order->orderItems()->delete();
+        foreach ($request->items as $item) {
+            OrderItem::create([
+                'order_id'   => $order->id,
+                'product_id' => $item['product_id'],
+                'quantity'   => $item['quantity'],
+                'price'      => $item['price'],
+            ]);
+        }
+
+        // Update or create booking
+        if ($request->filled('booking_date') && $request->filled('booking_time_slot')) {
+            $order->booking()->updateOrCreate(
+                ['order_id' => $order->id],
+                [
+                    'user_id'        => $request->user_id ?? $order->user_id,  // ← also fix here, was using stale $order->user_id
+                    'booking_date'   => $request->booking_date,
+                    'time_slot'      => $request->booking_time_slot,
+                ]
+            );
+        }
+
+        return redirect()->route('admin.orders.show', $order->id)
+            ->with('success', "Order #{$order->id} updated.");
+    }
 
     /* ══════════════════════════════════════════
        UPDATE STATUS (inline from index)
     ══════════════════════════════════════════ */
     public function updateStatus(Request $request, Order $order)
     {
-        $request->validate(['status' => 'required|in:draft,paid,shipped,delivered,cancelled']);
-        $order->update(['status' => $request->status]);
+        $request->validate(['status' => 'required|in:draft,paid,delivered,cancelled,refunded']);
+
+        $isPaid = match ($request->status) {
+            'paid', 'delivered' => true,
+            'draft', 'cancelled', 'refunded' => false,
+            default => $order->is_paid,
+        };
+
+        $wasUnpaid = !$order->is_paid;
+
+        $order->update([
+            'status' => $request->status,
+            'is_paid' => $isPaid,
+        ]);
+
+        // If this transition is turning a previously-unpaid order into paid,
+        // redeem any voucher attached to it — mirrors the webhook's redemption
+        // logic, so a manual admin override can't be used to bypass voucher spend.
+        if ($wasUnpaid && $isPaid && $order->voucher_id && $order->voucher_discount > 0) {
+            $orderVoucher = Voucher::lockForUpdate()->find($order->voucher_id);
+            if ($orderVoucher) {
+                $alreadyRedeemed = VoucherUsage::where('order_id', $order->id)
+                    ->where('voucher_id', $orderVoucher->id)
+                    ->exists();
+
+                if (!$alreadyRedeemed) {
+                    VoucherUsage::create([
+                        'voucher_id'  => $orderVoucher->id,
+                        'user_id'     => $order->user_id,
+                        'order_id'    => $order->id,
+                        'amount_used' => $order->voucher_discount,
+                    ]);
+
+                    if ($orderVoucher->type === 'gift') {
+                        $orderVoucher->remaining_amount = max(0, ($orderVoucher->remaining_amount ?? 0) - $order->voucher_discount);
+                        if ($orderVoucher->remaining_amount <= 0) {
+                            $orderVoucher->remaining_amount = 0;
+                            $orderVoucher->active = false;
+                        }
+                    } elseif ($orderVoucher->type === 'promo') {
+                        $orderVoucher->used_count += 1;
+                        if ($orderVoucher->max_uses && $orderVoucher->used_count >= $orderVoucher->max_uses) {
+                            $orderVoucher->active = false;
+                        }
+                    }
+
+                    $orderVoucher->save();
+
+                    Log::info("Voucher #{$orderVoucher->id} redeemed manually via admin status change for Order #{$order->id}");
+                }
+            }
+        }
+
         return back()->with('success', 'Status updated.');
     }
 
     /* ══════════════════════════════════════════
-       REFUND
-    ══════════════════════════════════════════ */
-    public function refund(Order $order)
+   REFUND
+   ══════════════════════════════════════════ */
+    public function refund(Request $request, Order $order)
     {
-        Log::info("Refund requested for Order #{$order->id}", [
-            'payment_method' => $order->payment_method,
-            'payment_intent' => $order->payment_intent,
-            'refunded_at'    => $order->refunded_at,
-            'total_price'    => $order->total_price,
-            'status'         => $order->status,
-            'has_booking'    => (bool) $order->booking,
+        $request->validate([
+            'type' => ['required', 'in:full,booking_fee,except_booking_fee'],
         ]);
 
-        if ($order->refunded_at) {
-            return back()->withErrors(['error' => 'Already refunded.']);
+        $type = $request->type;
+
+        Log::info("Refund requested for Order #{$order->id}", [
+            'type' => $type,
+            'payment_method' => $order->payment_method,
+            'payment_intent' => $order->payment_intent,
+            'refunded_at' => $order->refunded_at,
+            'total_price' => $order->total_price,
+            'status' => $order->status,
+            'has_booking' => (bool) $order->booking,
+        ]);
+
+        $refundService = app(RefundService::class);
+
+        // Per-type guard — a refund type can only be processed once per order
+        if ($refundService->hasRefundType($order, $type)) {
+            return back()->withErrors(['error' => 'This refund type has already been processed.']);
         }
 
         try {
-            $refundService = app(RefundService::class);
+            $stripePaymentMethods = ['stripe', 'card', 'link', 'afterpay_clearpay', 'klarna', 'zip'];
+            $isStripe   = in_array($order->payment_method, $stripePaymentMethods);
+            $isManual   = in_array($order->payment_method, ['cash', 'eftpos']);
+            $isGiftCard = $order->payment_method === 'gift_card';
 
-            if ($order->payment_method === 'stripe') {
-                if (empty($order->payment_intent)) {
-                    return back()->withErrors(['error' => 'Stripe order missing payment intent — cannot refund.']);
-                }
-                $amount = $order->booking
-                    ? $refundService->refundBookingAndOrder($order)
-                    : $refundService->refundOrder($order);
-            } elseif (in_array($order->payment_method, ['cash', 'eftpos'])) {
-                $amount = $refundService->refundManual($order);
-            } else {
-                return back()->withErrors(['error' => 'No valid payment method for refund.']);
+            if ($isStripe && empty($order->payment_intent)) {
+                return back()->withErrors(['error' => 'Stripe order missing payment intent — cannot refund.']);
             }
 
-            Log::info("Order #{$order->id} refund returned amount: {$amount}");
+            $amount = match ($type) {
+                'full' => match (true) {
+                    $isStripe   => $order->booking
+                        ? $refundService->refundBookingFeeAndOrder($order)
+                        : $refundService->refundOrder($order),
+                    $isManual   => $refundService->refundManual($order),
+                    $isGiftCard => $order->total_price,
+                    default     => 0,
+                },
 
-            if ($amount <= 0) {
+                'except_booking_fee' => $isStripe
+                    ? $refundService->refundExcludingBookingFee($order)
+                    : 0, // cash/gift orders have no Stripe-held amount to split this way
+
+                'booking_fee' => $isStripe
+                    ? $refundService->refundBookingFeeOnly($order)
+                    : 0,
+            };
+
+            // Gift card full refund doesn't touch Stripe — mark it manually
+            if ($type === 'full' && $isGiftCard) {
+                $order->update([
+                    'refund_amount' => $amount,
+                    'refunded_at' => now(),
+                    'status' => OrderStatusEnum::Refunded->value,
+                    'is_paid' => false,
+                ]);
+            }
+
+            // Vouchers only restored on a genuine full refund
+            $voucherRestored = $type === 'full'
+                ? $refundService->restoreVoucherForOrder($order)
+                : 0;
+
+            Log::info("Order #{$order->id} refund [{$type}] amount: {$amount}, voucher restored: {$voucherRestored}");
+
+            if ($amount <= 0 && $voucherRestored <= 0) {
                 return back()->withErrors(['error' => 'Refund failed — nothing was refunded.']);
             }
 
-            return back()->with('success', "Refunded \${$amount} successfully.");
+            if ($type === 'full') {
+                $refundService->recordRefund($order, 'full', $amount, reason: 'Full refund');
+
+                if (!$refundService->hasRefundType($order, 'except_booking_fee')) {
+                    $refundService->recordRefund($order, 'except_booking_fee', 0, reason: 'Covered by full refund', isMarker: true);
+                }
+                if (!$refundService->hasRefundType($order, 'booking_fee')) {
+                    $refundService->recordRefund($order, 'booking_fee', 0, reason: 'Covered by full refund', isMarker: true);
+                }
+            } else {
+                $refundService->recordRefund($order, $type, $amount);
+            }
+
+            $message = "Refunded \${$amount}";
+            if ($voucherRestored > 0) {
+                $message .= " and restored \${$voucherRestored} to voucher balance";
+            }
+
+            return back()->with('success', $message . ' successfully.');
         } catch (\Exception $e) {
-            Log::error("Refund exception for Order #{$order->id}: " . $e->getMessage());
+            Log::error("Refund exception for Order #{$order->id} [{$type}]: " . $e->getMessage());
             return back()->withErrors(['error' => 'Refund failed: ' . $e->getMessage()]);
         }
     }

@@ -34,32 +34,35 @@ class Handler extends ExceptionHandler
         });
     }
 
-    public function render($request, Throwable $exception)
-    { dd('Exception caught', $request->url(), $exception->getMessage());
-
-        $status = 500;
-        if ($this->isHttpException($exception)) {
-            /** @var HttpExceptionInterface $httpException */
-            $httpException = $exception;
-            $status = $httpException->getStatusCode();
-
-        }
-
-        $messages = [
-            404 => 'Page not found.',
-            403 => 'Access denied.',
-            500 => 'Internal server error.',
-        ];
-
-        $message = $messages[$status] ?? 'An unexpected error occurred.';
-
-        if ($request->wantsJson() || $request->isJson()) {
-            return response()->json(['message' => $message], $status);
-        }
-
-        return Inertia::render('ErrorPage', [
-            'statusCode' => $status,
-            'message' => $message,
-        ])->toResponse($request)->setStatusCode($status);
+   public function render($request, Throwable $exception)
+{
+    // Let Laravel/Inertia handle validation and auth exceptions the normal way —
+    // this is what produces the 422 response your frontend's onError expects.
+    if ($exception instanceof \Illuminate\Validation\ValidationException
+        || $exception instanceof \Illuminate\Auth\AuthenticationException) {
+        return parent::render($request, $exception);
     }
+
+    $status = 500;
+    if ($this->isHttpException($exception)) {
+        $status = $exception->getStatusCode();
+    }
+
+    $messages = [
+        404 => 'Page not found.',
+        403 => 'Access denied.',
+        500 => 'Internal server error.',
+    ];
+
+    $message = $messages[$status] ?? 'An unexpected error occurred.';
+
+    if ($request->wantsJson() || $request->isJson()) {
+        return response()->json(['message' => $message], $status);
+    }
+
+    return Inertia::render('ErrorPage', [
+        'statusCode' => $status,
+        'message' => $message,
+    ])->toResponse($request)->setStatusCode($status);
+}
 }

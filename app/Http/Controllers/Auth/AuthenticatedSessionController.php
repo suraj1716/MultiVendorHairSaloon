@@ -25,40 +25,36 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-  public function store(LoginRequest $request, CartService $cartService): RedirectResponse
+ public function store(LoginRequest $request, CartService $cartService): RedirectResponse|\Illuminate\Http\JsonResponse
 {
     $request->authenticate();
     $request->session()->regenerate();
 
     $user = Auth::user();
-
     $cartService->moveCartItemsToDatabase($user->id);
 
+    $redirectUrl = route('home', absolute: false);
+
     if ($user->hasRole(RolesEnum::Admin)) {
-        return redirect()->route('admin.home');
-    }
-
-    if ($user->hasRole(RolesEnum::Vendor)) {
+        $redirectUrl = route('admin.home');
+    } elseif ($user->hasRole(RolesEnum::Vendor)) {
         $vendor = $user->vendor;
-
         if (!$vendor) {
-            return redirect()->route('home')->with('status', 'No vendor profile found.');
+            $redirectUrl = route('home');
+        } elseif ($vendor->status === VendorStatusEnum::Approved->value) {
+            $redirectUrl = route('home');
+        } else {
+            $redirectUrl = route('home');
         }
-
-        if ($vendor->status === VendorStatusEnum::Approved->value) {
-            return redirect()->route('home');
-        }
-
-        $message = match ($vendor->status) {
-            VendorStatusEnum::Rejected->value => 'Your vendor application was rejected.',
-            VendorStatusEnum::Pending->value  => 'Your vendor account is still pending approval.',
-            default => 'Unknown vendor status.',
-        };
-
-        return redirect()->route('home')->with('status', $message);
+    } else {
+        $redirectUrl = redirect()->intended(route('home', absolute: false))->getTargetUrl();
     }
 
-    return redirect()->intended(route('home', absolute: false));
+    if ($request->wantsJson()) {
+        return response()->json(['redirect' => $redirectUrl]);
+    }
+
+    return redirect($redirectUrl);
 }
 
     public function destroy(Request $request): RedirectResponse

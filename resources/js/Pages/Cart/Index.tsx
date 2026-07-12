@@ -204,75 +204,75 @@ function Index({
 
   // ── Checkout ───────────────────────────────────────────────────────────────
 
-const handleCheckout = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const handleCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  if (loading) return;
+    if (loading) return;
 
-  if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
-    toast.error("Please select a booking date and time before proceeding.");
-    return;
-  }
-
-  setLoading(true);
-
-  const primitiveVendorId = Array.isArray(vendorId) ? vendorId[0] : vendorId;
-
-  // Step 1: Store booking
-  if (!allGiftCards && bookingConfirmed) {
-    try {
-      await axios.post(route("bookings.store"), {
-        booking_date: bookingDate,
-        hasBooking: "1",
-        hasShipping: showShippingForm ? "1" : "0",
-        time_slot: timeSlot,
-        vendor_id: primitiveVendorId,
-        staff_id: selectedStaffId,
-      });
-    } catch (err: any) {
-      console.error("Booking store failed:", err);
-      toast.error("Could not save your booking. Please try again.");
-      setLoading(false);
+    if (!allGiftCards && hasAppointmentItems && (!bookingDate || !timeSlot)) {
+      toast.error("Please select a booking date and time before proceeding.");
       return;
     }
-  }
 
-  // Step 2: Fire checkout
-  router.post(
-    route("cart.checkout"),
-    {
-      shipping_address_id: selectedAddressId ?? null,
-      vendor_id: null,
-      total_price: getDiscountedTotal(),
-      voucher_id: promoDetails?.id ?? null,
-    },
-    {
-      onError: (errors) => {
-        const msg =
-          Object.values(errors)[0] ?? "Checkout failed. Please try again.";
-        toast.error(String(msg));
+    setLoading(true);
+
+    const primitiveVendorId = Array.isArray(vendorId) ? vendorId[0] : vendorId;
+
+    // Step 1: Store booking
+    if (!allGiftCards && bookingConfirmed) {
+      try {
+        await axios.post(route("bookings.store"), {
+          booking_date: bookingDate,
+          hasBooking: "1",
+          hasShipping: showShippingForm ? "1" : "0",
+          time_slot: timeSlot,
+          vendor_id: primitiveVendorId,
+          staff_id: selectedStaffId,
+        });
+      } catch (err: any) {
+        console.error("Booking store failed:", err);
+        toast.error("Could not save your booking. Please try again.");
         setLoading(false);
+        return;
+      }
+    }
+
+    // Step 2: Fire checkout
+    router.post(
+      route("cart.checkout"),
+      {
+        shipping_address_id: selectedAddressId ?? null,
+        vendor_id: null,
+        total_price: getDiscountedTotal(),
+        voucher_id: promoDetails?.id ?? null,
       },
-      onSuccess: () => {
-        // Step 3: Clean up only after success
-        [
-          "bookingDate",
-          "timeSlot",
-          "checkoutStep",
-          "selectedStaffId",
-          "selectedStaffName",
-        ].forEach((k) => localStorage.removeItem(k));
-        setBookingDate("");
-        setTimeSlot("");
-        setBookingConfirmed(false);
-        setSelectedStaffId(null);
-        setSelectedStaffName(null);
-        setStep(1);
-        setLoading(false);
+      {
+        onError: (errors) => {
+          const msg =
+            Object.values(errors)[0] ?? "Checkout failed. Please try again.";
+          toast.error(String(msg));
+          setLoading(false);
+        },
+        onSuccess: () => {
+          // Step 3: Clean up only after success
+          [
+            "bookingDate",
+            "timeSlot",
+            "checkoutStep",
+            "selectedStaffId",
+            "selectedStaffName",
+          ].forEach((k) => localStorage.removeItem(k));
+          setBookingDate("");
+          setTimeSlot("");
+          setBookingConfirmed(false);
+          setSelectedStaffId(null);
+          setSelectedStaffName(null);
+          setStep(1);
+          setLoading(false);
+        },
       },
-    },
-  );
-};
+    );
+  };
 
   // ── Shared button styles ───────────────────────────────────────────────────
   const btnPrimary: React.CSSProperties = {

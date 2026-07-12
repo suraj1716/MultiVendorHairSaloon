@@ -11,6 +11,10 @@ type LoginClientErrors = {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+function getFreshCsrfToken(): string {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
 function getCsrfToken(): string {
   return (
     document
@@ -54,36 +58,49 @@ export default function LoginModal({
     return Object.keys(next).length === 0;
   };
 
-  const submit: FormEventHandler = (e) => {
-    e.preventDefault();
-    setServerError(null);
-    if (!validate()) return;
+const submit: FormEventHandler = async (e) => {
+  e.preventDefault();
+  setServerError(null);
+  if (!validate()) return;
 
-    setProcessing(true);
+  setProcessing(true);
 
-   router.post(
-  route("login"),
-  {
-    email,
-    password,
-    remember,
-  },
-  {
-    preserveState: true,
-    preserveScroll: true,
-    onSuccess: () => {
-      onClose(); // whatever your actual close function/setter is
-    },
-    onError: (errors) => {
-      const msg = errors.email ?? errors.message ?? "Invalid credentials.";
+  try {
+    const response = await fetch(route("login"), {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+          "X-XSRF-TOKEN": getFreshCsrfToken(), // ← was "X-CSRF-TOKEN"
+      },
+      body: JSON.stringify({ email, password, remember }),
+    });
+
+    if (response.status === 422) {
+      const data = await response.json();
+      const msg =
+        data.errors?.email?.[0] ?? data.errors?.password?.[0] ?? "Invalid credentials.";
       setServerError(msg);
       setClientErrors((prev) => ({ ...prev, password: " " }));
       setPassword("");
-    },
-    onFinish: () => setProcessing(false),
-  },
-);
-  };
+      return;
+    }
+
+    if (!response.ok) {
+      setServerError("Something went wrong. Please try again.");
+      return;
+    }
+
+    const data = await response.json();
+    onClose();
+    router.visit(data.redirect ?? "/"); // real, intentional navigation on success
+  } catch {
+    setServerError("Network error. Please try again.");
+  } finally {
+    setProcessing(false);
+  }
+};
 
   if (!isOpen) return null;
 
