@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog";
 import { DayPicker, Matcher } from "react-day-picker";
@@ -34,38 +34,46 @@ export default function BookingWidget({
   const [closedDates, setClosedDates] = useState<string[]>([]);
   const [recurringClosedDays, setRecurringClosedDays] = useState<number[]>([]);
 
-  useEffect(() => {
-    if (!bookingDate) {
+ const prevBookingDateRef = useRef(bookingDate);
+
+useEffect(() => {
+  if (!bookingDate) {
+    setAvailableTimeSlots([]);
+    setTimeSlot("");
+    prevBookingDateRef.current = bookingDate;
+    return;
+  }
+
+  const dateActuallyChanged = prevBookingDateRef.current !== bookingDate;
+
+  async function fetchTimeSlots() {
+    setLoadingSlots(true);
+    setError(null);
+    if (dateActuallyChanged) {
+      setTimeSlot(""); // only clear if the user picked a different date, not on remount
+    }
+    try {
+      const response = await axios.get(`/booking/available-slots`, {
+        params: { date: bookingDate, vendorId },
+      });
+      const { availableSlots, message, closedDates, recurringClosedDays } = response.data;
+      setAvailableTimeSlots(Array.isArray(availableSlots) ? availableSlots : []);
+      if (closedDates && Array.isArray(closedDates)) setClosedDates(closedDates);
+      if (recurringClosedDays && Array.isArray(recurringClosedDays))
+        setRecurringClosedDays(recurringClosedDays.map(Number));
+      if (message && message.toLowerCase().includes("error")) setError(message);
+      else setError(null);
+    } catch {
+      setError("Failed to load time slots.");
       setAvailableTimeSlots([]);
-      setTimeSlot("");
-      return;
+    } finally {
+      setLoadingSlots(false);
     }
+  }
 
-    async function fetchTimeSlots() {
-      setLoadingSlots(true);
-      setError(null);
-      setTimeSlot("");
-      try {
-        const response = await axios.get(`/booking/available-slots`, {
-          params: { date: bookingDate, vendorId },
-        });
-        const { availableSlots, message, closedDates, recurringClosedDays } = response.data;
-        setAvailableTimeSlots(Array.isArray(availableSlots) ? availableSlots : []);
-        if (closedDates && Array.isArray(closedDates)) setClosedDates(closedDates);
-        if (recurringClosedDays && Array.isArray(recurringClosedDays))
-          setRecurringClosedDays(recurringClosedDays.map(Number));
-        if (message && message.toLowerCase().includes("error")) setError(message);
-        else setError(null);
-      } catch {
-        setError("Failed to load time slots.");
-        setAvailableTimeSlots([]);
-      } finally {
-        setLoadingSlots(false);
-      }
-    }
-
-    fetchTimeSlots();
-  }, [bookingDate, vendorId]);
+  fetchTimeSlots();
+  prevBookingDateRef.current = bookingDate;
+}, [bookingDate, vendorId]);
 
   const closedDatesAsDateObjects = closedDates.map((d) => new Date(d));
   const disabledDays: Matcher[] = [
@@ -270,7 +278,7 @@ export default function BookingWidget({
                 selectedSlot={timeSlot}
                 onSelect={(slot) => {
                   setTimeSlot(slot);
-                  onOpenChange(false);
+                  // onOpenChange(false);
                 }}
               />
             ) : (
@@ -337,26 +345,26 @@ export default function BookingWidget({
             >
               Cancel
             </button>
-            <button
-              onClick={() => onOpenChange(false)}
-              disabled={!bookingDate || !timeSlot}
-              style={{
-                flex: 2,
-                background: !bookingDate || !timeSlot ? "var(--color-border)" : "var(--color-primary)",
-                color: !bookingDate || !timeSlot ? "var(--color-text-light)" : "var(--color-text-inverse)",
-                border: "none",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--text-xs)",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                padding: "0.75rem",
-                cursor: !bookingDate || !timeSlot ? "not-allowed" : "pointer",
-                transition: "background var(--transition-base)",
-              }}
-            >
-              Confirm Booking
-            </button>
+           <button
+  onClick={() => onSubmit(bookingDate, timeSlot)}
+  disabled={!bookingDate || !timeSlot}
+  style={{
+    flex: 2,
+    background: !bookingDate || !timeSlot ? "var(--color-border)" : "var(--color-primary)",
+    color: !bookingDate || !timeSlot ? "var(--color-text-light)" : "var(--color-text-inverse)",
+    border: "none",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-xs)",
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    padding: "0.75rem",
+    cursor: !bookingDate || !timeSlot ? "not-allowed" : "pointer",
+    transition: "background var(--transition-base)",
+  }}
+>
+  Confirm Booking
+</button>
           </div>
         </div>
       </DialogContent>

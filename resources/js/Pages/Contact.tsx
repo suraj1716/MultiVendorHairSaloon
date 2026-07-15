@@ -19,8 +19,11 @@ interface DepartmentOption {
 }
 
 const Contact: React.FC = () => {
-  const { departments: rawDepartments = [], contactReasons } =
-    usePage<PageProps>().props;
+  const {
+    departments: rawDepartments = [],
+    contactReasons,
+    vendor = null,
+  } = usePage<PageProps>().props;
 
   const departments: DepartmentOption[] = rawDepartments.map((dept: any) => ({
     id: dept.id,
@@ -40,7 +43,7 @@ const Contact: React.FC = () => {
     { value: "", label: "Select reason" },
     ...((contactReasons as { value: string; label: string }[]) || []),
   ];
-
+  console.log("vendor", vendor);
   const { data, setData, post, processing, errors, reset } = useForm({
     name: "",
     email: "",
@@ -55,6 +58,7 @@ const Contact: React.FC = () => {
     preferredContact: "email",
   });
 
+  // vendor[0] now available for the contact info card below
   const isGettingQuote = data.reason === "getting_quote";
 
   const selectedDepartment = departments.find(
@@ -69,14 +73,14 @@ const Contact: React.FC = () => {
     setData("file", file);
   };
 
- const handleSubmit = (e: React.FormEvent) => {
-  e.preventDefault();
-  post("/contact", {
-    forceFormData: true,
-    preserveState: true,
-    onSuccess: () => reset(),
-  });
-};
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    post("/contact", {
+      forceFormData: true,
+      preserveState: true,
+      onSuccess: () => reset(),
+    });
+  };
   return (
     <AuthenticatedLayout>
       <style>{`
@@ -478,12 +482,15 @@ const Contact: React.FC = () => {
       `}</style>
 
       <div className="contact-page">
-         <PageHero
-        eyebrow="We'd love to hear from you"
-        title={<>Get in <em>Touch</em></>}
-        subtitle="Whether you're after a quote, have a question, or simply want to say hello — our team is ready to help."
-        breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Contact" }]}
-      />
+        <PageHero
+          eyebrow="We'd love to hear from you"
+          title={<>Get in Touch</>}
+          subtitle="Whether you're after a quote, have a question, or simply want to say hello — our team is ready to help."
+          breadcrumbs={[
+            { label: "Home", href: route("home") },
+            { label: "Contact" },
+          ]}
+        />
 
         {/* Body */}
         <div className="contact-body">
@@ -701,27 +708,40 @@ const Contact: React.FC = () => {
                       </div>
                       <div className="form-group" style={{ marginBottom: 0 }}>
                         <label>Upload File (optional)</label>
-                       <div className="file-upload-area" onClick={() => document.getElementById('file-input')?.click()}>
-  <input
-    id="file-input"
-    type="file"
-    onChange={handleFileChange}
-    accept="image/*,application/pdf"
-    style={{ display: 'none' }}
-  />
-  <p className="file-upload-text">
-    {data.file ? (
-      <span style={{ color: "var(--color-primary)" }}>{(data.file as File).name}</span>
-    ) : (
-      <>
-        <span>Browse</span> or drag & drop<br />
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--color-text-light)" }}>
-          PDF, JPG, PNG
-        </span>
-      </>
-    )}
-  </p>
-</div>
+                        <div
+                          className="file-upload-area"
+                          onClick={() =>
+                            document.getElementById("file-input")?.click()
+                          }
+                        >
+                          <input
+                            id="file-input"
+                            type="file"
+                            onChange={handleFileChange}
+                            accept="image/*,application/pdf"
+                            style={{ display: "none" }}
+                          />
+                          <p className="file-upload-text">
+                            {data.file ? (
+                              <span style={{ color: "var(--color-primary)" }}>
+                                {(data.file as File).name}
+                              </span>
+                            ) : (
+                              <>
+                                <span>Browse</span> or drag & drop
+                                <br />
+                                <span
+                                  style={{
+                                    fontSize: "var(--text-xs)",
+                                    color: "var(--color-text-light)",
+                                  }}
+                                >
+                                  PDF, JPG, PNG
+                                </span>
+                              </>
+                            )}
+                          </p>
+                        </div>
                         {errors.file && (
                           <p className="field-error">{errors.file}</p>
                         )}
@@ -770,19 +790,23 @@ const Contact: React.FC = () => {
                     {
                       icon: "📍",
                       label: "Address",
-                      content: "123 Business Street, Melbourne VIC 3000",
+                      content: vendor?.data?.store_address || "Address not set",
                     },
                     {
                       icon: "📞",
                       label: "Phone",
-                      content: "+61 2 3456 7890",
-                      href: "tel:+61234567890",
+                      content: vendor?.data?.phone || "Phone not set",
+                      href: vendor?.data?.phone
+                        ? `tel:${vendor?.data?.phone.replace(/\s+/g, "")}`
+                        : undefined,
                     },
                     {
                       icon: "✉️",
                       label: "Email",
-                      content: "contact@yourcompany.com",
-                      href: "mailto:contact@yourcompany.com",
+                      content: vendor?.data?.email || "Email not set",
+                      href: vendor?.data?.email
+                        ? `mailto:${vendor?.data?.email}`
+                        : undefined,
                     },
                   ].map(({ icon, label, content, href }) => (
                     <div className="info-row" key={label}>
@@ -799,11 +823,23 @@ const Contact: React.FC = () => {
                   ))}
 
                   <div className="social-row">
-                    {["Instagram", "Facebook", "LinkedIn"].map((s) => (
-                      <a key={s} href="#" className="social-btn">
-                        {s}
-                      </a>
-                    ))}
+                    {[
+                      { label: "Facebook", url: vendor?.data?.facebook_url },
+                      { label: "Instagram", url: vendor?.data?.instagram_url },
+                      { label: "TikTok", url: vendor?.data?.tiktok_url },
+                    ]
+                      .filter((s) => s.url)
+                      .map((s) => (
+                        <a
+                          key={s.label}
+                          href={s.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="social-btn"
+                        >
+                          {s.label}
+                        </a>
+                      ))}
                   </div>
                 </div>
               </div>

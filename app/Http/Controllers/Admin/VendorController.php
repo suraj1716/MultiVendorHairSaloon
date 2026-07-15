@@ -9,6 +9,7 @@ use App\Enums\VendorType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -53,6 +54,12 @@ class VendorController extends Controller
 
     public function store(Request $request)
     {
+
+        $request->merge([
+            'facebook_url'  => $request->facebook_url ?: null,
+            'instagram_url' => $request->instagram_url ?: null,
+            'tiktok_url'    => $request->tiktok_url ?: null,
+        ]);
         $data = $request->validate([
             'name'                   => 'nullable|string|max:255',
             'email'                  => 'required|email',
@@ -69,6 +76,9 @@ class VendorController extends Controller
             'total_seats'            => 'required|integer|min:1',
             'recurring_closed_days'  => 'nullable|array',
             'closed_dates'           => 'nullable|array',
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'tiktok_url' => 'nullable|url|max:255',
         ]);
 
         DB::transaction(function () use ($data) {
@@ -106,6 +116,9 @@ class VendorController extends Controller
                 'total_seats'            => $data['total_seats'],
                 'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
                 'closed_dates'          => $data['closed_dates'] ?? [],
+                'facebook_url'  => $data['facebook_url'] ?? null,
+                'instagram_url' => $data['instagram_url'] ?? null,
+                'tiktok_url'   => $data['tiktok_url'] ?? null,
             ]);
 
             if (! $user->hasRole(\App\Enums\RolesEnum::Vendor->value)) {
@@ -146,6 +159,9 @@ class VendorController extends Controller
                 'total_seats'             => $vendor->total_seats,
                 'recurring_closed_days'  => is_array($vendor->recurring_closed_days) ? $vendor->recurring_closed_days : [],
                 'closed_dates'           => is_array($vendor->closed_dates) ? $vendor->closed_dates : [],
+                'facebook_url' => $vendor->facebook_url,
+                'instagram_url' => $vendor->instagram_url,
+                'tiktok_url' => $vendor->tiktok_url,
             ],
             'types'    => collect(VendorType::cases())->map->value,
             'statuses' => ['active', 'approved', 'rejected'],
@@ -154,6 +170,11 @@ class VendorController extends Controller
 
     public function update(Request $request, Vendor $vendor)
     {
+        $request->merge([
+            'facebook_url'  => $request->facebook_url ?: null,
+            'instagram_url' => $request->instagram_url ?: null,
+            'tiktok_url'    => $request->tiktok_url ?: null,
+        ]);
         $data = $request->validate([
             'name'                  => 'required|string|max:255',
             'email'                 => ['required', 'email', Rule::unique('users', 'email')->ignore($vendor->user_id)],
@@ -169,8 +190,11 @@ class VendorController extends Controller
             'total_seats'            => 'nullable|integer|min:1',
             'recurring_closed_days' => 'nullable|array',
             'closed_dates'          => 'nullable|array',
+            'facebook_url' => 'nullable|url|max:255',
+            'instagram_url' => 'nullable|url|max:255',
+            'tiktok_url' => 'nullable|url|max:255',
         ]);
-
+        Log::info("data:", $data);
         DB::transaction(function () use ($data, $vendor) {
             $vendor->user?->update([
                 'name'  => $data['name'],
@@ -180,6 +204,8 @@ class VendorController extends Controller
 
             $vendor->update([
                 'store_name'            => $data['store_name'],
+
+
                 'store_address'         => $data['store_address'] ?? null,
                 'vendor_type'           => $data['vendor_type'],
                 'booking_fee'           => $data['booking_fee'] ?? 0,
@@ -190,6 +216,9 @@ class VendorController extends Controller
                 'total_seats'            => $data['total_seats'] ?? 1,
                 'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
                 'closed_dates'          => $data['closed_dates'] ?? [],
+                'facebook_url' => $data['facebook_url'] ?? null,
+                'instagram_url' => $data['instagram_url'] ?? null,
+                'tiktok_url' => $data['tiktok_url'] ?? null,
             ]);
         });
 

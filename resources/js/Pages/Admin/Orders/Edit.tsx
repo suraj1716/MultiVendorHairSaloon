@@ -25,6 +25,10 @@ interface LineItem {
   quantity: number;
   price: number;
 }
+interface StaffOption {
+  id: number;
+  name: string;
+}
 
 interface OrderProp {
   payment_intent: any;
@@ -36,7 +40,13 @@ interface OrderProp {
   payment_method: string;
   total_price: number;
   notes: string;
-  booking: { id: number; booking_date: string; time_slot: string } | null;
+  booking: {
+    id: number;
+    booking_date: string;
+    time_slot: string;
+    assigned_staff_id: number | null;
+    assigned_staff: string | null;
+  } | null;
   items: LineItem[];
 }
 
@@ -45,6 +55,7 @@ interface Props {
   products: Product[];
   users: User[];
   statuses: string[];
+  staffOptions: StaffOption[];
   flash: { success?: string; error?: string };
   errors: Record<string, string>;
   vendor: { business_start_time: string; business_end_time: string; slot_interval_minutes: number } | null;
@@ -222,6 +233,7 @@ export default function OrderEdit({
   products,
   users,
   statuses,
+  staffOptions,
   flash,
  errors = {},
  vendor
@@ -292,6 +304,9 @@ const handlePhoneLookup = async () => {
   const [bookingSlot, setBookingSlot] = useState(
     order.booking?.time_slot ?? "09:00 - 09:30",
   );
+  const [assignedStaffId, setAssignedStaffId] = useState<string>(
+    order.booking?.assigned_staff_id ? String(order.booking.assigned_staff_id) : "",
+  );
   const timeSlots = vendor
     ? generateTimeSlots(vendor.business_start_time, vendor.business_end_time, vendor.slot_interval_minutes)
     : generateTimeSlots("09:00", "20:00", 30); // fallback
@@ -349,6 +364,7 @@ const handlePhoneLookup = async () => {
     if (hasBooking) {
       payload.booking_date = bookingDate;
       payload.booking_time_slot = bookingSlot;
+      payload.assigned_staff_id = assignedStaffId ? Number(assignedStaffId) : null;
     }
     if (lookupState === "new" && newName) {
       payload.new_customer = { name: newName, email: newEmail, phone };
@@ -883,45 +899,62 @@ if (!order) {
 
 
 {order.booking
-  ? `Currently: ${order.booking.booking_date.split('T')[0]} · ${order.booking.time_slot}`
+  ? `Currently: ${order.booking.booking_date.split('T')[0]} · ${order.booking.time_slot}${order.booking.assigned_staff ? ` · ${order.booking.assigned_staff}` : ""}`
   : "No booking linked"}
                   </div>
                 </div>
                 <Toggle checked={hasBooking} onChange={setHasBooking} />
               </div>
               {hasBooking && (
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 12,
-                  }}
-                >
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <label style={labelStyle}>Date</label>
-                    <input
-                      type="date"
-                      value={bookingDate}
-                      min={new Date().toISOString().split("T")[0]}
-                      onChange={(e) => setBookingDate(e.target.value)}
-                      style={inputStyle}
-                    />
+                <>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr",
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <label style={labelStyle}>Date</label>
+                      <input
+                        type="date"
+                        value={bookingDate}
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => setBookingDate(e.target.value)}
+                        style={inputStyle}
+                      />
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <label style={labelStyle}>Time Slot</label>
+                      <select
+                        value={bookingSlot}
+                        onChange={(e) => setBookingSlot(e.target.value)}
+                        style={inputStyle}
+                      >
+                        {timeSlots.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column" }}>
-                    <label style={labelStyle}>Time Slot</label>
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column" }}>
+                    <label style={labelStyle}>Assigned Staff</label>
                     <select
-                      value={bookingSlot}
-                      onChange={(e) => setBookingSlot(e.target.value)}
+                      value={assignedStaffId}
+                      onChange={(e) => setAssignedStaffId(e.target.value)}
                       style={inputStyle}
                     >
-                      {timeSlots.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
+                      <option value="">— Unassigned —</option>
+                      {staffOptions.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                </div>
+                </>
               )}
             </Card>
 

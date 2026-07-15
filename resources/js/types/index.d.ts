@@ -1,22 +1,26 @@
 import { JSX } from "react/jsx-runtime";
 import { Config } from "ziggy-js";
 
-
 export interface Vendor {
-  user_id: number
-id: number;
-   status: string;
-    booking_fee: string,
+  user_id: number;
+  id: number;
+  status: string;
+  booking_fee: string;
   status_label: string;
   store_name: string;
   store_address: string;
+  phone?: string;
   vendor_type: string;
+  email:string;
   cover_image: string;
   business_start_time: string;
   business_end_time: string;
   slot_interval_minutes: number;
   recurring_closed_days: string[]; // example: ['sunday', 'monday']
   closed_dates: string[]; // example: ['2025-06-01', '2025-06-05']
+    facebook_url: string;
+  instagram_url: string;
+  tiktok_url: string;
 }
 
 export interface User {
@@ -27,7 +31,7 @@ export interface User {
   email_verified_at?: string;
   stripe_account_active: boolean;
   vendor: Vendor;
-  avatar:string
+  avatar: string;
 }
 
 export type VariationTypeOption = {
@@ -63,7 +67,7 @@ export type CategoryGroup = {
 export type Product = {
   id: number;
   title: string;
-  highlight:string;
+  highlight: string;
   slug: string;
   status: string;
   price: number;
@@ -81,7 +85,7 @@ export type Product = {
     name: string;
     created_at: string;
     products_count?: number;
-    imgage?:string;
+    imgage?: string;
   };
 
   user: {
@@ -94,7 +98,7 @@ export type Product = {
     id: number;
     name: string;
     slug: string;
-    image:string;
+    image: string;
   };
 
   average_rating?: number;
@@ -109,7 +113,7 @@ export type Product = {
     comment_title: string | null;
     createdAt: string;
     userId: number;
-     userCreatedAt: string;  // user registration date
+    userCreatedAt: string; // user registration date
   }[];
 
   variationTypes: VariationType[];
@@ -121,17 +125,16 @@ export type Product = {
   }[];
 };
 
-
-export type ProductGroup={
+export type ProductGroup = {
   id: number;
-  name:string;
+  name: string;
   images: string[];
   slug: string;
   active: boolean;
   products: {
     data: Product[];
   };
-}
+};
 
 export type Image = {
   id: number;
@@ -142,7 +145,7 @@ export type Image = {
 
 export interface Booking {
   staff_id: null;
-  staff: { id: number; name: string } | null
+  staff: { id: number; name: string } | null;
   id: number | string;
   booking_date: string;
   time_slot: string;
@@ -169,7 +172,7 @@ export type CartItem = {
 
 export type GroupedCartItems = {
   user: User;
-   vendor: Vendor;
+  vendor: Vendor;
   items: CartItem[];
   totalPrice: number;
   totalQuantity: number;
@@ -206,7 +209,7 @@ export type PaginationProps<T> = {
 };
 
 export type PageProps<
-  T extends Record<string, unknown> = Record<string, unknown>
+  T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
   appName: string;
   csrf_token: string;
@@ -224,17 +227,18 @@ export type PageProps<
   miniCartItems: CartItem[];
   departments: Department[];
   dpts: Department[];
-faqs: Faq[];
+  vendor: { data: Vendor } | null;
+  faqs: Faq[];
   flash: {
     success?: string;
   };
 };
 
-export type Faq ={
+export type Faq = {
   id: number;
   question: string;
   answer: string;
-}
+};
 export type VariationSummary = {
   type: string;
   option: string;
@@ -266,9 +270,6 @@ export type OrderItem = {
   designer?: boolean; // <-- Add this line
 };
 
-
-
-
 export type Order = {
   payment_method: import("react/jsx-runtime").JSX.Element;
   booking_date: boolean;
@@ -280,7 +281,7 @@ export type Order = {
   status: string;
   created_at: string;
   vendor: Vendor;
- booking?: Booking
+  booking?: Booking;
   orderItems: OrderItem[];
 };
 
@@ -294,17 +295,16 @@ export type Vendor = {
 export type Category = {
   id: number;
   name: string;
-   products: Product[];
+  products: Product[];
   products_count: number;
-    image?:string;
-    department: Department; // <---- important
-
+  image?: string;
+  department: Department; // <---- important
 };
 
 export type Department = {
   id: number;
   name: string;
-  image:string;
+  image: string;
   slug: string;
   meta_title: string;
   meta_description: string;
@@ -339,6 +339,6 @@ export type ProductListItem = {
     id: number;
     name: string;
     slug: string;
-    image:string
+    image: string;
   };
 };

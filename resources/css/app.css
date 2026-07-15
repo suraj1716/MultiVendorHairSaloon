@@ -14,21 +14,22 @@
    THEME TOKENS — swap these per business
    ============================================================ */
 
-   :root {
-  /* --- Brand Colors --- */
-  --color-primary:        #2D5016;   /* deep forest green */
-  --color-primary-light:  #4A7C2F;
-  --color-primary-dark:   #1A3009;
-  --color-accent:         #C9A96E;   /* warm gold */
-  --color-accent-light:   #E2C99A;
-  --color-accent-dark:    #A07840;
+:root {
+  /* --- Brand Colors (jewel-tone) --- */
+ --color-primary:        #28a246;   /* deep forest green */
+
+  --color-primary-light:  #0ca239;
+  --color-primary-dark:   #0b9632;
+  --color-accent:         #facc15;   /* warm gold */
+  --color-accent-light:   #facc15;
+  --color-accent-dark:    #e5c522;
 
   /* --- Neutrals --- */
   --color-bg:             #FDFAF6;   /* warm off-white */
   --color-bg-alt:         #F4EFE8;   /* slightly deeper warm */
   --color-bg-dark:        #1C1A17;   /* rich near-black */
   --color-surface:        #FFFFFF;
-  --color-surface-warm:   #FAF6F0;
+  --color-surface-warm:   #ffffff;
 
   /* --- Text --- */
   --color-text:           #1C1A17;
@@ -48,6 +49,8 @@
   --color-warning:        #C9A200;
   --color-error:          #C0392B;
   --color-info:           #2471A3;
+
+
 
   /* --- Typography --- */
   --font-display:         'Cormorant Garamond', Georgia, serif;

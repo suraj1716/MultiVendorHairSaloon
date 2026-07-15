@@ -405,19 +405,64 @@ class CartController extends Controller
                             'quantity' => 1,
                         ];
                     }
-                }
+               }
             }
 
+            // ── Redeem the voucher synchronously, once, for the combined discount ──
+            if ($voucher && $discountToApply > 0) {
+                foreach ($orders as $idx => $order) {
+                    $orderDiscountUsed = $order->voucher_discount ?? 0;
+                    if ($orderDiscountUsed > 0) {
+                        VoucherUsage::create([
+                            'voucher_id' => $voucher->id,
+                            'user_id' => $user->id,
+                            'order_id' => $order->id,
+                            'amount_used' => $orderDiscountUsed,
+                        ]);
+                    }
+                }
+
+                if ($voucher->type === 'gift') {
+                    $voucher->remaining_amount = max(0, ($voucher->remaining_amount ?? 0) - $discountToApply);
+                    if ($voucher->remaining_amount <= 0) {
+                        $voucher->remaining_amount = 0;
+                        $voucher->active = false;
+                    }
+                } elseif ($voucher->type === 'promo') {
+                    $voucher->used_count += 1;
+                    if ($voucher->max_uses && $voucher->used_count >= $voucher->max_uses) {
+                        $voucher->active = false;
+                    }
+                }
+
+                $voucher->save();
+            }
 
             $combinedTotalDue = round($combinedTotal - $discountToApply, 2);
 
             // ── Fully covered by voucher: skip Stripe entirely ──
+          // ── Fully covered by voucher: skip Stripe entirely ──
             if ($combinedTotalDue <= 0) {
                 foreach ($orders as $order) {
                     $order->status = OrderStatusEnum::Paid->value;
                     $order->payment_method = 'gift_card';
-                     $order->is_paid = true;
+                    $order->is_paid = true;
                     $order->save();
+                }
+
+                // Clear the cart items that were just checked out — the Stripe
+                // path does this via webhook/success(), but this branch never
+                // touches Stripe at all, so it must clear the cart itself.
+                $orderedProductIds = collect($orders)
+                    ->flatMap(fn($o) => $o->orderItems()->pluck('product_id'))
+                    ->unique()
+                    ->values();
+
+                if ($orderedProductIds->isNotEmpty()) {
+                    CartItem::where('user_id', $user->id)
+                        ->whereIn('product_id', $orderedProductIds)
+                        ->where('saved_for_later', false)
+                        ->delete();
                 }
 
                 DB::commit();

@@ -81,7 +81,15 @@ function Index({
     parseInt(localStorage.getItem("checkoutStep") || "1", 10),
   );
   const steps = ["Cart", "Booking", "Review"];
-
+useEffect(() => {
+    localStorage.removeItem("bookingDate");
+    localStorage.removeItem("timeSlot");
+    localStorage.removeItem("checkoutStep");
+    localStorage.removeItem("selectedStaffId");
+    localStorage.removeItem("selectedStaffName");
+    // deliberately run once on mount only, wiping anything left from a prior visit
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // ── Loading ────────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(false);
 
@@ -95,16 +103,7 @@ function Index({
     if (flash.checkout) toast.error(flash.checkout);
   }, [flash]);
 
-  // ── Persist step & booking to localStorage ─────────────────────────────────
-  useEffect(
-    () => localStorage.setItem("checkoutStep", step.toString()),
-    [step],
-  );
-  useEffect(
-    () => localStorage.setItem("bookingDate", bookingDate),
-    [bookingDate],
-  );
-  useEffect(() => localStorage.setItem("timeSlot", timeSlot), [timeSlot]);
+
 
   // ── Scroll step into view ──────────────────────────────────────────────────
   useEffect(() => {
@@ -117,16 +116,16 @@ function Index({
       });
   }, [step]);
 
-  // ── Re-hydrate booking when returning to step 2 ────────────────────────────
-  useEffect(() => {
-    if (step === 2) {
-      const d = localStorage.getItem("bookingDate") || "";
-      const t = localStorage.getItem("timeSlot") || "";
-      setBookingDate(d);
-      setTimeSlot(t);
-      setBookingConfirmed(!!(d && t));
-    }
-  }, [step]);
+// const prevCartKeysRef = useRef<string>(JSON.stringify(Object.keys(cartItems).sort()));
+
+// useEffect(() => {
+//   const currentKeys = JSON.stringify(Object.keys(cartItems).sort());
+//   if (prevCartKeysRef.current !== currentKeys && hasAppointmentItems && step === 3) {
+//     setStep(2);
+//     toast.info("Cart updated — please review your booking.");
+//   }
+//   prevCartKeysRef.current = currentKeys;
+// }, [cartItems]);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const hasAppointmentItems = Object.values(cartItems).some((group: any) => {
@@ -191,6 +190,11 @@ function Index({
       toast.error("Failed to apply promo");
     }
   };
+
+
+
+
+
 
   // ── Core fix: wrap Inertia router.post in a real Promise ───────────────────
   const postAsync = (url: string, data: Record<string, any>): Promise<void> =>
@@ -589,7 +593,7 @@ function Index({
                               <button
                                 style={btnAccent}
                                 onClick={() => {
-                                  setBookingConfirmed(true);
+                                  // setBookingConfirmed(true);
                                   setDialogOpen(true);
                                 }}
                               >

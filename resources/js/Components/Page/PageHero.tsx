@@ -37,7 +37,7 @@ export default function PageHero({
       }
     >
       <div className="page-hero-inner">
-        {breadcrumbs && breadcrumbs.length > 0 && (
+        {/* {breadcrumbs && breadcrumbs.length > 0 && (
           <nav className="page-hero-breadcrumbs" aria-label="Breadcrumb">
             {breadcrumbs.map((b, i) => (
               <span key={i} className="page-hero-breadcrumb-item">
@@ -54,7 +54,7 @@ export default function PageHero({
               </span>
             ))}
           </nav>
-        )}
+        )} */}
 
         {eyebrow && <p className="page-hero-eyebrow">{eyebrow}</p>}
 

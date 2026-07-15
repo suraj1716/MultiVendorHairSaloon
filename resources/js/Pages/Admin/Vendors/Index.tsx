@@ -80,6 +80,9 @@ type CreateForm = {
   slot_interval_minutes: string;
   recurring_closed_days: number[];
   closed_dates: string[];
+  facebook_url: string;
+  instagram_url: string;
+  tiktok_url: string;
 };
 
 function CreateModal({
@@ -91,22 +94,25 @@ function CreateModal({
   statuses: string[];
   types: string[];
 }) {
-  const [form, setForm] = useState<CreateForm>({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    store_name: "",
-    store_address: "",
-    vendor_type: types[0] ?? "ecommerce",
-    booking_fee: "",
-    status: statuses[0] ?? "active",
-    business_start_time: "",
-    business_end_time: "",
-    slot_interval_minutes: "",
-    recurring_closed_days: [],
-    closed_dates: [],
-  });
+ const [form, setForm] = useState<CreateForm>({
+  name: "",
+  email: "",
+  phone: "",
+  password: "",
+  store_name: "",
+  store_address: "",
+  vendor_type: types[0] ?? "ecommerce",
+  booking_fee: "",
+  status: statuses[0] ?? "active",
+  business_start_time: "",
+  business_end_time: "",
+  slot_interval_minutes: "",
+  recurring_closed_days: [],
+  closed_dates: [],
+  facebook_url: "",
+  instagram_url: "",
+  tiktok_url: "",
+});
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -444,7 +450,38 @@ function CreateModal({
               )}
             </div>
           </div>
-
+{/* ── Social Links ─────────────────────────────── */}
+<div style={sectionTitleStyle}>Social Links</div>
+<div>
+  <label style={labelStyle}>Facebook</label>
+  <input
+    type="url"
+    value={form.facebook_url}
+    onChange={(e) => setForm({ ...form, facebook_url: e.target.value })}
+    placeholder="https://facebook.com/yourpage"
+    style={inputStyle}
+  />
+</div>
+<div>
+  <label style={labelStyle}>Instagram</label>
+  <input
+    type="url"
+    value={form.instagram_url}
+    onChange={(e) => setForm({ ...form, instagram_url: e.target.value })}
+    placeholder="https://instagram.com/yourhandle"
+    style={inputStyle}
+  />
+</div>
+<div>
+  <label style={labelStyle}>TikTok</label>
+  <input
+    type="url"
+    value={form.tiktok_url}
+    onChange={(e) => setForm({ ...form, tiktok_url: e.target.value })}
+    placeholder="https://tiktok.com/@yourhandle"
+    style={inputStyle}
+  />
+</div>
           <div
             style={{
               display: "flex",

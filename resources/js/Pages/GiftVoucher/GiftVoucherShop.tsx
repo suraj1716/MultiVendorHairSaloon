@@ -54,7 +54,7 @@ export default function GiftVoucherShop({ giftCards }: GiftVoucherShopProps) {
  {/* Hero */}
           <PageHero
                eyebrow="We'd love to hear from you"
-               title={<>Gift <em>Vouchers</em></>}
+               title={<>Gift Vouchers</>}
                subtitle="Send Gift Vouchers To Your Loved Ones."
                breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gift Vouchers" }]}
              />
@@ -194,7 +194,7 @@ export default function GiftVoucherShop({ giftCards }: GiftVoucherShopProps) {
 
         {/* Actions */}
         <div style={{ display: "flex", gap: "var(--space-md)" }}>
-          <button
+          {/* <button
             onClick={handleAddToCart}
             disabled={loading || !selectedId}
             style={{
@@ -214,7 +214,7 @@ export default function GiftVoucherShop({ giftCards }: GiftVoucherShopProps) {
             }}
           >
             Add to Cart
-          </button>
+          </button> */}
 
           <button
             onClick={handleBuyNow}

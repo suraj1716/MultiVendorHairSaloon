@@ -90,7 +90,8 @@ class OrderController extends Controller
             'vendorUser.vendor',
             'booking',
             'orderItems.product',
-            'refunds'
+            'refunds',
+            'staff'
         );
 
         return Inertia::render('Admin/Orders/Show', [
@@ -116,6 +117,11 @@ class OrderController extends Controller
                     'id'           => $order->booking->id,
                     'booking_date' => $order->booking->booking_date,
                     'time_slot'    => $order->booking->time_slot,
+                ] : null,
+                'staff_id' => $order->staff_id,
+                'staff' => $order->staff ? [
+                    'id'   => $order->staff->id,
+                    'name' => $order->staff->name,
                 ] : null,
                 'items' => $order->orderItems->map(fn($i) => [
                     'id'       => $i->id,
@@ -275,15 +281,16 @@ class OrderController extends Controller
     }
 
     /* ══════════════════════════════════════════
-       EDIT
-    ══════════════════════════════════════════ */
+   EDIT
+══════════════════════════════════════════ */
     public function edit(Order $order)
     {
 
-        $order->load('orderItems.product', 'booking');
+        $order->load('orderItems.product', 'booking.staff');
         $products = Product::where('status', 'published')->get(['id', 'title', 'price']);
         $users    = User::orderBy('name')->get(['id', 'name', 'email', 'phone']);
         $vendor = \App\Models\Vendor::where('user_id', $order->vendor_user_id)->first();
+        $staffOptions = \App\Models\Staff::select('id', 'name')->orderBy('name')->get();
 
         $payload = [
             'order' => [
@@ -297,9 +304,11 @@ class OrderController extends Controller
                 'total_price'    => $order->total_price,
                 'notes'          => $order->notes ?? '',
                 'booking' => $order->booking ? [
-                    'id'           => $order->booking->id,
-                    'booking_date' => $order->booking->booking_date,
-                    'time_slot'    => $order->booking->time_slot,
+                    'id'                => $order->booking->id,
+                    'booking_date'      => $order->booking->booking_date,
+                    'time_slot'         => $order->booking->time_slot,
+                    'assigned_staff_id' => $order->booking->staff_id,
+                    'assigned_staff'    => $order->booking->staff?->name,
                 ] : null,
                 'items' => $order->orderItems->map(fn($i) => [
                     'product_id' => $i->product_id,
@@ -313,10 +322,11 @@ class OrderController extends Controller
                 'business_end_time'     => $vendor->business_end_time,
                 'slot_interval_minutes' => $vendor->slot_interval_minutes,
             ] : null,
-            'products' => $products,
-            'users'    => $users,
-            'statuses' => ['draft', 'paid', 'delivered', 'cancelled', 'refunded'],
-            'flash'    => ['success' => session('success'), 'error' => session('error')],
+            'products'     => $products,
+            'users'        => $users,
+            'staffOptions' => $staffOptions,
+            'statuses'     => ['draft', 'paid', 'delivered', 'cancelled', 'refunded'],
+            'flash'        => ['success' => session('success'), 'error' => session('error')],
         ];
 
 
@@ -324,8 +334,8 @@ class OrderController extends Controller
     }
 
     /* ══════════════════════════════════════════
-       UPDATE
-    ══════════════════════════════════════════ */
+   UPDATE
+══════════════════════════════════════════ */
     public function update(Request $request, Order $order)
     {
         $request->validate([
@@ -333,13 +343,14 @@ class OrderController extends Controller
             'is_paid'           => 'boolean',
             'payment_method' => 'nullable|in:cash,eftpos,other,stripe,card',
             'notes'             => 'nullable|string|max:500',
-            'user_id'           => 'nullable|exists:users,id',   // ← add validation
+            'user_id'           => 'nullable|exists:users,id',
             'items'             => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity'  => 'required|integer|min:1',
             'items.*.price'     => 'required|numeric|min:0',
             'booking_date'      => 'nullable|date',
             'booking_time_slot' => 'nullable|string',
+            'assigned_staff_id' => 'nullable|exists:staff,id',
         ]);
 
         $total = collect($request->items)->sum(fn($i) => $i['quantity'] * $i['price']);
@@ -349,7 +360,7 @@ class OrderController extends Controller
             'is_paid'        => $request->boolean('is_paid'),
             'payment_method' => $request->payment_method,
             'total_price'    => $total,
-            'user_id'        => $request->user_id ?? $order->user_id,  // ← add this line
+            'user_id'        => $request->user_id ?? $order->user_id,
             'manual_paid_at' => $request->boolean('is_paid') && !$order->manual_paid_at ? now() : $order->manual_paid_at,
         ]);
 
@@ -369,9 +380,10 @@ class OrderController extends Controller
             $order->booking()->updateOrCreate(
                 ['order_id' => $order->id],
                 [
-                    'user_id'        => $request->user_id ?? $order->user_id,  // ← also fix here, was using stale $order->user_id
+                    'user_id'        => $request->user_id ?? $order->user_id,
                     'booking_date'   => $request->booking_date,
                     'time_slot'      => $request->booking_time_slot,
+                    'staff_id'       => $request->assigned_staff_id,
                 ]
             );
         }

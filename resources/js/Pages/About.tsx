@@ -372,7 +372,7 @@ const About: React.FC = () => {
             <div data-aos="fade-up">
               <SectionHeading
                 eyebrow="What We Stand For"
-                title={<>Our <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>Values</em></>}
+                title={<>Our <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>Values</em></>}
                 center
               />
             </div>
@@ -441,7 +441,7 @@ const About: React.FC = () => {
             <div data-aos="fade-up">
               <SectionHeading
                 eyebrow="The Artisans"
-                title={<>Meet Our <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>Team</em></>}
+                title={<>Meet Our <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>Team</em></>}
                 center
               />
             </div>
@@ -538,7 +538,7 @@ const About: React.FC = () => {
             <div data-aos="fade-up">
               <SectionHeading
                 eyebrow="Our Journey"
-                title={<>Fifteen Years of <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>Excellence</em></>}
+                title={<>Fifteen Years of <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>Excellence</em></>}
                 center
               />
             </div>

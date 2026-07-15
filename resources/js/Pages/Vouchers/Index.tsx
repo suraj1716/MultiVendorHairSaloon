@@ -1,5 +1,5 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { useForm } from "@inertiajs/react";
+import { useForm, router } from "@inertiajs/react";
 import { useState } from "react";
 
 type Voucher = {
@@ -22,6 +22,7 @@ type GiftVoucherCard = {
   expires_at: string | null;
   gifted_to_email: string | null;
   created_at: string;
+  hidden?: boolean;
 };
 
 interface VouchersProps {
@@ -36,11 +37,14 @@ interface VouchersProps {
 function GiftCardTile({
   card,
   variant = "purchased",
+  onRemove,
 }: {
   card: GiftVoucherCard;
   variant?: "purchased" | "received";
+  onRemove?: (id: number) => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const isExpired = card.expires_at ? new Date(card.expires_at) < new Date() : false;
   const isDepleted = (card.remaining_amount ?? 0) <= 0;
@@ -53,6 +57,16 @@ function GiftCardTile({
     navigator.clipboard.writeText(card.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleRemove = () => {
+    if (removing) return;
+    setRemoving(true);
+    onRemove?.(card.id);
+    // Parent removes this card from the visible list once the request
+    // settles, so there's no need to reset `removing` on success — the
+    // tile simply unmounts. If it fails and the card reappears, the
+    // button becomes usable again on the next render.
   };
 
   let statusLabel = "Active";
@@ -266,6 +280,43 @@ function GiftCardTile({
           })}
         </p>
       )}
+
+      {/* remove button — only shown once the card is fully used up */}
+      {isDepleted && (
+        <button
+          onClick={handleRemove}
+          disabled={removing}
+          style={{
+            display: "block",
+            width: "100%",
+            marginTop: "var(--space-md)",
+            padding: "0.5rem 0.75rem",
+            fontFamily: "var(--font-body)",
+            fontSize: "var(--text-xs)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: removing ? "var(--color-text-light)" : "var(--color-error)",
+            background: "transparent",
+            border: `1px solid ${removing ? "var(--color-border)" : "var(--color-error)"}`,
+            cursor: removing ? "not-allowed" : "pointer",
+            transition: "background var(--transition-fast), color var(--transition-fast)",
+          }}
+          onMouseEnter={(e) => {
+            if (!removing) {
+              (e.currentTarget as HTMLButtonElement).style.background = "var(--color-error)";
+              (e.currentTarget as HTMLButtonElement).style.color = "#fff";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!removing) {
+              (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+              (e.currentTarget as HTMLButtonElement).style.color = "var(--color-error)";
+            }
+          }}
+        >
+          {removing ? "Removing…" : "Remove"}
+        </button>
+      )}
     </div>
   );
 }
@@ -276,11 +327,13 @@ function VoucherSection({
   subtitle,
   cards,
   variant,
+  onRemove,
 }: {
   title: string;
   subtitle: string;
   cards: GiftVoucherCard[];
   variant: "purchased" | "received";
+  onRemove?: (id: number) => void;
 }) {
   if (!cards || cards.length === 0) return null;
 
@@ -315,7 +368,7 @@ function VoucherSection({
         }}
       >
         {cards.map((card) => (
-          <GiftCardTile key={card.id} card={card} variant={variant} />
+          <GiftCardTile key={card.id} card={card} variant={variant} onRemove={onRemove} />
         ))}
       </div>
     </div>
@@ -330,6 +383,38 @@ export default function Vouchers({
   received = [],
 }: VouchersProps) {
   const { data, setData, post, processing } = useForm({ code: "" });
+
+  // "Remove" for used-up gift cards is non-destructive: it flips a `hidden`
+  // flag on the record via a PATCH request (no delete, no other fields
+  // touched), so admins still see full voucher history. We hide the card
+  // optimistically for a snappy UI, and put it back if the request fails.
+  const [hiddenIds, setHiddenIds] = useState<number[]>([]);
+
+  const handleRemove = (id: number) => {
+    setHiddenIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
+
+    // NOTE: adjust the route name/params to match your backend's endpoint
+    // for marking a voucher hidden (e.g. PATCH /vouchers/{id}/hide).
+    router.patch(
+      route("vouchers.hide", id),
+      {},
+      {
+        preserveScroll: true,
+        preserveState: true,
+        onError: () => {
+          // Revert — the card reappears and its button becomes usable again.
+          setHiddenIds((prev) => prev.filter((hiddenId) => hiddenId !== id));
+        },
+      }
+    );
+  };
+
+  const visiblePurchased = purchased.filter(
+    (c) => !hiddenIds.includes(c.id) && !c.hidden
+  );
+  const visibleReceived = received.filter(
+    (c) => !hiddenIds.includes(c.id) && !c.hidden
+  );
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -395,20 +480,22 @@ export default function Vouchers({
         <VoucherSection
           title="Your Gift Cards"
           subtitle="Gift cards you've purchased, for yourself or to send to someone else."
-          cards={purchased}
+          cards={visiblePurchased}
           variant="purchased"
+          onRemove={handleRemove}
         />
 
         {/* ── Received gift cards ── */}
         <VoucherSection
           title="Gifted to You"
           subtitle="Gift cards someone sent you — ready to use on your next order."
-          cards={received}
+          cards={visibleReceived}
           variant="received"
+          onRemove={handleRemove}
         />
 
         {/* ── Empty state if no gift cards at all ── */}
-        {purchased.length === 0 && received.length === 0 && (
+        {visiblePurchased.length === 0 && visibleReceived.length === 0 && (
           <div
             style={{
               background: "var(--color-surface-warm)",

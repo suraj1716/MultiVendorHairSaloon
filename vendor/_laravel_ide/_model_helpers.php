@@ -7419,6 +7419,9 @@ namespace App\Models {
     /**
      * App\Models\Vendor
      *
+     * @property string|null $tiktok_url
+     * @property string|null $instagram_url
+     * @property string|null $facebook_url
      * @property array|null $closed_dates
      * @property array|null $recurring_closed_days
      * @property mixed $total_seats
@@ -7455,6 +7458,9 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereTotalSeats($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereRecurringClosedDays($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereClosedDates($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereFacebookUrl($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereInstagramUrl($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereTiktokUrl($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor query()
@@ -7751,6 +7757,7 @@ namespace App\Models {
     /**
      * App\Models\Voucher
      *
+     * @property bool $hidden
      * @property mixed $gift_card_template_id
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
@@ -7796,6 +7803,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher whereGiftCardTemplateId($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher whereHidden($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Voucher>|Voucher query()

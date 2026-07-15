@@ -37,8 +37,9 @@ interface OrderProps {
   created_at: string;
   items: OrderItem[];
   booking: { id: number; booking_date: string; time_slot: string } | null;
-    refunded_types: string[];
-  
+  staff_id: number | null;
+  staff: { id: number; name: string } | null;
+  refunded_types: string[];
 }
 
 interface Props {
@@ -214,15 +215,24 @@ export default function OrderShow({ order, statuses, flash }: Props) {
               <AdminBtn onClick={() => setShowDelete(true)} variant="danger">
                 <Icons.Delete /> Delete Order
               </AdminBtn>
-              <AdminBtn onClick={() => handleRefund("full")} disabled={order.refunded_types.includes("full")}>
-  Refund Full
-</AdminBtn>
-<AdminBtn onClick={() => handleRefund("except_booking_fee")} disabled={order.refunded_types.includes("except_booking_fee")}>
-  Refund Except Booking Fee
-</AdminBtn>
-<AdminBtn onClick={() => handleRefund("booking_fee")} disabled={order.refunded_types.includes("booking_fee")}>
-  Refund Booking Fee Only
-</AdminBtn>
+              <AdminBtn
+                onClick={() => handleRefund("full")}
+                disabled={order.refunded_types.includes("full")}
+              >
+                Refund Full
+              </AdminBtn>
+              <AdminBtn
+                onClick={() => handleRefund("except_booking_fee")}
+                disabled={order.refunded_types.includes("except_booking_fee")}
+              >
+                Refund Except Booking Fee
+              </AdminBtn>
+              <AdminBtn
+                onClick={() => handleRefund("booking_fee")}
+                disabled={order.refunded_types.includes("booking_fee")}
+              >
+                Refund Booking Fee Only
+              </AdminBtn>
 
               <AdminBtn
                 as="a"
@@ -516,6 +526,43 @@ export default function OrderShow({ order, statuses, flash }: Props) {
                     >
                       {order.booking.time_slot}
                     </div>
+                  </div>
+                </div>
+              </SectionCard>
+            )}
+
+            {/* Staff */}
+            {order.staff && (
+              <SectionCard title="Staff">
+                <div
+                  style={{
+                    padding: "14px 16px",
+                    background: "var(--color-bg-alt)",
+                    borderRadius: "var(--radius-sm)",
+                    border: "1px solid var(--color-border)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "10px",
+                      letterSpacing: "0.14em",
+                      textTransform: "uppercase",
+                      color: "var(--color-text-muted)",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Name
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "var(--font-body)",
+                      fontSize: "14px",
+                      color: "var(--color-text)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {order.staff.name}
                   </div>
                 </div>
               </SectionCard>

@@ -411,7 +411,7 @@ export default function Home({
                   <em
                     style={{
                       fontStyle: "italic",
-                      color: "var(--color-accent)",
+                      color: "var(--color-text)",
                     }}
                   >
                     elevated
@@ -760,7 +760,7 @@ export default function Home({
                   <em
                     style={{
                       fontStyle: "italic",
-                      color: "var(--color-accent)",
+                      color: "var(--color-text)",
                     }}
                   >
                     Services
@@ -775,7 +775,7 @@ export default function Home({
                   fontSize: "0.65rem",
                   letterSpacing: "0.15em",
                   textTransform: "uppercase",
-                  color: "var(--color-accent)",
+                  color: "var(--color-text)",
                   textDecoration: "none",
                   display: "flex",
                   alignItems: "center",
@@ -1132,7 +1132,7 @@ export default function Home({
               <SectionHeading>
                 Crafted for{" "}
                 <em
-                  style={{ fontStyle: "italic", color: "var(--color-accent)" }}
+                  style={{ fontStyle: "italic", color: "var(--color-text)" }}
                 >
                   Excellence
                 </em>
@@ -1254,7 +1254,7 @@ export default function Home({
                   <em
                     style={{
                       fontStyle: "italic",
-                      color: "var(--color-accent)",
+                      color: "var(--color-text)",
                     }}
                   >
                     say

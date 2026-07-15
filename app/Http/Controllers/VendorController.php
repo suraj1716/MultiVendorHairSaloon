@@ -10,15 +10,21 @@ use App\Models\Department;
 use App\Models\Product;
 use App\Models\Vendor;
 use App\services\ProductSearchService;
+use App\Services\VendorDetailService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
 
 class VendorController extends Controller
 {
 
-
+public function public(VendorDetailService $service)
+{
+    return new VendorUserResource(
+        $service->getVendorDetails()
+    );
+}
 
 
     public function profile(Request $request, Vendor $vendor)

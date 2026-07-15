@@ -109,9 +109,19 @@ Route::get('auth/google-callback', [GoogleController::class, 'handleGoogleCallba
 Route::post('/vouchers/validate', [VoucherController::class, 'validateAndApplyCode'])
     ->name('vouchers.validate');
 
+ Route::patch('/vouchers/{voucher}/hide', [VoucherController::class, 'hide'])
+    ->name('vouchers.hide');
+
 // ── Stripe Webhook (public, CSRF excluded) ──────────────────────────────────
 Route::post('/stripe/webhook', [StripeController::class, 'handle'])
     ->name('stripe.webhook');
+
+
+
+// ════════════════════════════════════════════════════════════════════════════
+// Vendor Details service
+// ════════════════════════════════════════════════════════════════════════════
+Route::get('/api/vendor-details', [VendorController::class, 'public']);
 
 
 // ════════════════════════════════════════════════════════════════════════════

@@ -1,5 +1,9 @@
 "use client";
 
+import { Vendor } from "@/types";
+import axios from "axios";
+import { useEffect, useState } from "react";
+
 const NAV_COLS = [
   {
     heading: "Services",
@@ -53,6 +57,14 @@ const SOCIALS = [
 ];
 
 export default function Footer() {
+  const [vendor, setVendor] = useState<Vendor | null>(null);
+  console.log('venodr',vendor)
+useEffect(() => {
+    axios.get("/api/vendor-details").then((res) => {
+        setVendor(res.data.data);
+    });
+}, []);
+
   return (
     <>
       <style>{`
@@ -390,18 +402,20 @@ export default function Footer() {
               A luxury atelier where precision meets artistry. Every appointment
               is an experience tailored entirely to you.
             </p>
-            <ul className="footer-contact-list">
-              {[
-                "12 Rue de la Beauté, Sydney NSW 2000",
-                "hello@maisoneclat.com.au",
-                "(02) 9123 4567",
-              ].map((item) => (
-                <li key={item}>
-                  <span className="footer-contact-dot">◆</span>
-                  {item}
-                </li>
-              ))}
-            </ul>
+           <ul className="footer-contact-list">
+  {[
+    vendor?.store_address,
+    vendor?.email,
+    vendor?.phone,
+  ]
+    .filter(Boolean)
+    .map((item) => (
+      <li key={item}>
+        <span className="footer-contact-dot">◆</span>
+        {item}
+      </li>
+    ))}
+</ul>
           </div>
 
           {/* Nav columns */}
