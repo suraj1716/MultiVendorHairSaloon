@@ -110,6 +110,8 @@ function SearchOverlay({
     onClose();
   };
 
+
+
   const suggestions = [
     "Balayage",
     "Keratin Ritual",
@@ -342,6 +344,10 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+
+const { url } = usePage();
+const onHomePage = url === "/" || url.startsWith("/#");
+
 
   const { openLogin, openRegister } = useAuthModal();
 
@@ -678,7 +684,7 @@ export default function Navbar() {
               {/* LEFT: dark decorative */}
               <div className="fs-left">
                 <div className="fs-left-accent-line" />
-                <p className="fs-left-brand">Dhurva Studio</p>
+                <p className="fs-left-brand">RB Hair & Beauty Lounge Studio</p>
                 <p className="fs-left-tagline">Est. 2020 · Melbourne</p>
               </div>
 
@@ -934,70 +940,54 @@ export default function Navbar() {
           >
             {/* 1: Logo */}
             <Link
-              href={route("home")}
-              style={{
-                textDecoration: "none",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "flex-start",
-                marginRight: 64,
-                flexShrink: 0,
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-display)",
-                  fontSize: 30,
-                  fontWeight: 400,
-                  fontStyle: "italic",
-                  letterSpacing: "0.1em",
-                  color: "var(--color-text)",
-                  lineHeight: 1,
-                }}
-              >
-                Dhurva
-              </span>
-              <LogoOrnament />
-              <span
-                style={{
-                  fontFamily: "var(--font-body)",
-                  fontSize: 8,
-                  fontWeight: 400,
-                  letterSpacing: "0.38em",
-                  textTransform: "uppercase",
-                  color: "var(--color-accent-dark)",
-                  lineHeight: 1,
-                  marginTop: 2,
-                }}
-              >
-                Luxury Hair Atelier
-              </span>
-            </Link>
+  href={route("home")}
+  style={{
+    textDecoration: "none",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "flex-start",
+    marginRight: 64,
+    flexShrink: 0,
+  }}
+>
+  <img
+    src="/images/logo.png"
+    alt="RB Hair & Beauty Lounge"
+    style={{
+      height: 55,
+      width: "auto",
+      objectFit: "contain",
+    }}
+  />
+
+</Link>
 
             {/* 2: Nav links */}
-            <nav
-              className="hidden lg:flex"
-              style={{ alignItems: "center", gap: 36, flexShrink: 0 }}
-            >
-              <NavLink
-                href="/#services"
-                active
-                onClick={(e) => {
-                  const onHomePage = window.location.pathname === "/";
-                  if (onHomePage) {
-                    e.preventDefault();
-                    const el = document.getElementById("services");
-                    el?.scrollIntoView({ behavior: "smooth" });
-                  }
-                }}
-              >
-                Services
-              </NavLink>
-              <NavLink href={route("about")}>About</NavLink>
-              <NavLink href={route("gallery.index")}>Gallery</NavLink>
-              <NavLink href={route("gift-voucher.shop")}>Gift Vouchers</NavLink>
-              <NavLink href={route("contact.index")}>Contact</NavLink>
-            </nav>
+
+
+<nav
+  className="hidden lg:flex"
+  style={{ alignItems: "center", gap: 36, flexShrink: 0 }}
+>
+  <NavLink
+    href="/#services"
+    active={onHomePage}
+    onClick={(e) => {
+      const onHomePageClick = window.location.pathname === "/";
+      if (onHomePageClick) {
+        e.preventDefault();
+        const el = document.getElementById("services");
+        el?.scrollIntoView({ behavior: "smooth" });
+      }
+    }}
+  >
+    Services
+  </NavLink>
+  <NavLink href={route("about")} active={url.startsWith("/about")}>About</NavLink>
+  <NavLink href={route("gallery.index")} active={url.startsWith("/gallery")}>Gallery</NavLink>
+  <NavLink href={route("gift-voucher.shop")} active={url.startsWith("/gift-voucher")}>Gift Vouchers</NavLink>
+  <NavLink href={route("contact.index")} active={url.startsWith("/contact")}>Contact</NavLink>
+</nav>
 
             {/* 3: Icons (search, cart, account) */}
             <div
@@ -1071,6 +1061,10 @@ export default function Navbar() {
                         }}
                       >
                         {[
+                          {
+                            label: "Admin Dashboard",
+                            href: route("admin.dashboard"),
+                          },
                           {
                             label: "Your Vouchers",
                             href: route("vouchers.index"),

@@ -64,7 +64,7 @@ interface PageProps {
   productGroups: ProductGroup[];
   banners: HeroBannerProps[];
   departments: Department[];
-   categories: Category[];
+  categories: Category[];
 }
 
 const getIconByIndex = (index: number) => {
@@ -427,10 +427,10 @@ export default function Home({
                     maxWidth: 460,
                   }}
                 >
-                  Dhurva is Sydney's destination for precision haircraft. From
-                  transformative colour to restorative treatments, every service
-                  is designed around you — your hair, your lifestyle, your
-                  vision.
+                  RB Hair & Beauty Lounge is Sydney's destination for precision
+                  haircraft. From transformative colour to restorative
+                  treatments, every service is designed around you — your hair,
+                  your lifestyle, your vision.
                 </p>
                 <p
                   style={{
@@ -738,8 +738,13 @@ export default function Home({
         </section>
 
         {/* ══ SERVICES BENTO ══ */}
-        <section id="services"
-          style={{ background: "var(--color-bg)", padding: "7rem 0",  scrollMarginTop: "100px", }}
+        <section
+          id="services"
+          style={{
+            background: "var(--color-bg)",
+            padding: "7rem 0",
+            scrollMarginTop: "100px",
+          }}
           data-aos="fade-up"
         >
           <div className="container-site">
@@ -1128,12 +1133,12 @@ export default function Home({
         >
           <div className="container-site">
             <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-              <SectionEyebrow>The Dhurva Difference</SectionEyebrow>
+              <SectionEyebrow>
+                The RB Hair & Beauty Lounge Difference
+              </SectionEyebrow>
               <SectionHeading>
                 Crafted for{" "}
-                <em
-                  style={{ fontStyle: "italic", color: "var(--color-text)" }}
-                >
+                <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
                   Excellence
                 </em>
               </SectionHeading>
@@ -1398,7 +1403,7 @@ export default function Home({
         {/* ══ CTA BAND ══ */}
         <section
           style={{
-            background: "var(--color-primary)",
+            background: "var(--color-bg-dark-black)",
             padding: "7rem 0",
             position: "relative",
             overflow: "hidden",
@@ -1422,7 +1427,7 @@ export default function Home({
               letterSpacing: "-0.05em",
             }}
           >
-            D
+            R
           </div>
 
           {/* geometric accents */}

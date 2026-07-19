@@ -59,7 +59,7 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
         Route::post('/products/{product}/variations',          [AdminProductController::class, 'saveVariations'])->name('products.variations.save');
         Route::post('/products/{product}/variations/generate', [AdminProductController::class, 'generateVariations'])->name('products.variations.generate');
 
-        Route::get('/',                    [DashboardController::class, 'index'])->name('home');
+        Route::get('/',                    [DashboardController::class, 'index'])->name('dashboard');
 
         // Walk-in phone lookup (JSON — must be before resource routes)
         Route::post('/orders/walkin/lookup', [AdminOrderController::class, 'lookupPhone'])->name('orders.walkin.lookup');

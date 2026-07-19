@@ -11,41 +11,63 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
-    public function index(Request $request)
-    {
-        $query = Booking::with('user', 'order')->latest();
+  public function index(Request $request)
+{
+    $query = Booking::with('user', 'order');
 
-        if ($request->filled('search')) {
-            $s = $request->search;
-            $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$s%")
-                ->orWhere('email', 'like', "%$s%"));
-        }
-
-        if ($request->filled('date')) {
-            $query->whereDate('booking_date', $request->date);
-        }
-
-        if ($request->filled('status')) {
-            $query->whereHas('order', fn($q) => $q->where('status', $request->status));
-        }
-
-        $bookings = $query->paginate(20)->through(fn($b) => [
-            'id'           => $b->id,
-            'customer'     => $b->user?->name ?? '—',
-            'email'        => $b->user?->email ?? '—',
-            'booking_date' => $b->booking_date,
-            'time_slot'    => $b->time_slot,
-            'order_id'     => $b->order_id,
-            'order_status' => $b->order?->status ?? '—',
-            'order_total'  => $b->order?->total_price ?? 0,
-            'created_at'   => $b->created_at?->format('d M Y'),
-        ]);
-
-        return Inertia::render('Admin/Bookings/Index', [
-            'bookings' => $bookings,
-            'filters'  => $request->only(['search', 'date', 'status']),
-        ]);
+    if ($request->filled('search')) {
+        $s = $request->search;
+        $query->whereHas('user', fn($q) => $q->where('name', 'like', "%$s%")
+            ->orWhere('email', 'like', "%$s%"));
     }
+
+    if ($request->filled('date')) {
+        $query->whereDate('booking_date', $request->date);
+    }
+
+    if ($request->filled('status')) {
+        $query->whereHas('order', fn($q) => $q->where('status', $request->status));
+    }
+
+    $sort = $request->get('sort', 'created_at');
+    $direction = $request->get('direction') === 'asc' ? 'asc' : 'desc';
+
+   switch ($sort) {
+  case 'booking_date':
+    $query->orderBy('booking_date', $direction)
+          ->orderBy('sort_minutes', 'asc'); // always 9am → 5pm within a day
+    break;
+
+    case 'order_total':
+        $query->leftJoin('orders', 'bookings.order_id', '=', 'orders.id')
+            ->orderBy('orders.total_price', $direction)
+            ->orderBy('bookings.booking_date', 'asc')
+            ->select('bookings.*');
+        break;
+
+    case 'created_at':
+    default:
+        $query->orderBy('created_at', $direction);
+        break;
+}
+
+    $bookings = $query->paginate(20)->through(fn($b) => [
+        'id'           => $b->id,
+        'customer'     => $b->user?->name ?? '—',
+        'email'        => $b->user?->email ?? '—',
+        'booking_date' => $b->booking_date,
+        'time_slot'    => $b->time_slot,
+        'order_id'     => $b->order_id,
+        'order_status' => $b->order?->status ?? '—',
+        'order_total'  => $b->order?->total_price ?? 0,
+        'created_at'   => $b->created_at?->format('d M Y'),
+    ]);
+
+    return Inertia::render('Admin/Bookings/Index', [
+        'bookings' => $bookings,
+        'filters'  => $request->only(['search', 'date', 'status', 'sort', 'direction']),
+    ]);
+}
 
     public function show(Booking $booking)
     {

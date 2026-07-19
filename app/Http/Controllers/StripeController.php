@@ -6,6 +6,7 @@ use App\Enums\OrderStatusEnum;
 use App\Enums\VendorStatusEnum;
 use App\Http\Resources\OrderViewResource;
 use App\Mail\CheckoutCompleted;
+use App\Mail\GiftVoucherRecipientMail;
 use App\Mail\NewOrderMail;
 use App\Mail\RefundProcessedForUser;
 use App\Mail\RefundProcessedForVendor;
@@ -210,6 +211,11 @@ class StripeController extends Controller
                     foreach ($order->orderItems as $orderItem) {
                         $options = $orderItem->variation_type_option_ids;
                         $product = $orderItem->product;
+
+                        if (! $product) {
+                            continue; // gift-card / non-product line items have no stock to decrement
+                        }
+
                         if ($options) {
                             sort($options);
                             $variation = $product->variations()
@@ -275,12 +281,30 @@ class StripeController extends Controller
                 // Gift card vouchers purchased via gift card shop — activate them now that payment is confirmed
                 if (!empty($metadata['voucher_ids'])) {
                     $ids = explode(',', $metadata['voucher_ids']);
-                    Voucher::whereIn('id', $ids)
+                    $vouchers = Voucher::whereIn('id', $ids)
                         ->where('stripe_session_id', $session->id)
                         ->where('active', false)
-                        ->update(['active' => true]);
+                        ->get();
+
+                    Voucher::whereIn('id', $vouchers->pluck('id'))->update(['active' => true]);
 
                     Log::info('Gift card vouchers activated', ['ids' => $ids]);
+
+                    // ── Email any voucher with a gift recipient ──
+                    $buyer = User::find($session->metadata->purchased_by ?? null);
+
+                    foreach ($vouchers as $voucher) {
+                        if (!empty($voucher->gifted_to_email) && !$voucher->sent_at) {
+                            try {
+                                Mail::to($voucher->gifted_to_email)
+                                    ->send(new GiftVoucherRecipientMail($voucher->fresh(), $buyer?->name));
+
+                                $voucher->update(['sent_at' => now()]); // you already have this column — use it
+                            } catch (\Exception $e) {
+                                Log::error("Failed to send gift voucher email for voucher #{$voucher->id}: " . $e->getMessage());
+                            }
+                        }
+                    }
                 }
 
                 if ($userId && !empty($productsToDeleteFromCart)) {
@@ -414,7 +438,7 @@ class StripeController extends Controller
                     'used_count' => 0,
                     'user_id' => $user->referred_by,
                     'active' => true,
-                    'expires_at' => now()->addDays(30),
+                    'expires_at' => now()->addDays(365),
                 ]);
 
                 Voucher::create([
@@ -427,7 +451,7 @@ class StripeController extends Controller
                     'used_count' => 0,
                     'user_id' => $user->id,
                     'active' => true,
-                    'expires_at' => now()->addDays(30),
+                    'expires_at' => now()->addDays(365),
                 ]);
 
                 $user->update(['has_received_referral_bonus' => true]);

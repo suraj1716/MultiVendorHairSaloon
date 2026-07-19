@@ -207,19 +207,19 @@ class VoucherController extends Controller
             'referral_code' => $user->referral_code,
         ]);
     }
-public function hide(Voucher $voucher)
-{
-    abort_unless(
-        $voucher->purchased_by === Auth::id()
-            || $voucher->assigned_to === Auth::id()
-            || $voucher->gifted_to_email === Auth::user()->email,
-        403
-    );
+    public function hide(Voucher $voucher)
+    {
+        abort_unless(
+            $voucher->purchased_by === Auth::id()
+                || $voucher->assigned_to === Auth::id()
+                || $voucher->gifted_to_email === Auth::user()->email,
+            403
+        );
 
-    $voucher->update(['hidden' => true]);
+        $voucher->update(['hidden' => true]);
 
-    return back();
-}
+        return back();
+    }
     public function validateForUser(Request $request)
     {
         $request->validate(['code' => 'required|string']);

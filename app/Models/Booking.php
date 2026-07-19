@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TimeSlotParser;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -11,6 +12,7 @@ class Booking extends Model
 
     protected $fillable = [
         'user_id',
+          'booking_date',
         'time_slot',
         'order_id',
         'staff_id',
@@ -20,6 +22,13 @@ class Booking extends Model
         'is_read' => 'boolean',
          'booking_date' => 'date',
     ];
+
+protected static function booted()
+    {
+        static::saving(function (Booking $booking) {
+            $booking->sort_minutes = TimeSlotParser::toMinutes($booking->time_slot);
+        });
+    }
 
     public function user(): BelongsTo
     {

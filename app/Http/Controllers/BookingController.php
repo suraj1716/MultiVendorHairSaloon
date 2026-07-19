@@ -81,7 +81,7 @@ class BookingController extends Controller
                 $bookedCount = Booking::join('orders', 'bookings.order_id', '=', 'orders.id')
                     ->whereDate('bookings.booking_date', $formattedDate)
                     ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$normalizedSlot])
-                    ->where('orders.status', '!=', 'cancelled')
+                    ->whereNotIn('orders.status', ['cancelled', 'refunded'])
                     ->where(function ($q) {
                         $q->where('orders.status', '!=', OrderStatusEnum::Draft->value)
                             ->orWhere('orders.created_at', '>=', now()->subMinutes(5));
@@ -151,44 +151,44 @@ class BookingController extends Controller
         }
     }
 
-  public function getStaffAvailability(Request $request)
-{
-    $request->validate([
-        'vendor_id' => 'required|integer',
-        'date'      => 'required|date',
-        'time_slot' => 'required|string',
-    ]);
+    public function getStaffAvailability(Request $request)
+    {
+        $request->validate([
+            'vendor_id' => 'required|integer',
+            'date'      => 'required|date',
+            'time_slot' => 'required|string',
+        ]);
 
-    $vendorId = $request->input('vendor_id');
-    $date     = \Carbon\Carbon::parse($request->input('date'))->format('Y-m-d');
-    $timeSlot = strtolower(trim($request->input('time_slot')));
+        $vendorId = $request->input('vendor_id');
+        $date     = \Carbon\Carbon::parse($request->input('date'))->format('Y-m-d');
+        $timeSlot = strtolower(trim($request->input('time_slot')));
 
-    $staffMembers = \App\Models\Staff::where('vendor_id', $vendorId)
-        ->where('is_active', true)
-        ->get();
+        $staffMembers = \App\Models\Staff::where('vendor_id', $vendorId)
+            ->where('is_active', true)
+            ->get();
 
-    $bookedStaffIds = DB::table('bookings')
-        ->join('orders', 'bookings.order_id', '=', 'orders.id')
-        ->whereDate('bookings.booking_date', $date)
-        ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$timeSlot])
-        ->where('orders.status', '!=', 'cancelled')
-        ->where(function ($q) {
-            $q->where('orders.status', '!=', \App\Enums\OrderStatusEnum::Draft->value)
-              ->orWhere('orders.created_at', '>=', now()->subMinutes(5));
-        })
-        ->pluck('bookings.staff_id')
-        ->toArray();
-Log::info("asdasd:",$bookedStaffIds);
-    $staffList = $staffMembers->map(function ($staff) use ($bookedStaffIds) {
-        return [
-            'id'        => $staff->id,
-            'name'      => $staff->name,
-            'available' => !in_array($staff->id, $bookedStaffIds),
-        ];
-    });
+        $bookedStaffIds = DB::table('bookings')
+            ->join('orders', 'bookings.order_id', '=', 'orders.id')
+            ->whereDate('bookings.booking_date', $date)
+            ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$timeSlot])
+           ->whereNotIn('orders.status', ['cancelled', 'refunded'])
+            ->where(function ($q) {
+                $q->where('orders.status', '!=', \App\Enums\OrderStatusEnum::Draft->value)
+                    ->orWhere('orders.created_at', '>=', now()->subMinutes(5));
+            })
+            ->pluck('bookings.staff_id')
+            ->toArray();
+        Log::info("asdasd:", $bookedStaffIds);
+        $staffList = $staffMembers->map(function ($staff) use ($bookedStaffIds) {
+            return [
+                'id'        => $staff->id,
+                'name'      => $staff->name,
+                'available' => !in_array($staff->id, $bookedStaffIds),
+            ];
+        });
 
-    return response()->json(['staff' => $staffList]);
-}
+        return response()->json(['staff' => $staffList]);
+    }
 
     public function getAvailableSlots(Request $request)
     {
@@ -380,7 +380,7 @@ Log::info("asdasd:",$bookedStaffIds);
         $bookedCounts = DB::table('bookings')
             ->join('orders', 'bookings.order_id', '=', 'orders.id')
             ->whereDate('bookings.booking_date', $formattedDate)
-            ->where('orders.status', '!=', 'cancelled')
+            ->whereNotIn('orders.status', ['cancelled', 'refunded'])
             ->where(function ($q) {
                 $q->where('orders.status', '!=', OrderStatusEnum::Draft->value)
                     ->orWhere('orders.created_at', '>=', now()->subMinutes(5));

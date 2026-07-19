@@ -24,6 +24,7 @@ export interface Vendor {
 }
 
 export interface User {
+  roles: string[];
   phone: ReactNode;
   id: number;
   name: string;

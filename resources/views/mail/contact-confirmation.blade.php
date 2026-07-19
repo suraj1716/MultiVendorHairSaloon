@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <body style="font-family: 'Georgia', serif; color: #2a2a2a; max-width: 600px; margin: 0 auto; padding: 20px;">
-    <h1 style="font-weight: 400; letter-spacing: 1px;">Maison Verd</h1>
+    <h1 style="font-weight: 400; letter-spacing: 1px;">RB Hair & Beauty Lounge</h1>
 
     <p>Hi {{ $contact->name }},</p>
 
@@ -16,7 +16,7 @@
 
     <p style="margin-top: 30px;">
         Warm regards,<br>
-        The Maison Verd Team
+        The RB Hair & Beauty Lounge Team
     </p>
 </body>
 </html>

@@ -178,42 +178,7 @@ class RefundService
 
 
 
-    /**
-     * Restore any voucher/gift-card amount used on this order back to the voucher.
-     * Safe to call even if no voucher was used (does nothing).
-     */
-    public function restoreVoucherForOrder(Order $order): float
-    {
-        $usages = VoucherUsage::where('order_id', $order->id)->get();
 
-        if ($usages->isEmpty()) {
-            return 0;
-        }
-
-        $totalRestored = 0;
-
-        foreach ($usages as $usage) {
-            $voucher = $usage->voucher;
-            if (!$voucher) continue;
-
-            if ($voucher->type === 'gift') {
-                $voucher->remaining_amount = ($voucher->remaining_amount ?? 0) + $usage->amount_used;
-                if ($voucher->remaining_amount > 0 && !$voucher->active) {
-                    $voucher->active = true; // reactivate if it had been exhausted
-                }
-            } elseif ($voucher->type === 'promo') {
-                $voucher->used_count = max(0, $voucher->used_count - 1);
-                $voucher->active = true;
-            }
-
-            $voucher->save();
-            $totalRestored += $usage->amount_used;
-
-            Log::info("Restored voucher #{$voucher->id} by {$usage->amount_used} for refunded Order #{$order->id}");
-        }
-
-        return $totalRestored;
-    }
 
     /**
      * Refund booking fee (total - booking_fee)
@@ -262,7 +227,7 @@ class RefundService
             Stripe::setApiKey(config('app.stripe_secret_key'));
 
             $stripeParams = [
-                'amount' => intval($refundAmount * 100),
+                'amount' => intval(round($refundAmount * 100)),
                 'reason' => 'requested_by_customer',
             ];
 
@@ -362,7 +327,7 @@ class RefundService
             Stripe::setApiKey(config('app.stripe_secret_key'));
 
             $stripeParams = [
-                'amount' => intval($remaining * 100),
+                'amount' => intval(round($remaining * 100)),
                 'reason' => 'requested_by_customer',
             ];
 
@@ -429,7 +394,7 @@ class RefundService
             try {
                 Stripe::setApiKey(config('app.stripe_secret_key'));
                 $stripeParams = [
-                    'amount' => intval($remainingRefundable * 100),
+                    'amount' => intval(round($remainingRefundable * 100)),
                     'reason' => 'requested_by_customer',
                 ];
 
@@ -483,7 +448,7 @@ class RefundService
 
         try {
             Stripe::setApiKey(config('app.stripe_secret_key'));
-            $stripeParams = ['amount' => intval($bookingFee * 100), 'reason' => 'requested_by_customer'];
+            $stripeParams = ['amount' => intval(round($bookingFee * 100)), 'reason' => 'requested_by_customer'];
             $stripeParams[$order->stripe_charge_id ? 'charge' : 'payment_intent']
                 = $order->stripe_charge_id ?: $order->payment_intent;
 
@@ -514,16 +479,21 @@ class RefundService
 
 
 
-    public function recordRefund(Order $order, string $type, float $amount, ?string $stripeRefundId = null, ?string $reason = null, bool $isMarker = false): void
-    {
+    public function recordRefund(
+        Order $order,
+        string $type,
+        float $amount,
+        string $reason = null,
+        bool $isMarker = false,
+        float $voucherRestored = 0
+    ): void {
         RefundRecord::create([
-            'order_id' => $order->id,
-            'type' => $type,
-            'amount' => $amount,
-            'stripe_refund_id' => $stripeRefundId,
-            'reason' => $reason,
-            'refunded_by' => auth()->id(),
-            'is_marker' => $isMarker,
+            'order_id'          => $order->id,
+            'type'              => $type,
+            'amount'            => $amount,
+            'voucher_restored'  => $voucherRestored,
+            'reason'            => $reason,
+            'is_marker'         => $isMarker,
         ]);
     }
 
@@ -531,4 +501,90 @@ class RefundService
     {
         return RefundRecord::where('order_id', $order->id)->where('type', $type)->exists();
     }
+
+    /**
+     * Total amount already restored to the voucher for this order, across all
+     * previous partial/full refund actions. Prevents double-restoring the same
+     * voucher usage across multiple refund button clicks.
+     */
+    protected function alreadyRestoredForOrder(Order $order): float
+    {
+        return (float) RefundRecord::where('order_id', $order->id)
+            ->where('voucher_restored', '>', 0)
+            ->sum('voucher_restored');
+    }
+    public function restoreVoucherForOrder(Order $order): float
+{
+    $usages = VoucherUsage::where('order_id', $order->id)->get();
+    if ($usages->isEmpty()) return 0;
+
+    $alreadyRestored = $this->alreadyRestoredForOrder($order);
+    $totalRestored = 0;
+
+    foreach ($usages as $usage) {
+        $voucher = $usage->voucher;
+        if (!$voucher) continue;
+
+        $remainingRestorable = max(0, $usage->amount_used - $alreadyRestored);
+        if ($remainingRestorable <= 0) continue;
+
+        if ($voucher->type === 'gift') {
+            // Hard ceiling: never let remaining_amount exceed the voucher's original amount
+            $maxAllowed = max(0, $voucher->amount - ($voucher->remaining_amount ?? 0));
+            $actuallyRestored = min($remainingRestorable, $maxAllowed);
+
+            $voucher->remaining_amount = ($voucher->remaining_amount ?? 0) + $actuallyRestored;
+            if ($voucher->remaining_amount > 0 && !$voucher->active) {
+                $voucher->active = true;
+            }
+        } elseif ($voucher->type === 'promo') {
+            $voucher->used_count = max(0, $voucher->used_count - 1);
+            $voucher->active = true;
+            $actuallyRestored = $remainingRestorable;
+        }
+
+        $voucher->save();
+        $totalRestored += $actuallyRestored;
+
+        Log::info("Restored voucher #{$voucher->id} by {$actuallyRestored} (capped, ceiling-enforced) for refunded Order #{$order->id}");
+    }
+
+    return $totalRestored;
+}
+
+  public function restoreVoucherAmountForOrder(Order $order, float $amount): float
+{
+    if ($amount <= 0) return 0;
+
+    $usage = VoucherUsage::where('order_id', $order->id)->first();
+    if (!$usage || !$usage->voucher) return 0;
+
+    $alreadyRestored = $this->alreadyRestoredForOrder($order);
+    $remainingRestorable = max(0, $usage->amount_used - $alreadyRestored);
+    $amount = min($amount, $remainingRestorable);
+    if ($amount <= 0) return 0;
+
+    $voucher = $usage->voucher;
+
+    if ($voucher->type === 'gift') {
+        // Hard ceiling: never let remaining_amount exceed the voucher's original amount
+        $maxAllowed = max(0, $voucher->amount - ($voucher->remaining_amount ?? 0));
+        $amount = min($amount, $maxAllowed);
+        if ($amount <= 0) return 0;
+
+        $voucher->remaining_amount = ($voucher->remaining_amount ?? 0) + $amount;
+        if ($voucher->remaining_amount > 0 && !$voucher->active) {
+            $voucher->active = true;
+        }
+    } elseif ($voucher->type === 'promo') {
+        $voucher->used_count = max(0, $voucher->used_count - 1);
+        $voucher->active = true;
+    }
+
+    $voucher->save();
+
+    Log::info("Restored A\${$amount} to voucher #{$voucher->id} for Order #{$order->id} (partial, ceiling-enforced)");
+
+    return $amount;
+}
 }

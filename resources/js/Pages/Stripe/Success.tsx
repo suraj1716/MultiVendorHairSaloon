@@ -141,7 +141,9 @@ function Success({ orders }: PageProps<{ orders: Order[] }>) {
                     fontWeight: 600,
                   }}
                 >
-                  <CurrencyFormatter amount={grossTotal} currency="AUD" />
+                  {/* <CurrencyFormatter amount={grossTotal} currency="AUD" /> */}
+                  <CurrencyFormatter amount={order.total_price} currency="AUD" />
+
                 </span>
               </SummaryRow>
 

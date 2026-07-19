@@ -58,12 +58,14 @@ class OrderController extends Controller
             'vendor_type'    => $o->vendorUser?->vendor?->vendor_type?->value ?? '—',
             'total_price'    => $o->total_price,
             'voucher_discount' => $o->voucher_discount ?? 0,
+            'gross_total'      => round(($o->total_price ?? 0) + ($o->voucher_discount ?? 0), 2), // ← new, ready to display
             'status'         => $o->status,
             'is_paid'        => $o->is_paid,
             'payment_method' => $o->payment_method ?? null,
             'payment_intent' => $o->payment_intent,
             'refunded_at'    => $o->refunded_at?->format('d M Y H:i'),
             'refund_amount'  => $o->refund_amount,
+
             'has_booking'    => !is_null($o->booking),
             'created_at'     => $o->created_at?->format('d M Y H:i'),
             'refunded_types' => $o->refunds()->pluck('type')->values()->all(),
@@ -93,7 +95,6 @@ class OrderController extends Controller
             'refunds',
             'staff'
         );
-
         return Inertia::render('Admin/Orders/Show', [
             'order' => [
                 'id'             => $order->id,
@@ -102,7 +103,9 @@ class OrderController extends Controller
                 'customer_phone' => $order->user?->phone ?? '—',
                 'vendor'         => $order->vendorUser?->vendor?->store_name ?? '—',
                 'vendor_type'    => $order->vendorUser?->vendor?->vendor_type?->value ?? '—',
+                'voucher_discount' => $order->voucher_discount ?? 0,
                 'total_price'    => $order->total_price,
+                'gross_total'    => round(($order->total_price ?? 0) + ($order->voucher_discount ?? 0), 2), // ← add this
                 'booking_fee'    => $order->booking_fee ?? 0,
                 'status'         => $order->status,
                 'is_paid'        => $order->is_paid,
@@ -112,6 +115,7 @@ class OrderController extends Controller
                 'refunded_types' => $order->refunds->pluck('type')->values()->all(),
                 'refunded_at'    => $order->refunded_at?->format('d M Y H:i'),
                 'refund_amount'  => $order->refund_amount,
+
                 'created_at'     => $order->created_at?->format('d M Y H:i'),
                 'booking' => $order->booking ? [
                     'id'           => $order->booking->id,
@@ -519,11 +523,42 @@ class OrderController extends Controller
                     'is_paid' => false,
                 ]);
             }
+            // After computing $voucherRestored for booking_fee/except_booking_fee types:
+            if (in_array($type, ['booking_fee', 'except_booking_fee']) && $isGiftCard) {
+                $bothPartialsUsed = $refundService->hasRefundType($order, 'booking_fee')
+                    && $refundService->hasRefundType($order, 'except_booking_fee');
 
-            // Vouchers only restored on a genuine full refund
-            $voucherRestored = $type === 'full'
-                ? $refundService->restoreVoucherForOrder($order)
-                : 0;
+                // hasRefundType checks refunds already recorded — but THIS refund hasn't been recorded yet,
+                // so also check if the current click completes the pair:
+                $willCompletePair = $type === 'booking_fee'
+                    ? $refundService->hasRefundType($order, 'except_booking_fee')
+                    : $refundService->hasRefundType($order, 'booking_fee');
+
+                if ($bothPartialsUsed || $willCompletePair) {
+                    $order->update([
+                        'refunded_at' => now(),
+                        'status' => OrderStatusEnum::Refunded->value,
+                        'is_paid' => false,
+                    ]);
+                }
+            }
+            // ── Voucher restoration, split by refund type ──
+            $isVoucherCovered = !empty($order->voucher_id) && (float) $order->voucher_discount > 0;
+
+            $voucherRestored = 0;
+            if ($isVoucherCovered) {
+                $voucherRestored = match ($type) {
+                    'full'               => $refundService->restoreVoucherForOrder($order),
+                    'booking_fee'        => $refundService->restoreVoucherAmountForOrder($order, (float) $order->booking_fee),
+                    'except_booking_fee' => $refundService->restoreVoucherAmountForOrder(
+                        $order,
+                        max(0, (float) $order->voucher_discount - (float) $order->booking_fee)
+                    ),
+                };
+            } elseif ($type === 'full') {
+                // Stripe/cash orders that also had a partial voucher applied on top
+                $voucherRestored = $refundService->restoreVoucherForOrder($order);
+            }
 
             Log::info("Order #{$order->id} refund [{$type}] amount: {$amount}, voucher restored: {$voucherRestored}");
 
@@ -532,7 +567,7 @@ class OrderController extends Controller
             }
 
             if ($type === 'full') {
-                $refundService->recordRefund($order, 'full', $amount, reason: 'Full refund');
+                $refundService->recordRefund($order, 'full', $amount, reason: 'Full refund', voucherRestored: $voucherRestored);
 
                 if (!$refundService->hasRefundType($order, 'except_booking_fee')) {
                     $refundService->recordRefund($order, 'except_booking_fee', 0, reason: 'Covered by full refund', isMarker: true);
@@ -541,7 +576,7 @@ class OrderController extends Controller
                     $refundService->recordRefund($order, 'booking_fee', 0, reason: 'Covered by full refund', isMarker: true);
                 }
             } else {
-                $refundService->recordRefund($order, $type, $amount);
+                $refundService->recordRefund($order, $type, $amount, voucherRestored: $voucherRestored);
             }
 
             $message = "Refunded \${$amount}";

@@ -9,7 +9,7 @@ const NAV_GROUPS = [
     items: [
       {
         label: "Dashboard",
-        href: "admin.home",
+        href: "admin.dashboard",
         icon: "⬛",
         countKey: null,
       },
@@ -246,7 +246,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
             style={{
               background: "none",
               border: "none",
-              color: "rgba(255,255,255,0.4)",
+              color: "rgba(255,255,255,0.9)",
               cursor: "pointer",
               fontSize: "1.1rem",
               padding: "4px",
@@ -284,7 +284,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
                       cursor: "pointer",
                       color: hasActive
                         ? "var(--color-accent-light)"
-                        : "rgba(255,255,255,0.3)",
+                        : "rgba(255,255,255,0.7)",
                       fontFamily: "var(--font-body)",
                       fontSize: "0.6rem",
                       letterSpacing: "0.12em",
@@ -350,7 +350,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
                               : "calc(var(--space-lg) + 10px)",
                           color: isActive
                             ? "var(--color-accent-light)"
-                            : "rgba(255,255,255,0.5)",
+                            : "var(--color-text-light)",
                           background: isActive
                             ? "rgba(255,255,255,0.06)"
                             : "transparent",
@@ -384,7 +384,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
                   <div
                     style={{
                       height: "1px",
-                      background: "rgba(255,255,255,0.05)",
+                      background: "rgba(255,255,255,0.2)",
                       margin: "4px var(--space-lg)",
                     }}
                   />
@@ -407,7 +407,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
               display: "flex",
               alignItems: "center",
               gap: "var(--space-sm)",
-              color: "rgba(255,255,255,0.35)",
+              color: "var(--color-text-light)",
               textDecoration: "none",
               fontSize: "var(--text-xs)",
               letterSpacing: "0.08em",
@@ -436,7 +436,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
             background: "var(--color-surface)",
             borderBottom: "1px solid var(--color-border)",
             padding: "0 var(--space-xl)",
-            height: "56px",
+            height: "92px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -445,16 +445,14 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
             zIndex: 50,
           }}
         >
-          <span
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "var(--text-lg)",
-              color: "var(--color-text)",
-              fontWeight: 400,
-            }}
-          >
-            Maison Verd — Admin
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+  <img
+    src="/images/logo.png"
+    alt="RB Hair & Beauty Lounge"
+    style={{ height: 64, width: "auto", objectFit: "contain" }}
+  />
+
+</div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* Notification bell */}
@@ -512,7 +510,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
                     background: "var(--color-surface)",
                     border: "1px solid var(--color-border)",
                     borderRadius: "var(--radius-md)",
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.9)",
                     zIndex: 100,
                     overflow: "hidden",
                   }}

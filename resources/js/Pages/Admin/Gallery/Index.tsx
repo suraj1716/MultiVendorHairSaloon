@@ -130,11 +130,13 @@ export default function GalleryIndex({ galleries, flash }: Props) {
       <FlashMessage flash={flash ?? {}} />
 
       <AdminTable
-        headers={["", "Title", "Status", "Images", "Created", "Actions"]}
+        headers={["#","", "Title", "Status", "Images", "Created", "Actions"]}
         empty="✦ No gallery collections yet"
       >
         {galleries.map((g) => (
           <Tr key={g.id} onClick={() => router.visit(route("admin.gallery.show", g.id))}>
+                                        <Td muted>{g.id}</Td>
+
             {/* Thumbnail */}
             <Td>
               <div style={{

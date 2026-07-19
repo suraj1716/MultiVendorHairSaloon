@@ -4,66 +4,97 @@ import { Vendor } from "@/types";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-const NAV_COLS = [
-  {
-    heading: "Services",
-    links: ["Haircut & Blow-dry", "Colour & Balayage", "Keratin Treatment", "Hair Extensions", "Bridal Styling"],
-  },
-  {
-    heading: "Explore",
-    links: ["Our Story", "Meet the Team", "Gallery", "Press & Awards", "Gift Cards"],
-  },
-  {
-    heading: "Support",
-    links: ["Book Appointment", "Loyalty Club", "Student Offer", "Cancellation Policy", "FAQs"],
-  },
-];
 
-const SOCIALS = [
-  {
-    label: "Instagram",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
-        <rect x="2" y="2" width="20" height="20" rx="5" />
-        <circle cx="12" cy="12" r="4" />
-        <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-  },
-  {
-    label: "Pinterest",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-        <path d="M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.86 6.39 9.29-.09-.78-.17-1.98.03-2.83.19-.77 1.27-5.38 1.27-5.38s-.32-.65-.32-1.6c0-1.5.87-2.63 1.95-2.63.92 0 1.37.69 1.37 1.52 0 .93-.59 2.32-.9 3.6-.25 1.07.53 1.95 1.58 1.95 1.9 0 3.17-2.44 3.17-5.33 0-2.2-1.49-3.74-3.62-3.74-2.47 0-3.92 1.85-3.92 3.77 0 .74.28 1.54.64 1.97.07.08.08.15.06.24-.07.27-.22.86-.25.98-.04.16-.13.2-.3.12-1.12-.52-1.82-2.16-1.82-3.48 0-2.83 2.06-5.43 5.93-5.43 3.11 0 5.53 2.22 5.53 5.18 0 3.09-1.95 5.57-4.65 5.57-.91 0-1.76-.47-2.05-1.03l-.56 2.08c-.2.78-.75 1.75-1.12 2.34.85.26 1.74.4 2.67.4 5.52 0 10-4.48 10-10S17.52 2 12 2z" />
-      </svg>
-    ),
-  },
-  {
-    label: "Facebook",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-        <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
-      </svg>
-    ),
-  },
-  {
-    label: "TikTok",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-        <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.78a4.85 4.85 0 01-1-.09z" />
-      </svg>
-    ),
-  },
-];
+interface FooterCategory {
+  id: number;
+  name: string;
+  slug: string;
+}
 
 export default function Footer() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
-  console.log('venodr',vendor)
-useEffect(() => {
+ const [services, setServices] = useState<FooterCategory[]>([]);
+
+  useEffect(() => {
+    axios.get("/api/vendor-details").then((res) => setVendor(res.data.data));
+    axios.get("/api/footer-services").then((res) => setServices(res.data));
+  }, []);
+  console.log("venodr", vendor);
+  useEffect(() => {
     axios.get("/api/vendor-details").then((res) => {
-        setVendor(res.data.data);
+      setVendor(res.data.data);
     });
-}, []);
+  }, []);
+console.log('service',services)
+
+const NAV_COLS = [
+    {
+      heading: "Services",
+      links: services.map((c) => ({ label: c.name,  href: "/#services",
+                      scrollTo: "services", })),
+    },
+    {
+      heading: "Explore",
+      links: [
+        { label: "Our Story", href: "/about" },
+        { label: "Meet the Team", href: "/about#team" },
+        { label: "Gallery", href: route("gallery.index") },
+        { label: "Press & Awards", href: "/about" },
+        { label: "Gift Cards", href: route("gift-voucher.shop") },
+      ],
+    },
+    {
+      heading: "Support",
+      links: [
+        { label: "Book Appointment", href: route("shop.search") },
+        // { label: "Loyalty Club", href: "/loyalty" },
+        // { label: "Student Offer", href: "/student-offer" },
+        { label: "Cancellation Policy", href: "/cancellation-policy" },
+        { label: "FAQs", href: "/faqs" },
+      ],
+    },
+  ];
+const SOCIALS = [
+    {
+      label: "Instagram",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+          <rect x="2" y="2" width="20" height="20" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+        </svg>
+      ),
+      url: vendor?.instagram_url,
+    },
+    {
+      label: "Pinterest",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M12 2C6.48 2 2 6.48 2 12c0 4.24 2.65 7.86 6.39 9.29-.09-.78-.17-1.98.03-2.83.19-.77 1.27-5.38 1.27-5.38s-.32-.65-.32-1.6c0-1.5.87-2.63 1.95-2.63.92 0 1.37.69 1.37 1.52 0 .93-.59 2.32-.9 3.6-.25 1.07.53 1.95 1.58 1.95 1.9 0 3.17-2.44 3.17-5.33 0-2.2-1.49-3.74-3.62-3.74-2.47 0-3.92 1.85-3.92 3.77 0 .74.28 1.54.64 1.97.07.08.08.15.06.24-.07.27-.22.86-.25.98-.04.16-.13.2-.3.12-1.12-.52-1.82-2.16-1.82-3.48 0-2.83 2.06-5.43 5.93-5.43 3.11 0 5.53 2.22 5.53 5.18 0 3.09-1.95 5.57-4.65 5.57-.91 0-1.76-.47-2.05-1.03l-.56 2.08c-.2.78-.75 1.75-1.12 2.34.85.26 1.74.4 2.67.4 5.52 0 10-4.48 10-10S17.52 2 12 2z" />
+        </svg>
+      ),
+      url: undefined, // no pinterest_url column on Vendor — always hidden
+    },
+    {
+      label: "Facebook",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+        </svg>
+      ),
+      url: vendor?.facebook_url,
+    },
+    {
+      label: "TikTok",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.78a4.85 4.85 0 01-1-.09z" />
+        </svg>
+      ),
+      url: vendor?.tiktok_url,
+    },
+  ].filter((s) => s.url); // hide any platform the vendor hasn't set
+
 
   return (
     <>
@@ -100,7 +131,7 @@ useEffect(() => {
           font-style: italic;
           font-size: var(--text-lg);
           font-weight: 300;
-          color: rgba(255,255,255,0.3);
+         color: --var(--color-text-light);
           letter-spacing: 0.03em;
         }
         .footer-socials {
@@ -115,8 +146,8 @@ useEffect(() => {
           width: 38px;
           height: 38px;
           border-radius: var(--radius-full);
-          border: 1px solid rgba(255,255,255,0.12);
-          color: rgba(255,255,255,0.4);
+          border: 1px solid rgba(255,255,255,0.9);
+          color: --var(--color-text-light);
           background: transparent;
           cursor: pointer;
           text-decoration: none;
@@ -164,7 +195,7 @@ useEffect(() => {
         }
         .footer-brand-desc {
           font-size: 13px;
-          color: rgba(255,255,255,0.4);
+          color: --var(--color-text-light);
           line-height: 1.8;
           margin-bottom: 20px;
         }
@@ -181,7 +212,7 @@ useEffect(() => {
           align-items: flex-start;
           gap: 9px;
           font-size: 12px;
-          color: rgba(255,255,255,0.35);
+          color: --var(--color-text-light);
           line-height: 1.5;
         }
         .footer-contact-dot {
@@ -211,7 +242,7 @@ useEffect(() => {
         }
         .footer-nav-list a {
           font-size: 13px;
-          color: rgba(255,255,255,0.42);
+          color: --var(--color-text-light);
           text-decoration: none;
           transition: color var(--transition-fast);
           display: inline-block;
@@ -222,7 +253,7 @@ useEffect(() => {
         /* Newsletter column */
         .footer-nl-desc {
           font-size: 13px;
-          color: rgba(255,255,255,0.42);
+         color: --var(--color-text-light);
           line-height: 1.7;
           margin-bottom: 14px;
         }
@@ -235,13 +266,13 @@ useEffect(() => {
           background: rgba(255,255,255,0.05);
           border: 1px solid rgba(255,255,255,0.12);
           border-radius: var(--radius-sm);
-          color: white;
+          color:--var(--color-text-light);
           outline: none;
           margin-bottom: 8px;
           box-sizing: border-box;
           transition: border-color var(--transition-fast);
         }
-        .footer-email-input::placeholder { color: rgba(255,255,255,0.22); }
+        .footer-email-input::placeholder { color: rgba(255,255,255,0.6); }
         .footer-email-input:focus { border-color: var(--color-accent); }
         .footer-subscribe-btn {
           display: block;
@@ -274,17 +305,17 @@ useEffect(() => {
           font-size: 9px;
           letter-spacing: 0.2em;
           text-transform: uppercase;
-          color: var(--color-accent-light);
+          color: --var(--color-text-light);
           margin-bottom: 10px;
         }
         .footer-hours-row {
           display: flex;
           justify-content: space-between;
           font-size: 11px;
-          color: rgba(255,255,255,0.35);
+         color: --var(--color-text-light);
           padding: 3px 0;
         }
-        .footer-hours-row span:last-child { color: rgba(255,255,255,0.6); }
+        .footer-hours-row span:last-child { color: --var(--color-text-light); }
 
         /* ── BOTTOM BAR ── */
         .footer-bottom {
@@ -317,7 +348,7 @@ useEffect(() => {
         .footer-copy a:hover { color: rgba(255,255,255,0.55); }
         .footer-copy-sep {
           margin: 0 8px;
-          color: rgba(255,255,255,0.15);
+          color: --var(--color-text-light);
         }
         .footer-badge {
           display: flex;
@@ -373,62 +404,81 @@ useEffect(() => {
 
       <footer className="footer-root">
         {/* Wave */}
-        <svg className="footer-wave" viewBox="0 0 1440 64" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-          <path fill="currentColor" d="M0,32 C180,64 360,0 540,32 C720,64 900,0 1080,32 C1260,64 1380,16 1440,32 L1440,64 L0,64 Z" />
+        <svg
+          className="footer-wave"
+          viewBox="0 0 1440 64"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="currentColor"
+            d="M0,32 C180,64 360,0 540,32 C720,64 900,0 1080,32 C1260,64 1380,16 1440,32 L1440,64 L0,64 Z"
+          />
         </svg>
 
         {/* Top strip */}
         <div className="footer-top-strip">
           <div className="footer-top-inner">
-            <span className="footer-tagline">Crafted for every strand, every story.</span>
+            <span className="footer-tagline">
+              Crafted for every strand, every story.
+            </span>
             <div className="footer-socials">
               {SOCIALS.map((s) => (
-                <a key={s.label} href="/" aria-label={s.label} className="footer-social-btn">
-                  {s.icon}
-                </a>
-              ))}
+
+     <a key={s.label}
+      href={s.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={s.label}
+      className="footer-social-btn"
+    >
+      {s.icon}
+    </a>
+  ))}
             </div>
           </div>
         </div>
 
         {/* Main grid */}
         <div className="footer-main">
-
           {/* Brand column */}
           <div className="footer-brand-col">
-            <a href="/" className="footer-brand-logo">Maison <em>Éclat</em></a>
+            <a href="/" className="footer-brand-logo">
+              Maison <em>Éclat</em>
+            </a>
             <div className="footer-brand-rule" />
             <p className="footer-brand-desc">
               A luxury atelier where precision meets artistry. Every appointment
               is an experience tailored entirely to you.
             </p>
-           <ul className="footer-contact-list">
-  {[
-    vendor?.store_address,
-    vendor?.email,
-    vendor?.phone,
-  ]
-    .filter(Boolean)
-    .map((item) => (
-      <li key={item}>
-        <span className="footer-contact-dot">◆</span>
-        {item}
-      </li>
-    ))}
-</ul>
+            <ul className="footer-contact-list">
+              {[vendor?.store_address, vendor?.email, vendor?.phone]
+                .filter(Boolean)
+                .map((item) => (
+                  <li key={item}>
+                    <span className="footer-contact-dot">◆</span>
+                    {item}
+                  </li>
+                ))}
+            </ul>
           </div>
 
           {/* Nav columns */}
-          {NAV_COLS.map((col) => (
-            <div key={col.heading}>
-              <p className="footer-col-heading">{col.heading}</p>
-              <ul className="footer-nav-list">
-                {col.links.map((link) => (
-                  <li key={link}><a href="/">{link}</a></li>
-                ))}
-              </ul>
-            </div>
-          ))}
+        {NAV_COLS.map((col) => (
+  <div key={col.heading}>
+    <p className="footer-col-heading">{col.heading}</p>
+    <ul className="footer-nav-list">
+      {col.links.map((link) => (
+        <li key={link.label}>
+          <a href={link.href}>{link.label}</a>
+        </li>
+      ))}
+      {col.heading === "Services" && services.length === 0 && (
+        <li style={{ opacity: 0.4, fontSize: 12 }}>Loading…</li>
+      )}
+    </ul>
+  </div>
+))}
 
           {/* Newsletter + hours */}
           <div className="footer-nl-col">
@@ -436,27 +486,72 @@ useEffect(() => {
             <div className="footer-nl-row">
               <div className="footer-nl-form-wrap">
                 <p className="footer-nl-desc">
-                  Seasonal edits, early booking access, and exclusive offers for our community.
+                  Seasonal edits, early booking access, and exclusive offers for
+                  our community.
                 </p>
-                <input type="email" placeholder="Your email address" className="footer-email-input" />
+                <input
+                  type="email"
+                  placeholder="Your email address"
+                  className="footer-email-input"
+                />
                 <button className="footer-subscribe-btn">Subscribe</button>
               </div>
               <div className="footer-hours">
                 <span className="footer-hours-label">Studio Hours</span>
-                {[
-                  ["Mon – Fri", "9:00 – 19:00"],
-                  ["Saturday", "9:00 – 17:00"],
-                  ["Sunday", "Closed"],
-                ].map(([day, hrs]) => (
-                  <div className="footer-hours-row" key={day}>
-                    <span>{day}</span>
-                    <span>{hrs}</span>
-                  </div>
-                ))}
+                {(() => {
+                  const raw = vendor?.recurring_closed_days ?? [];
+                  const closedDays: number[] = raw.map((d: any) => Number(d));
+                  const startTime = vendor?.business_start_time;
+                  const endTime = vendor?.business_end_time;
+
+                  const formatTime = (time?: string) => {
+                    if (!time) return "—";
+                    const [hourStr, minuteStr] = time.split(":");
+                    const hour = parseInt(hourStr, 10);
+                    return `${hour % 24}:${minuteStr}`; // 24hr style to match "9:00 – 19:00" format
+                  };
+
+                  const hoursRange = `${formatTime(startTime)} – ${formatTime(endTime)}`;
+
+                  // Group consecutive open days that share the same hours, e.g. "Mon – Fri"
+                  const dayLabels = [
+                    "Sun",
+                    "Mon",
+                    "Tue",
+                    "Wed",
+                    "Thu",
+                    "Fri",
+                    "Sat",
+                  ];
+                  const rows: [string, string][] = [];
+                  let i = 0;
+
+                  while (i < 7) {
+                    if (closedDays.includes(i)) {
+                      rows.push([dayLabels[i], "Closed"]);
+                      i++;
+                      continue;
+                    }
+                    let start = i;
+                    while (i < 7 && !closedDays.includes(i)) i++;
+                    const end = i - 1;
+                    const label =
+                      start === end
+                        ? dayLabels[start]
+                        : `${dayLabels[start]} – ${dayLabels[end]}`;
+                    rows.push([label, hoursRange]);
+                  }
+
+                  return rows.map(([day, hrs]) => (
+                    <div className="footer-hours-row" key={day}>
+                      <span>{day}</span>
+                      <span>{hrs}</span>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
           </div>
-
         </div>
 
         {/* Bottom bar */}

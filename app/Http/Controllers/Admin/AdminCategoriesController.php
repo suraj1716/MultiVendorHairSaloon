@@ -14,34 +14,35 @@ class AdminCategoriesController extends Controller
     /* ──────────────────────────────────────────
        INDEX
     ────────────────────────────────────────── */
-    public function index(Request $request)
-    {
-        $query = Category::with(['parent', 'department'])
-            ->withCount('products')
-            ->latest();
+   public function index(Request $request)
+{
+    $query = Category::with(['parent', 'department'])
+        ->withCount('products');
 
-        if ($search = $request->input('search')) {
-            $query->where('name', 'like', "%{$search}%");
-        }
-
-        if ($request->filled('department_id')) {
-            $query->where('department_id', $request->input('department_id'));
-        }
-
-        if ($request->filled('active')) {
-            $query->where('active', (bool) $request->input('active'));
-        }
-
-        return Inertia::render('Admin/Categories/Index', [
-            'categories'  => $query->paginate(20)->withQueryString(),
-            'departments' => Department::orderBy('name')->get(['id', 'name']),
-            'filters'     => $request->only(['search', 'department_id', 'active']),
-            'flash'       => [
-                'success' => session('success'),
-                'error'   => session('error'),
-            ],
-        ]);
+    if ($search = $request->input('search')) {
+        $query->where('name', 'like', "%{$search}%");
     }
+
+    if ($request->filled('department_id')) {
+        $query->where('department_id', $request->input('department_id'));
+    }
+
+    if ($request->filled('active')) {
+        $query->where('active', (bool) $request->input('active'));
+    }
+
+    $query->orderBy('id', 'asc');
+
+    return Inertia::render('Admin/Categories/Index', [
+        'categories'  => $query->paginate(20)->withQueryString(),
+        'departments' => Department::orderBy('name')->get(['id', 'name']),
+        'filters'     => $request->only(['search', 'department_id', 'active']),
+        'flash'       => [
+            'success' => session('success'),
+            'error'   => session('error'),
+        ],
+    ]);
+}
 
     /* ──────────────────────────────────────────
        CREATE

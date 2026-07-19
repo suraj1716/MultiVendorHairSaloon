@@ -1,5 +1,6 @@
 import React from "react";
-import { Link } from "@inertiajs/react";
+import { Link, usePage } from "@inertiajs/react";
+import { PageProps } from "@/types";
 
 interface ErrorPageProps {
   statusCode?: number;
@@ -46,26 +47,26 @@ export default function ErrorPage({
     title: "Unexpected Error",
     subtitle: "Something went wrong.",
   };
-
+  const isDashboard = window.location.pathname.startsWith("/dashboard");
   const displayMessage =
     message && message !== meta.subtitle ? message : meta.subtitle;
-const handleAction = () => {
+  const handleAction = () => {
     switch (statusCode) {
-        case 404:
-            // Route doesn't exist
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = "/dashboard";
-            }
-            break;
+      case 404:
+        // Route doesn't exist
+        if (window.history.length > 1) {
+          window.history.back();
+        } else {
+          window.location.href = "/dashboard";
+        }
+        break;
 
-        default:
-            // 500, 419, etc.
-            window.location.reload();
-            break;
+      default:
+        // 500, 419, etc.
+        window.location.reload();
+        break;
     }
-};
+  };
   return (
     <div className="error-page">
       <div className="error-page__inner">
@@ -86,10 +87,27 @@ const handleAction = () => {
           </details>
         )}
 
-      <button onClick={handleAction} className="error-page__cta">
-    {statusCode === 404 ? "Go Back" : "Try Again"}
-</button>
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            justifyContent: "center",
+            alignItems: "center",
+            marginTop: "1.5rem",
+            flexWrap: "wrap", // wraps on small screens
+          }}
+        >
+          <button onClick={handleAction} className="error-page__cta">
+            {statusCode === 404 ? "Go Back" : "Try Again"}
+          </button>
 
+          <Link
+            href={isDashboard ? "/dashboard" : "/"}
+            className="error-page__cta"
+          >
+            {isDashboard ? "Dashboard" : "Home"}
+          </Link>
+        </div>
         <div className="error-page__rule error-page__rule--bottom" />
       </div>
 

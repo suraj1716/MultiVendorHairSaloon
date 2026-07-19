@@ -100,11 +100,13 @@ export default function CategoriesIndex({ categories, departments, filters, flas
         />
 
         <AdminTable
-          headers={["", "Name", "Department", "Parent", "Products", "Status", "Actions"]}
+          headers={["#","", "Name", "Department", "Parent", "Products", "Status", "Actions"]}
           empty="✦ No categories found"
         >
           {categories.data.map((cat) => (
             <Tr key={cat.id}>
+                            <Td muted>{cat.id}</Td>
+
               {/* Thumbnail */}
               <Td>
                 <div style={{

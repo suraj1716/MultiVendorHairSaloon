@@ -36,7 +36,7 @@ class AuthenticatedSessionController extends Controller
     $redirectUrl = route('home', absolute: false);
 
     if ($user->hasRole(RolesEnum::Admin)) {
-        $redirectUrl = route('admin.home');
+        $redirectUrl = route('admin.dashboard');
     } elseif ($user->hasRole(RolesEnum::Vendor)) {
         $vendor = $user->vendor;
         if (!$vendor) {

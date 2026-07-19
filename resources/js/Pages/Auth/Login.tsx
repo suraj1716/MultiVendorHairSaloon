@@ -415,7 +415,7 @@ const submit: FormEventHandler = async (e) => {
               margin: 0,
             }}
           >
-            New to Dhurva?{" "}
+            New to RB Hair & Beauty Lounge?{" "}
             <button
               type="button"
               onClick={onSwitchToRegister}

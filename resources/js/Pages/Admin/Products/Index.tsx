@@ -146,7 +146,8 @@ export default function Index({ products, departments, filters, flash }: Props) 
 
       {/* ── Table ── */}
       <AdminTable
-        headers={["", "Product", "Dept / Category", "Price", "Qty", "Status", "Highlight", "Variations", "Actions"]}
+        headers={["#","", "Product", "Dept / Category", "Price", "Qty", "Status", "Highlight", "Variations", "Actions"]}
+
         empty="✦ No products found"
       >
         {products.data.map((product) => (
@@ -154,6 +155,7 @@ export default function Index({ products, departments, filters, flash }: Props) 
             key={product.id}
             onClick={() => router.visit(route("admin.products.edit", product.id))}
           >
+            <Td muted>{product.id}</Td>
             {/* Thumb */}
             <Td>
               <div style={{

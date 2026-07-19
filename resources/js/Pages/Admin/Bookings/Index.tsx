@@ -16,8 +16,13 @@ type Booking = {
 };
 
 type Props = {
-  bookings: { data: Booking[]; links: any[] };
-  filters: Record<string, string>;
+  filters: {
+    search?: string;
+    date?: string;
+    status?: string;
+    sort?: string;
+    direction?: "asc" | "desc";
+  };
 };
 
 const btnStyle = (color = "var(--color-primary)"): React.CSSProperties => ({
@@ -52,7 +57,30 @@ export default function BookingsIndex({ bookings, filters }: Props) {
       onError: () => toast.error("Failed"),
     });
   };
+const sort = (key: string) => {
+  const direction =
+    filters.sort === key && filters.direction === "asc"
+      ? "desc"
+      : "asc";
 
+  const params = {
+    ...filters,
+    sort: key,
+    direction,
+  };
+
+  console.log("filters:", filters);
+  console.log("params:", params);
+
+  router.get(
+    route("admin.bookings.index"),
+    params,
+    {
+      preserveState: true,
+      preserveScroll: true,
+    }
+  );
+};
   return (
     <AdminLayout>
       <Head title="Admin — Bookings" />
@@ -84,7 +112,30 @@ export default function BookingsIndex({ bookings, filters }: Props) {
         ]}
       />
 
-      <AdminTable headers={["#", "Customer", "Date", "Time Slot", "Order", "Order Status", "Total", "Actions"]}>
+     <AdminTable
+  headers={[
+    "#",
+    "Customer",
+    <span
+      key="date"
+      onClick={() => sort("booking_date")}
+      style={{ cursor: "pointer" }}
+    >
+      Booking Date ↕
+    </span>,
+    "Time Slot",
+    "Order",
+    "Order Status",
+    <span
+      key="total"
+      onClick={() => sort("order_total")}
+      style={{ cursor: "pointer" }}
+    >
+      Total ↕
+    </span>,
+    "Actions",
+  ]}
+>
         {bookings.data.map((b) => (
           <tr key={b.id}>
             <Td muted>#{b.id}</Td>
@@ -92,7 +143,7 @@ export default function BookingsIndex({ bookings, filters }: Props) {
               <div>{b.customer}</div>
               <div style={{ fontSize: "var(--text-xs)", color: "var(--color-text-light)" }}>{b.email}</div>
             </Td>
-           <Td>{b.booking_date.split('T')[0]}</Td>
+           <Td >{b.booking_date.split('T')[0]}</Td>
             <Td muted>{b.time_slot}</Td>
             <Td muted>{b.order_id ? `#${b.order_id}` : "—"}</Td>
             <Td><StatusBadge status={b.order_status} /></Td>

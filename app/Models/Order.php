@@ -19,27 +19,29 @@ class Order extends Model
 
     ];
 
-    protected $fillable = [
-         'is_read' => 'boolean',
-         'stripe_charge_id',
-         'stripe_amount',
-        'stripe_session_id',
-        'user_id',
-        'vendor_user_id',
-        'total_price',
-        'booking_fee', // ✅ make sure this is included
-        'status',
-        'shipping_address_id',
-        'payment_intent',
-        'online_payment_comission',
-        'website_payment_comission',
-        'vendor_subtotal',
-        'is_paid',
-        'manual_paid_at',
-        'payment_method',
-          'staff_id'
-
-    ];
+  protected $fillable = [
+    'is_read',
+    'stripe_charge_id',
+    'stripe_amount',
+    'stripe_session_id',
+    'user_id',
+    'vendor_user_id',
+    'total_price',
+    'booking_fee',
+    'status',
+    'shipping_address_id',
+    'payment_intent',
+    'online_payment_comission',
+    'website_payment_comission',
+    'vendor_subtotal',
+    'is_paid',
+    'manual_paid_at',
+    'payment_method',
+    'staff_id',
+    'voucher_id',
+    'voucher_discount',
+    'discount_amount',
+];
 
 
     public function orderItems()

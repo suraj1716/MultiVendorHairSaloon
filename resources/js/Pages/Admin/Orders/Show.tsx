@@ -19,6 +19,7 @@ interface OrderItem {
   subtotal: number;
 }
 interface OrderProps {
+  voucher_id: number | null;
   id: number;
   customer: string;
   customer_email: string;
@@ -26,6 +27,7 @@ interface OrderProps {
   vendor: string;
   vendor_type: string;
   total_price: number;
+  voucher_discount: number;
   booking_fee: number;
   status: string;
   is_paid: boolean;
@@ -40,6 +42,7 @@ interface OrderProps {
   staff_id: number | null;
   staff: { id: number; name: string } | null;
   refunded_types: string[];
+  gross_total: number;
 }
 
 interface Props {
@@ -148,7 +151,7 @@ export default function OrderShow({ order, statuses, flash }: Props) {
   const [showDelete, setShowDelete] = useState(false);
   const [status, setStatus] = useState(order.status);
   const [saving, setSaving] = useState(false);
-
+console.log(order.total_price)
   const handleStatusSave = () => {
     setSaving(true);
     router.patch(
@@ -160,6 +163,11 @@ export default function OrderShow({ order, statuses, flash }: Props) {
       },
     );
   };
+console.log('order refund state:', {
+  refund_amount: order.refund_amount,
+  voucher_discount: order.voucher_discount,
+  refunded_types: order.refunded_types
+});
 
   const handleRefund = (
     type: "full" | "booking_fee" | "except_booking_fee",
@@ -180,9 +188,17 @@ export default function OrderShow({ order, statuses, flash }: Props) {
   const handleDelete = () => {
     router.delete(route("admin.orders.destroy", order.id));
   };
+const stripeLikeMethods = ["stripe", "card", "link", "afterpay_clearpay", "klarna", "zip"];
+const isStripeOrder = order.payment_method ? stripeLikeMethods.includes(order.payment_method) : false;
+const isVoucherCovered = Number(order.voucher_discount) > 0;
+const isFullyRefunded = order.refunded_types.includes("full");
+
+// Partial refund buttons work if EITHER the order is Stripe-paid (partial charge refund)
+// OR the order was voucher-covered (partial voucher restore) — or both, for mixed orders.
+const canPartialRefund = isStripeOrder || isVoucherCovered;
+const bothPartialsUsed = order.refunded_types.includes("booking_fee") && order.refunded_types.includes("except_booking_fee");
 
   const isWalkIn = !!order.payment_method && !order.payment_intent;
-
   return (
     <>
       <Head title={`Order #${order.id}`} />
@@ -215,25 +231,23 @@ export default function OrderShow({ order, statuses, flash }: Props) {
               <AdminBtn onClick={() => setShowDelete(true)} variant="danger">
                 <Icons.Delete /> Delete Order
               </AdminBtn>
-              <AdminBtn
-                onClick={() => handleRefund("full")}
-                disabled={order.refunded_types.includes("full")}
-              >
-                Refund Full
-              </AdminBtn>
-              <AdminBtn
-                onClick={() => handleRefund("except_booking_fee")}
-                disabled={order.refunded_types.includes("except_booking_fee")}
-              >
-                Refund Except Booking Fee
-              </AdminBtn>
-              <AdminBtn
-                onClick={() => handleRefund("booking_fee")}
-                disabled={order.refunded_types.includes("booking_fee")}
-              >
-                Refund Booking Fee Only
-              </AdminBtn>
+<AdminBtn onClick={() => handleRefund("full")} disabled={isFullyRefunded || bothPartialsUsed}>
+  Refund Full
+</AdminBtn>
 
+<AdminBtn
+  onClick={() => handleRefund("except_booking_fee")}
+  disabled={isFullyRefunded || !canPartialRefund || order.refunded_types.includes("except_booking_fee")}
+>
+  Refund Except Booking Fee
+</AdminBtn>
+
+<AdminBtn
+  onClick={() => handleRefund("booking_fee")}
+  disabled={isFullyRefunded || !canPartialRefund || order.refunded_types.includes("booking_fee")}
+>
+  Refund Booking Fee Only
+</AdminBtn>
               <AdminBtn
                 as="a"
                 href={route("admin.orders.index")}
@@ -385,72 +399,50 @@ export default function OrderShow({ order, statuses, flash }: Props) {
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot>
-                    {order.booking_fee > 0 && (
-                      <tr
-                        style={{
-                          borderTop: "1px solid var(--color-border)",
-                          background: "var(--color-bg-alt)",
-                        }}
-                      >
-                        <td
-                          colSpan={4}
-                          style={{
-                            padding: "10px 12px",
-                            textAlign: "right",
-                            fontFamily: "var(--font-body)",
-                            fontSize: "11px",
-                            color: "var(--color-text-muted)",
-                            letterSpacing: "0.1em",
-                            textTransform: "uppercase",
-                          }}
-                        >
-                          Booking Fee
-                        </td>
-                        <td
-                          style={{
-                            padding: "10px 12px",
-                            fontFamily: "var(--font-body)",
-                            fontSize: "13px",
-                            color: "var(--color-text-muted)",
-                          }}
-                        >
-                          A${Number(order.booking_fee).toFixed(2)}
-                        </td>
-                      </tr>
-                    )}
-                    <tr
-                      style={{
-                        borderTop: "2px solid var(--color-border)",
-                        background: "var(--color-bg-alt)",
-                      }}
-                    >
-                      <td
-                        colSpan={4}
-                        style={{
-                          padding: "12px",
-                          textAlign: "right",
-                          fontFamily: "var(--font-body)",
-                          fontSize: "10px",
-                          letterSpacing: "0.14em",
-                          textTransform: "uppercase",
-                          color: "var(--color-text-muted)",
-                        }}
-                      >
-                        Order Total
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          fontFamily: "var(--font-display)",
-                          fontSize: "1.2rem",
-                          color: "var(--color-primary)",
-                        }}
-                      >
-                        A${Number(order.total_price).toFixed(2)}
-                      </td>
-                    </tr>
-                  </tfoot>
+                 <tfoot>
+
+  {order.booking_fee > 0 && (
+    <tr style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
+      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "11px", color: "var(--color-text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        Booking Fee
+      </td>
+      <td style={{ padding: "10px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-text-muted)" }}>
+        A${Number(order.booking_fee).toFixed(2)}
+      </td>
+    </tr>
+  )}
+
+  {Number(order.voucher_discount) > 0 && (
+    <tr style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
+      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "11px", color: "var(--color-text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
+        Gift Card / Voucher Applied
+      </td>
+      <td style={{ padding: "10px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-error)" }}>
+        −A${Number(order.voucher_discount).toFixed(2)}
+      </td>
+    </tr>
+  )}
+
+ <tr style={{ borderTop: "2px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
+  <td colSpan={4} style={{ padding: "12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
+    Order Total
+  </td>
+  <td style={{ padding: "12px", fontFamily: "var(--font-display)", fontSize: "1.2rem", color: "var(--color-primary)" }}>
+    A${Number(order.gross_total).toFixed(2)}
+  </td>
+</tr>
+
+{Number(order.voucher_discount) > 0 && (
+  <tr style={{ background: "var(--color-bg-alt)" }}>
+    <td colSpan={4} style={{ padding: "6px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
+      Amount Charged
+    </td>
+    <td style={{ padding: "6px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-text-muted)" }}>
+      A${Number(order.total_price).toFixed(2)}
+    </td>
+  </tr>
+)}
+</tfoot>
                 </table>
               </div>
             </SectionCard>

@@ -25,10 +25,10 @@ class ContactController extends Controller
             'value' => $case->value,
             'label' => ucfirst(str_replace('_', ' ', $case->value)),
         ], ContactReasonEnum::cases());
-       $vendor = User::whereHas('vendor')->first();
-// dd($vendor);
-return Inertia::render('Contact', [
-    'vendor' => $vendor ? new VendorUserResource($vendor) : null,
+        $vendor = User::whereHas('vendor')->first();
+        // dd($vendor);
+        return Inertia::render('Contact', [
+            'vendor' => $vendor ? new VendorUserResource($vendor) : null,
 
             'contactReasons' => $contactReasons,
             'departments' => \App\Models\Department::with([

@@ -17,6 +17,7 @@ import {
 } from "../../../Components/Admin/AdminComponents";
 
 interface Order {
+  gross_total(gross_total: any): unknown;
   voucher_discount(voucher_discount: any): unknown;
   id: number;
   customer: string;
@@ -37,7 +38,13 @@ interface Order {
 
 interface Props {
   orders: { data: Order[]; links: any[] };
-  filters: Record<string, string>;
+  filters: {
+    search?: string;
+    date?: string;
+    status?: string;
+    sort?: string;
+    direction?: "asc" | "desc";
+  };
   statuses: string[];
   flash: { success?: string; error?: string };
   errors?: { error?: string };
@@ -175,7 +182,7 @@ export default function OrdersIndex({
         >
           {orders.data.map((o) => (
             <Tr key={o.id}>
-              <Td muted>#{o.id}</Td>
+              <Td muted>{o.id}</Td>
 
               <Td>
                 <div style={{ fontWeight: 500 }}>{o.customer}</div>
@@ -199,41 +206,33 @@ export default function OrdersIndex({
 
               <Td muted>{o.vendor}</Td>
 
-            <Td>
-  {(() => {
-    const grossTotal = Number(o.total_price) + Number(o.voucher_discount ?? 0);
-    return (
-      <>
-        <span style={{ color: "var(--color-primary)", fontWeight: 500 }}>
-          A${grossTotal.toFixed(2)}
-        </span>
-        {Number(o.voucher_discount) > 0 && (
-          <div
-            style={{
-              fontSize: 10,
-              color: "var(--color-text-muted)",
-              marginTop: 2,
-            }}
-          >
-            Gift card: −A${Number(o.voucher_discount).toFixed(2)}
-            {Number(o.total_price) === 0 && " (fully covered)"}
-          </div>
-        )}
-        {o.refunded_at && (
-          <div
-            style={{
-              fontSize: 10,
-              color: "var(--color-error)",
-              marginTop: 2,
-            }}
-          >
-            Refunded A${o.refund_amount}
-          </div>
-        )}
-      </>
-    );
-  })()}
-</Td>
+              <Td>
+                <span
+                  style={{ color: "var(--color-primary)", fontWeight: 500 }}
+                >
+                  A${Number(o.gross_total).toFixed(2)}
+                </span>
+                {Number(o.voucher_discount) > 0 && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "var(--color-text-muted)",
+                      marginTop: 2,
+                    }}
+                  >
+                    Gift card: −A${Number(o.voucher_discount).toFixed(2)}
+                    {Number(o.total_price) === 0 && " (fully covered)"}
+                  </div>
+                )}
+               {o.refunded_at && (
+  <div style={{ fontSize: 10, color: "var(--color-error)", marginTop: 2 }}>
+    Refunded A${Number(o.refund_amount).toFixed(2)}
+    {Number(o.voucher_discount) > 0 && (
+      <> + A${Number(o.voucher_discount).toFixed(2)} restored to gift card</>
+    )}
+  </div>
+)}
+              </Td>
 
               <Td muted>
                 {o.payment_method ? (
@@ -313,24 +312,23 @@ export default function OrdersIndex({
                   >
                     <Icons.Edit />
                   </ActionBtn>
-            {
-  Boolean(
-    !o.refunded_at &&
-    o.is_paid &&
-    (
-      (stripeLikeMethods.includes(o.payment_method ?? "") && !!o.payment_intent) ||
-      ["cash", "eftpos", "gift_card"].includes(o.payment_method ?? "")
-    )
-  ) && (
-    <ActionBtn
-      variant="delete"
-      title="Refund"
-      onClick={() => handleRefund(o)}
-    >
-      ↩
-    </ActionBtn>
-  )
-}
+                  {Boolean(
+                    !o.refunded_at &&
+                    o.is_paid &&
+                    ((stripeLikeMethods.includes(o.payment_method ?? "") &&
+                      !!o.payment_intent) ||
+                      ["cash", "eftpos", "gift_card"].includes(
+                        o.payment_method ?? "",
+                      )),
+                  ) && (
+                    <ActionBtn
+                      variant="delete"
+                      title="Refund"
+                      onClick={() => handleRefund(o)}
+                    >
+                      ↩
+                    </ActionBtn>
+                  )}
                   <ActionBtn
                     variant="delete"
                     title="Delete"

@@ -208,5 +208,17 @@ Route::middleware('auth')->group(function () {
 });
 
 
+//footer
+Route::get('/api/footer-services', function () {
+    return \App\Models\Category::whereHas('products', fn($q) => $q->where('status', 'published'))
+        ->where('active', true)
+        ->select('id', 'name', 'department_id')
+        ->withCount('products')
+        ->orderByDesc('products_count')
+        ->get();
+});
+
+
+
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin_routes.php';

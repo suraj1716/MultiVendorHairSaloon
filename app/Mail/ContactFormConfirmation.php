@@ -18,7 +18,7 @@ class ContactFormConfirmation extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'We received your message — Maison Verd',
+            subject: 'We received your message — RB Hair & Beauty Lounge',
         );
     }
 

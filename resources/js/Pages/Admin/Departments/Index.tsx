@@ -80,11 +80,12 @@ export default function DepartmentsIndex({ departments, filters, flash }: Props)
         />
 
         <AdminTable
-          headers={["", "Name", "Slug", "Categories", "Products", "Status", "Actions"]}
+          headers={["#","", "Name", "Slug", "Categories", "Products", "Status", "Actions"]}
           empty="✦ No departments found"
         >
           {departments.data.map((dept) => (
             <Tr key={dept.id}>
+              <Td muted>{dept.id}</Td>
               {/* Thumbnail */}
               <Td>
                 <div style={{

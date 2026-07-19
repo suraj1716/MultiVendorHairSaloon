@@ -16,26 +16,31 @@
 
 :root {
   /* --- Brand Colors (jewel-tone) --- */
- --color-primary:        #28a246;   /* deep forest green */
-
+  --color-primary:        #1e8a39;   /* deep forest green */
   --color-primary-light:  #0ca239;
   --color-primary-dark:   #0b9632;
+  --color-primary-50:     #F5FAF6;   /* very light tint — for bg-alt */
+  --color-primary-100:    #E9F5EB;
+  --color-primary-200:    #D9EEDD;
+
   --color-accent:         #facc15;   /* warm gold */
   --color-accent-light:   #facc15;
   --color-accent-dark:    #e5c522;
 
   /* --- Neutrals --- */
-  --color-bg:             #FDFAF6;   /* warm off-white */
-  --color-bg-alt:         #F4EFE8;   /* slightly deeper warm */
-  --color-bg-dark:        #1C1A17;   /* rich near-black */
+  --color-bg:             #f8fdf6;   /* warm off-white */
+  --color-bg-alt:         var(--color-primary-50);   /* slightly deeper warm */
+  --color-bg-dark:        #0d7527;   /* rich near-blackGreen */
+  --color-bg-dark-black:        #1C1A17;   /* rich near-black */
+
   --color-surface:        #FFFFFF;
   --color-surface-warm:   #ffffff;
 
   /* --- Text --- */
   --color-text:           #1C1A17;
   --color-text-muted:     #6B6560;
-  --color-text-light:     #A09890;
-  --color-text-inverse:   #FDFAF6;
+  --color-text-light:     #ffffff;
+  --color-text-inverse:   #ffffff;
 
   /* --- UI --- */
   --color-border:         #E8E0D5;

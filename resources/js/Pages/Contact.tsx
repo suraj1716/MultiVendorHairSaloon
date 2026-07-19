@@ -81,6 +81,11 @@ const Contact: React.FC = () => {
       onSuccess: () => reset(),
     });
   };
+
+  const closedDays: number[] = (vendor?.data?.recurring_closed_days ?? []).map(
+    Number,
+  );
+
   return (
     <AuthenticatedLayout>
       <style>{`
@@ -844,22 +849,45 @@ const Contact: React.FC = () => {
                 </div>
               </div>
 
-              {/* Hours */}
-              <div className="info-card">
-                <div className="info-card-header">
-                  <h3>Business Hours</h3>
-                </div>
-                <div className="info-card-body">
-                  <div className="hours-grid">
-                    <span className="hours-day">Monday – Friday</span>
-                    <span className="hours-time">9:00 AM – 5:00 PM</span>
-                    <span className="hours-day">Saturday</span>
-                    <span className="hours-time">10:00 AM – 3:00 PM</span>
-                    <span className="hours-day">Sunday</span>
-                    <span className="hours-time hours-closed">Closed</span>
-                  </div>
-                </div>
-              </div>
+             {/* Hours */}
+<div className="info-card">
+  <div className="info-card-header">
+    <h3>Business Hours</h3>
+  </div>
+  <div className="info-card-body">
+
+    <div className="hours-grid">
+      {(() => {
+        const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+        const raw = vendor?.data?.recurring_closed_days ?? [];
+        const closedDays: number[] = raw.map((d: any) => Number(d));
+        const startTime = vendor?.data?.business_start_time;
+        const endTime = vendor?.data?.business_end_time;
+
+        const formatTime = (time?: string) => {
+          if (!time) return "—";
+          const [hourStr, minuteStr] = time.split(":");
+          const hour = parseInt(hourStr, 10);
+          const period = hour >= 12 ? "PM" : "AM";
+          const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+          return `${displayHour}:${minuteStr} ${period}`;
+        };
+
+        return dayNames.map((day, index) => {
+          const isClosed = closedDays.includes(index);
+          return (
+            <React.Fragment key={day}>
+              <span className="hours-day">{day}  {isClosed ? "(Closed)" : "(Open)"}</span>
+              <span className={isClosed ? "hours-time hours-closed" : "hours-time"}>
+                {isClosed ? "Closed" : `${formatTime(startTime)} – ${formatTime(endTime)}`}
+              </span>
+            </React.Fragment>
+          );
+        });
+      })()}
+    </div>
+  </div>
+</div>
 
               {/* Map */}
               <div className="map-card">

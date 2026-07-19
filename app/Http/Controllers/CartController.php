@@ -471,6 +471,7 @@ class CartController extends Controller
                     'orders' => OrderViewResource::collection($orders)->collection->toArray(),
                 ]);
             }
+            // dd($combinedTotal);
             Log::info('Checkout totals', [
                 'combinedTotal'    => $combinedTotal,
                 'discountToApply'  => $discountToApply,

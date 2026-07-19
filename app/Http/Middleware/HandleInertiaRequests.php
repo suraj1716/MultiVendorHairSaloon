@@ -48,6 +48,7 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
 
+
         $departments = Department::whereHas('categories', function ($query) {
             $query->where('active', true)
                 ->whereHas('products');

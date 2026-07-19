@@ -8,33 +8,35 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Voucher extends Model
 {
-    protected $fillable = [
-        'code',
-        'type',
-        'amount',
-        'discount_type',
-        'remaining_amount',
-        'max_uses',
-        'used_count',
-        'purchased_by',
-        'assigned_to',
-        'gifted_to_email',
-          'gift_card_template_id',  // add thisS
-        'gift_card_product_id',
-        'stripe_session_id',
-        'stripe_coupon_id',
-        'expires_at',
-        'active',
-        'sent_at',
-    ];
+ protected $fillable = [
+    'code',
+    'type',
+    'amount',
+    'discount_type',
+    'remaining_amount',
+    'max_uses',
+    'used_count',
+    'purchased_by',
+    'assigned_to',
+    'gifted_to_email',
+    'gift_card_template_id',
+    'gift_card_product_id',
+    'stripe_session_id',
+    'stripe_coupon_id',
+    'expires_at',
+    'active',
+    'sent_at',
+    'hidden',   // ← add this
+];
 
-    protected $casts = [
-        'active'       => 'boolean',
-        'amount'       => 'float',
-        'remaining_amount' => 'float',
-        'expires_at'   => 'datetime',
-        'sent_at'      => 'datetime',
-    ];
+ protected $casts = [
+    'active'       => 'boolean',
+    'hidden'       => 'boolean',   // ← add this
+    'amount'       => 'float',
+    'remaining_amount' => 'float',
+    'expires_at'   => 'datetime',
+    'sent_at'      => 'datetime',
+];
 
     // ── Relationships ──────────────────────────────────────────
 

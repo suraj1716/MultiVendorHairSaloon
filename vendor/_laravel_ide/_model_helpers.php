@@ -14,6 +14,7 @@ namespace App\Models {
      * @property string|null $google_event_id
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
+     * @property mixed $sort_minutes
      * @property string $time_slot
      * @property boolean $is_read
      * @property \Illuminate\Support\Carbon $booking_date
@@ -31,6 +32,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereBookingDate($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereIsRead($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereTimeSlot($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereSortMinutes($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Booking>|Booking whereGoogleEventId($value)
@@ -5163,6 +5165,7 @@ namespace App\Models {
      * @property string|null $reason
      * @property string|null $stripe_refund_id
      * @property boolean $is_marker
+     * @property float $voucher_restored
      * @property float $amount
      * @property mixed $type
      * @property mixed $order_id
@@ -5173,6 +5176,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereOrderId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereType($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereAmount($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereVoucherRestored($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereIsMarker($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereStripeRefundId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Refund>|Refund whereReason($value)
@@ -7757,7 +7761,7 @@ namespace App\Models {
     /**
      * App\Models\Voucher
      *
-     * @property bool $hidden
+     * @property boolean $hidden
      * @property mixed $gift_card_template_id
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
