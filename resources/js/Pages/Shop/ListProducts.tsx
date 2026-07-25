@@ -191,6 +191,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
           text-align: center;
           position: relative;
           overflow: hidden;
+          z-index:1000
         }
         .sp-hero::before {
           content: '';
@@ -342,7 +343,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
         .sp-cat-count {
           font-family: var(--font-body);
           font-size: 11px;
-          color: var(--color-text-light);
+          color: var(--color-text);
           background: var(--color-bg-alt);
           border: 1px solid var(--color-border);
           border-radius: var(--radius-full);
@@ -485,7 +486,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
           bottom: 0;
           left: 0;
           right: 0;
-          z-index: 200;
+          z-index: 20000;
         }
         .sp-tray-bar {
           background: var(--color-bg-dark);

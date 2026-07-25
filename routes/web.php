@@ -143,9 +143,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders-history', [OrderController::class, 'index'])->name('orders.history');
     Route::get('/orders/{order}', [OrderController::class, 'show']);
 
-    Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
-        ->name('admin.orders.refund')
-        ->middleware(['auth', 'role:Admin']);
+    // Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
+    //     ->name('admin.orders.refund')
+    //     ->middleware(['auth', 'role:Admin']);
 
     // ── Gift Card actions (require auth — browsing the shop above does not) ──
     Route::middleware('auth')->prefix('gift-vouchers')->name('gift-voucher.')->group(function () {
@@ -218,7 +218,9 @@ Route::get('/api/footer-services', function () {
         ->get();
 });
 
-
+// Cancellation policy
+Route::get('/cancellation-policy', fn () => Inertia::render('CancellationPolicy'))
+    ->name('cancellation-policy');
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/admin_routes.php';

@@ -357,7 +357,7 @@ const Contact: React.FC = () => {
           box-shadow: var(--shadow-sm);
         }
         .info-card-header {
-          background: var(--color-primary-dark);
+          background: var(--color-primary);
           padding: var(--space-lg) var(--space-xl);
         }
         .info-card-header h3 {

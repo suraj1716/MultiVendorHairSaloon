@@ -296,6 +296,8 @@ class RefundService
             ]);
         }
 
+          $this->recordRefund($order, 'full', $refundAmount, null, 'Manual refund (' . $order->payment_method . ')');
+
         Log::info("Manual refund successful: A\$ {$refundAmount} for Order #{$order->id}");
 
         return $refundAmount;
@@ -305,6 +307,10 @@ class RefundService
      * Full refund via Stripe (total - booking_fee)
      */
     public function refundOrder(Order $order): float
+
+    /**
+     * Full refund via Stripe (total - booking_fee)
+     */
     {
         Log::info("Starting full order refund for Order #{$order->id}");
 
@@ -337,7 +343,7 @@ class RefundService
                 $stripeParams['payment_intent'] = $order->payment_intent;
             }
 
-            Refund::create($stripeParams);
+         $stripeRefund = Refund::create($stripeParams);
 
             $order->update([
                 'refund_amount' => $alreadyRefunded + $remaining,
@@ -346,8 +352,9 @@ class RefundService
                 'is_paid' => false,
             ]);
 
-            Log::info("Order refund successful: A\$ {$remaining} for Order #{$order->id} (total refunded now: " . ($alreadyRefunded + $remaining) . ")");
+            $this->recordRefund($order, 'full', $remaining, $stripeRefund->id);
 
+            Log::info("Order refund successful: A\$ {$remaining} for Order #{$order->id} (total refunded now: " . ($alreadyRefunded + $remaining) . ")");
             try {
                 Mail::to($order->user)->send(new RefundProcessedForUser($order));
                 Mail::to($order->vendor->user)->send(new RefundProcessedForVendor($order));
@@ -363,72 +370,51 @@ class RefundService
     }
 
 
-    /**
-     * Refund both booking fee and remaining order amount.
-     */
-    public function refundBookingAndOrder(Order $order): float
-    {
-        Log::info("Initiating full refund including booking fee for Order #{$order->id}");
 
-        if (!$order->payment_intent) {
-            Log::warning("Missing payment intent on Order #{$order->id}");
-            return 0;
-        }
 
-        $totalRefunded = 0;
 
-        // Step 1: Refund booking fee if applicable
-        if ($order->booking && !$order->booking->booking_fee_refunded) {
-            $bookingRefund = $this->refundExcludingBookingFee($order);
-            $totalRefunded += $bookingRefund;
-            Log::info("Booking refund processed: A$ {$bookingRefund}");
-        }
-
-        // Step 2: Refund remaining order amount (item or other fees)
-        $alreadyRefunded = $order->refund_amount ?? 0;
-        $remainingRefundable = $order->total_price;
-
-        Log::info("Remaining refundable amount: A$ {$remainingRefundable} for Order #{$order->id}");
-
-        if ($remainingRefundable > 0) {
-            try {
-                Stripe::setApiKey(config('app.stripe_secret_key'));
-                $stripeParams = [
-                    'amount' => intval(round($remainingRefundable * 100)),
-                    'reason' => 'requested_by_customer',
-                ];
-
-                if ($order->stripe_charge_id) {
-                    $stripeParams['charge'] = $order->stripe_charge_id;
-                } elseif ($order->payment_intent) {
-                    $stripeParams['payment_intent'] = $order->payment_intent;
-                } else {
-                    throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
-                }
-
-                $refund = Refund::create($stripeParams);
-
-                $order->refund_amount = $alreadyRefunded + $remainingRefundable;
-                $order->total_price = max(0, $order->total_price - $remainingRefundable);
-                $order->refunded_at = now();
-                $order->refund_id = $refund->id;
-                $order->refund_reason = 'Admin refund (partial or full)';
-                $order->status =  OrderStatusEnum::Refunded->value;
-                $order->is_paid = false;
-                $order->save();
-
-                Log::info("Refund successful for Order #{$order->id}. New total: {$order->total_price}");
-
-                // Add refunded item amount to totalRefunded
-                $totalRefunded += $remainingRefundable;
-            } catch (\Exception $e) {
-                Log::error("Refund failed for Order #{$order->id}: " . $e->getMessage());
-            }
-        }
-
-        return $totalRefunded;
+public function refundCustomAmount(Order $order, float $amount): float
+{
+    if ($amount <= 0) {
+        return 0;
     }
 
+    try {
+        Stripe::setApiKey(config('app.stripe_secret_key'));
+
+        $stripeParams = [
+            'amount' => intval($amount * 100),
+            'reason' => 'requested_by_customer',
+        ];
+
+        if ($order->stripe_charge_id) {
+            $stripeParams['charge'] = $order->stripe_charge_id;
+        } elseif ($order->payment_intent) {
+            $stripeParams['payment_intent'] = $order->payment_intent;
+        } else {
+            throw new \Exception("No Stripe charge or payment intent for Order #{$order->id}");
+        }
+
+        $stripeRefund = Refund::create($stripeParams);
+
+        $newRefundTotal = ($order->refund_amount ?? 0) + $amount;
+        $isFullyRefunded = $newRefundTotal >= $order->total_price;
+
+        $order->update([
+            'refund_amount' => $newRefundTotal,
+            'refunded_at' => now(),
+            'status' => $isFullyRefunded ? OrderStatusEnum::Refunded->value : $order->status,
+            'is_paid' => $isFullyRefunded ? false : $order->is_paid,
+        ]);
+
+        $this->recordRefund($order, 'custom', $amount, $stripeRefund->id);
+
+        return $amount;
+    } catch (\Exception $e) {
+        Log::error("Custom refund failed for Order #{$order->id}: " . $e->getMessage());
+        throw $e;
+    }
+}
 
 
     /**
@@ -452,7 +438,7 @@ class RefundService
             $stripeParams[$order->stripe_charge_id ? 'charge' : 'payment_intent']
                 = $order->stripe_charge_id ?: $order->payment_intent;
 
-            Refund::create($stripeParams);
+           $stripeRefund = Refund::create($stripeParams);
 
             $booking->update([
                 'booking_fee_refunded' => true,
@@ -461,6 +447,8 @@ class RefundService
             $order->update([
                 'refund_amount' => ($order->refund_amount ?? 0) + $bookingFee,
             ]);
+
+            $this->recordRefund($order, 'booking_fee', $bookingFee, $stripeRefund->id);
 
             return $bookingFee;
         } catch (\Exception $e) {
@@ -479,23 +467,25 @@ class RefundService
 
 
 
-    public function recordRefund(
-        Order $order,
-        string $type,
-        float $amount,
-        string $reason = null,
-        bool $isMarker = false,
-        float $voucherRestored = 0
-    ): void {
-        RefundRecord::create([
-            'order_id'          => $order->id,
-            'type'              => $type,
-            'amount'            => $amount,
-            'voucher_restored'  => $voucherRestored,
-            'reason'            => $reason,
-            'is_marker'         => $isMarker,
-        ]);
-    }
+public function recordRefund(
+    Order $order,
+    string $type,
+    float $amount,
+    ?string $stripeRefundId = null,
+    ?string $reason = null,
+    bool $isMarker = false,
+    float $voucherRestored = 0
+): void {
+    RefundRecord::create([
+        'order_id'          => $order->id,
+        'type'              => $type,
+        'amount'            => $amount,
+        'voucher_restored'  => $voucherRestored,
+        'stripe_refund_id'  => $stripeRefundId,
+        'reason'            => $reason,
+        'is_marker'         => $isMarker,
+    ]);
+}
 
     public function hasRefundType(Order $order, string $type): bool
     {

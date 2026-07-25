@@ -202,16 +202,7 @@ export default function GalleryIndex({ galleries, flash }: Props) {
                 style={{ display: "flex", gap: 6, justifyContent: "flex-end" }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <ActionBtn
-                  variant="view"
-                  title="View"
-                  as="a"
-                  href={route("admin.gallery.show", g.id)}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 13, height: 13 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-                  </svg>
-                </ActionBtn>
+
                 <ActionBtn
                   variant="edit"
                   title="Edit"

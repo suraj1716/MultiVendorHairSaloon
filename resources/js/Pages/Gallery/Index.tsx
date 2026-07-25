@@ -360,8 +360,8 @@ export default function Gallery({ galleryItems }: Props) {
       <Head title="Gallery" />
         <section style={{
           width: "100%",
-          paddingTop: "5rem",
-          paddingBottom: "5rem",
+          paddingTop: "6rem",
+          paddingBottom: "6rem",
           background: "var(--color-bg)",
           fontFamily: "var(--font-body)",
         }}>

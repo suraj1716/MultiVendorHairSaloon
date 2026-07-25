@@ -32,10 +32,13 @@ class ProductController extends Controller
         $keyword = $request->query('keyword');
 
         $categories = Category::whereHas('products', function ($q) {
-            $q->where('status', 'published');
-        })
-            ->with('department')
-            ->get();
+        $q->where('status', 'published');
+    })
+    ->withCount(['products' => function ($q) {
+        $q->where('status', 'published');
+    }])
+    ->with('department')
+    ->get();
 
 
         // Load category groups with departments

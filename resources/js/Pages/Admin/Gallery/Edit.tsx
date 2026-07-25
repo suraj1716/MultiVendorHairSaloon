@@ -285,7 +285,7 @@ export default function GalleryEdit({ gallery, flash }: Props) {
         eyebrow="Admin · Gallery"
         title={<>Edit <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>{gallery.title}</em></>}
         action={
-          <AdminBtn variant="ghost" as="a" href={route("admin.gallery.show", gallery.id)}>
+          <AdminBtn variant="ghost" as="a" href={route("admin.gallery.index", gallery.id)}>
             ← Back to Gallery
           </AdminBtn>
         }

@@ -6,6 +6,7 @@ import {
   ChevronDown, ChevronUp,
 } from "lucide-react";
 import { useAdminForm, inputClass } from "@/Components/Admin/useAdminForm";
+import { AdminBtn, AdminPageHeader, Icons } from "@/Components/Admin/AdminComponents";
 
 /* ── Types ── */
 interface MediaItem { id: number; url: string; thumb: string; name: string; size: string; }
@@ -343,14 +344,19 @@ export default function Form({
       <div className="apf-page">
 
         {/* Header */}
-        <div className="apf-header">
-          <Link href={route("admin.products.index")} className="apf-header-back">
-            <ArrowLeft size={14} /> Back to Products
-          </Link>
-          <h1 className="apf-header-title">
-            {isEdit ? <><em>Edit</em> Product</> : <>New <em>Product</em></>}
-          </h1>
-        </div>
+        <AdminPageHeader
+                  eyebrow="Catalogue"
+                  title={isEdit
+                    ? <>Edit <em style={{ fontStyle: "italic" }}>{product!.title}</em></>
+                    : "New Category"
+                  }
+                  action={
+                    <AdminBtn as="a" href={route("admin.products.index")} variant="ghost">
+                      <Icons.Back />
+                      Back
+                    </AdminBtn>
+                  }
+                />
 
         {flash.success && <div className="apf-flash success">{flash.success}</div>}
 

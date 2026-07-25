@@ -73,7 +73,7 @@ export default function ErrorPage({
         {/* Decorative rule */}
         <div className="error-page__rule" />
 
-        <p className="error-page__eyebrow">Maison Éclat</p>
+        <p className="error-page__eyebrow">RB Hair & Beauty Lounge</p>
 
         <h1 className="error-page__code">{statusCode}</h1>
         <h2 className="error-page__title">{meta.title}</h2>

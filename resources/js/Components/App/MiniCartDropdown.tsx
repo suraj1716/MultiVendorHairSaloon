@@ -5,14 +5,18 @@ import { Link, usePage } from "@inertiajs/react";
 import React, { useState, useRef, useEffect } from "react";
 import { useAuthModal } from "@/Contexts/AuthModalContext";
 function MiniCartDropdown() {
-  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage().props as any;
+  const { auth, totalPrice, totalQuantity, miniCartItems } = usePage()
+    .props as any;
   const user = (auth as any)?.user ?? null;
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-const { openLogin } = useAuthModal();
+  const { openLogin } = useAuthModal();
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -39,7 +43,6 @@ const { openLogin } = useAuthModal();
       )}
 
       <div style={{ position: "relative", zIndex: 9999 }} ref={dropdownRef}>
-
         {/* Cart Icon Button */}
         <button
           onClick={() => setOpen(!open)}
@@ -58,12 +61,16 @@ const { openLogin } = useAuthModal();
             color: "var(--color-text-muted)",
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-primary)";
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--color-primary)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              "var(--color-primary)";
+            (e.currentTarget as HTMLButtonElement).style.color =
+              "var(--color-primary)";
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--color-border)";
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-muted)";
+            (e.currentTarget as HTMLButtonElement).style.borderColor =
+              "var(--color-border)";
+            (e.currentTarget as HTMLButtonElement).style.color =
+              "var(--color-text-muted)";
           }}
         >
           <ShoppingBagIcon style={{ width: "18px", height: "18px" }} />
@@ -93,28 +100,34 @@ const { openLogin } = useAuthModal();
           )}
         </button>
 
-        {/* Dropdown Panel */}
-        <div
-          style={{
-            position: "absolute",
-            right: 0,
-            top: "calc(100% + 12px)",
-            width: "360px",
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
-            boxShadow: "var(--shadow-xl)",
-            transformOrigin: "top right",
-            transition: "opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base)",
-            opacity: open ? 1 : 0,
-            transform: open ? "scale(1) translateY(0)" : "scale(0.97) translateY(-6px)",
-            visibility: open ? "visible" : "hidden",
-            pointerEvents: open ? "auto" : "none",
-          }}
-        >
+       {/* Dropdown Panel */}
+<div
+  className="minicart-panel"
+  style={{
+    position: "absolute",
+    right: 0,
+    top: "calc(100% + 12px)",
+    marginRight:-40 ,
+    marginTop:-80,
+    width: "360px",
+    background: "var(--color-surface)",
+    border: "1px solid var(--color-border)",
+    boxShadow: "var(--shadow-xl)",
+    transformOrigin: "top right",
+    transition:
+      "opacity var(--transition-base), transform var(--transition-base), visibility var(--transition-base)",
+    opacity: open ? 1 : 0,
+    transform: open
+      ? "scale(1) translateY(0)"
+      : "scale(0.97) translateY(-6px)",
+    visibility: open ? "visible" : "hidden",
+    pointerEvents: open ? "auto" : "none",
+  }}
+>
           {/* Header */}
           <div
             style={{
-              padding: "var(--space-lg) var(--space-lg) var(--space-md)",
+             padding: "14px 16px 10px",
               borderBottom: "1px solid var(--color-border)",
               display: "flex",
               alignItems: "baseline",
@@ -124,7 +137,7 @@ const { openLogin } = useAuthModal();
             <span
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "var(--text-xl)",
+               fontSize: "1.1rem",
                 fontWeight: 400,
                 color: "var(--color-text)",
               }}
@@ -142,6 +155,47 @@ const { openLogin } = useAuthModal();
             >
               {totalQuantity} item{totalQuantity !== 1 ? "s" : ""}
             </span>
+
+             <button
+      onClick={() => setOpen(false)}
+      aria-label="Close cart"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "22px",
+        height: "22px",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        color: "var(--color-text-muted)",
+        padding: 0,
+        flexShrink: 0,
+        transition: "color var(--transition-fast)",
+      }}
+      onMouseEnter={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.color =
+          "var(--color-primary)";
+      }}
+      onMouseLeave={(e) => {
+        (e.currentTarget as HTMLButtonElement).style.color =
+          "var(--color-text-muted)";
+      }}
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </button>
           </div>
 
           {/* Items */}
@@ -164,7 +218,11 @@ const { openLogin } = useAuthModal();
                 }}
               >
                 <ShoppingBagIcon
-                  style={{ width: "36px", height: "36px", color: "var(--color-border-dark)" }}
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    color: "var(--color-border-dark)",
+                  }}
                 />
                 <p
                   style={{
@@ -178,7 +236,9 @@ const { openLogin } = useAuthModal();
                 </p>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0" }}>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0" }}
+              >
                 {miniCartItems?.map((item: any, idx: number) => (
                   <div
                     key={item.id}
@@ -187,16 +247,17 @@ const { openLogin } = useAuthModal();
                       alignItems: "flex-start",
                       gap: "var(--space-md)",
                       padding: "var(--space-md) 0",
-                      borderBottom: idx < miniCartItems?.length - 1
-                        ? "1px solid var(--color-border)"
-                        : "none",
+                      borderBottom:
+                        idx < miniCartItems?.length - 1
+                          ? "1px solid var(--color-border)"
+                          : "none",
                     }}
                   >
                     {/* Thumbnail */}
-                   <Link
-                   href='#'
-                  //  href={productRoute(item)}
-                   >
+                    <Link
+                      href="#"
+                      //  href={productRoute(item)}
+                    >
                       <div
                         style={{
                           width: "60px",
@@ -218,10 +279,14 @@ const { openLogin } = useAuthModal();
                             transition: "transform var(--transition-slow)",
                           }}
                           onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.transform = "scale(1.06)";
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).style.transform = "scale(1.06)";
                           }}
                           onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLImageElement).style.transform = "scale(1)";
+                            (
+                              e.currentTarget as HTMLImageElement
+                            ).style.transform = "scale(1)";
                           }}
                         />
                       </div>
@@ -230,22 +295,23 @@ const { openLogin } = useAuthModal();
                     {/* Details */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <Link
-                        href='#'
+                        href="#"
                         // href={productRoute(item)}
-                        style={{
-
-                          fontFamily: "var(--font-display)",
-                          fontSize: "var(--text-base)",
-                          fontWeight: 400,
-                          color: "var(--color-text)",
-                          textDecoration: "none",
-                          overflow: "hidden",
-                          display: "-webkit-box",
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: "vertical",
-                          marginBottom: "4px",
-                          lineHeight: 1.3,
-                        } as React.CSSProperties}
+                        style={
+                          {
+                            fontFamily: "var(--font-display)",
+                            fontSize: "var(--text-base)",
+                            fontWeight: 400,
+                            color: "var(--color-text)",
+                            textDecoration: "none",
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            marginBottom: "4px",
+                            lineHeight: 1.3,
+                          } as React.CSSProperties
+                        }
                       >
                         {item.title}
                       </Link>
@@ -260,15 +326,29 @@ const { openLogin } = useAuthModal();
                           marginBottom: "4px",
                         }}
                       >
-                        <span style={{ color: "var(--color-text-light)", fontWeight: 400 }}>
+                        <span
+                          style={{
+                            color: "var(--color-text-light)",
+                            fontWeight: 400,
+                          }}
+                        >
                           ×{item.quantity}&nbsp;
                         </span>
-                        <CurrencyFormatter amount={item.quantity * item.price} currency="AUD" />
+                        <CurrencyFormatter
+                          amount={item.quantity * item.price}
+                          currency="AUD"
+                        />
                       </div>
 
                       {/* Variations */}
                       {item.options && item.options.length > 0 && (
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: "4px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "4px",
+                          }}
+                        >
                           {item.options.map((opt: any) => (
                             <span
                               key={opt.id}
@@ -356,10 +436,12 @@ const { openLogin } = useAuthModal();
                     border: "1px solid var(--color-primary)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.background = "var(--color-primary-light)";
+                    (e.currentTarget as HTMLAnchorElement).style.background =
+                      "var(--color-primary-light)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLAnchorElement).style.background = "var(--color-primary)";
+                    (e.currentTarget as HTMLAnchorElement).style.background =
+                      "var(--color-primary)";
                   }}
                 >
                   View Bag & Checkout
@@ -384,10 +466,12 @@ const { openLogin } = useAuthModal();
                     transition: "background var(--transition-fast)",
                   }}
                   onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "var(--color-primary-light)";
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "var(--color-primary-light)";
                   }}
                   onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.background = "var(--color-primary)";
+                    (e.currentTarget as HTMLButtonElement).style.background =
+                      "var(--color-primary)";
                   }}
                 >
                   Sign In to Checkout
@@ -399,7 +483,6 @@ const { openLogin } = useAuthModal();
       </div>
 
       {/* Login Modal */}
-
     </div>
   );
 }

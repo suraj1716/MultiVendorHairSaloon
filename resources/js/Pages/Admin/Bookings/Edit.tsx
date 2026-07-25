@@ -1,7 +1,10 @@
-import { Head, Link, useForm } from "@inertiajs/react";
+import { Head, Link, useForm, router } from "@inertiajs/react";
 import AdminLayout from "../AdminLayout";
+import { AdminBtn, AdminPageHeader, ConfirmModal, Icons } from "@/Components/Admin/AdminComponents";
+import { useState } from "react";
+import { toast } from "react-toastify";
 
-type User  = { id: number; name: string; email: string };
+type User = { id: number; name: string; email: string };
 type Order = { id: number; label: string };
 
 type BookingProp = {
@@ -11,6 +14,8 @@ type BookingProp = {
   booking_date: string;
   time_slot: string;
   notes: string | null;
+   created_at: string;
+     customer: { name: string; email: string; phone: string };
 };
 type VendorProp = {
   business_start_time: string;
@@ -18,12 +23,21 @@ type VendorProp = {
   slot_interval_minutes: number;
 } | null;
 
-type Props = { booking: BookingProp; users: User[]; orders: Order[]; vendor: VendorProp };
+type Props = {
+  booking: BookingProp;
+  users: User[];
+  orders: Order[];
+  vendor: VendorProp;
+};
 
-function generateTimeSlots(start: string, end: string, intervalMinutes: number): string[] {
+function generateTimeSlots(
+  start: string,
+  end: string,
+  intervalMinutes: number,
+): string[] {
   const slots: string[] = [];
-  const [startH, startM] = start.split(':').map(Number);
-  const [endH, endM] = end.split(':').map(Number);
+  const [startH, startM] = start.split(":").map(Number);
+  const [endH, endM] = end.split(":").map(Number);
 
   let current = startH * 60 + startM;
   const endTotal = endH * 60 + endM;
@@ -31,9 +45,9 @@ function generateTimeSlots(start: string, end: string, intervalMinutes: number):
   const fmt = (totalMinutes: number) => {
     const h = Math.floor(totalMinutes / 60);
     const m = totalMinutes % 60;
-    const ampm = h < 12 ? 'am' : 'pm';
+    const ampm = h < 12 ? "am" : "pm";
     const hour = h % 12 === 0 ? 12 : h % 12;
-    const min = String(m).padStart(2, '0');
+    const min = String(m).padStart(2, "0");
     return `${hour}:${min} ${ampm}`;
   };
 
@@ -46,168 +60,407 @@ function generateTimeSlots(start: string, end: string, intervalMinutes: number):
   return slots;
 }
 
+function Card({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      style={{
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        borderRadius: "var(--radius-md)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          padding: "12px 20px",
+          borderBottom: "1px solid var(--color-border)",
+          background: "var(--color-bg-alt)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            width: 3,
+            height: 16,
+            background: "var(--color-accent)",
+            borderRadius: 2,
+          }}
+        />
+        <span
+          style={{
+            fontFamily: "var(--font-body)",
+            fontSize: "10px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--color-text-muted)",
+            fontWeight: 500,
+          }}
+        >
+          {title}
+        </span>
+      </div>
+      <div style={{ padding: "20px" }}>{children}</div>
+    </div>
+  );
+}
+export default function BookingEdit({ booking, users, orders, vendor }: Props) {
+  const [showDelete, setShowDelete] = useState(false);
 
-// const TIME_SLOTS = [
-//   "9:00 am - 9:30 am",
-//   "9:30 am - 10:00 am",
-//   "10:00 am - 10:30 am",
-//   "10:30 am - 11:00 am",
-//   "11:00 am - 11:30 am",
-//   "11:30 am - 12:00 pm",
-//   "12:00 pm - 12:30 pm",
-//   "12:30 pm - 1:00 pm",
-//   "1:00 pm - 1:30 pm",
-//   "1:30 pm - 2:00 pm",
-//   "2:00 pm - 2:30 pm",
-//   "2:30 pm - 3:00 pm",
-//   "3:00 pm - 3:30 pm",
-//   "3:30 pm - 4:00 pm",
-//   "4:00 pm - 4:30 pm",
-//   "4:30 pm - 5:00 pm",
-//   "5:00 pm - 5:30 pm",
-//   "5:30 pm - 6:00 pm",
-// ];
-
-export default function BookingEdit({ booking, users, orders,vendor  }: Props) {
   const { data, setData, put, processing, errors } = useForm({
-    user_id:      String(booking.user_id),
-    order_id:     booking.order_id ? String(booking.order_id) : "",
-    booking_date: booking.booking_date.split('T')[0], // ← extract just the date part
-    time_slot:    booking.time_slot,
-    notes:        booking.notes ?? "",
+    user_id: String(booking.user_id),
+    order_id: booking.order_id ? String(booking.order_id) : "",
+    booking_date: booking.booking_date.split("T")[0],
+    time_slot: booking.time_slot,
+    notes: booking.notes ?? "",
   });
-   const timeSlots = vendor
+
+  const timeSlots = vendor
     ? generateTimeSlots(
         vendor.business_start_time,
         vendor.business_end_time,
         vendor.slot_interval_minutes,
       )
     : [];
-console.log(booking, users, orders )
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     put(route("admin.bookings.update", booking.id));
   };
 
   const inputStyle: React.CSSProperties = {
-    width: "100%", padding: "0.75rem 1rem",
-    fontFamily: "var(--font-body)", fontSize: "var(--text-sm)",
-    color: "var(--color-text)", background: "var(--color-bg)",
-    border: "1px solid var(--color-border)", outline: "none",
+    width: "100%",
+    padding: "0.75rem 1rem",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-sm)",
+    color: "var(--color-text)",
+    background: "var(--color-bg)",
+    border: "1px solid var(--color-border)",
+    outline: "none",
   };
   const labelStyle: React.CSSProperties = {
-    display: "block", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)",
-    fontWeight: 500, letterSpacing: "0.1em", textTransform: "uppercase",
-    color: "var(--color-text-muted)", marginBottom: "var(--space-xs)",
+    display: "block",
+    fontFamily: "var(--font-body)",
+    fontSize: "var(--text-xs)",
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    color: "var(--color-text-muted)",
+    marginBottom: "var(--space-xs)",
   };
   const errStyle: React.CSSProperties = {
-    color: "var(--color-error)", fontSize: "var(--text-xs)",
-    marginTop: 4, fontFamily: "var(--font-body)",
+    color: "var(--color-error)",
+    fontSize: "var(--text-xs)",
+    marginTop: 4,
+    fontFamily: "var(--font-body)",
   };
-  const sectionStyle: React.CSSProperties = {
-    background: "var(--color-surface)",
-    border: "1px solid var(--color-border)",
-    marginBottom: "var(--space-lg)",
+
+  const handleCancel = (id: number) => {
+    if (
+      !confirm("Cancel this booking? The linked order will also be cancelled.")
+    )
+      return;
+    router.post(
+      route("admin.bookings.cancel", id),
+      {},
+      {
+        preserveScroll: true,
+        onSuccess: () => toast.success("Booking cancelled"),
+        onError: () => toast.error("Failed"),
+      },
+    );
   };
-  const sectionHead: React.CSSProperties = {
-    padding: "var(--space-md) var(--space-xl)",
-    borderBottom: "1px solid var(--color-border)",
-    fontFamily: "var(--font-body)", fontSize: "var(--text-xs)",
-    letterSpacing: "0.15em", textTransform: "uppercase",
-    color: "var(--color-text-light)", fontWeight: 500,
+
+  const handleDelete = () => {
+    if (!confirm("Delete this booking permanently?")) return;
+    router.delete(route("admin.bookings.destroy", booking.id), {
+      onSuccess: () => toast.success("Booking deleted"),
+      onError: () => toast.error("Failed"),
+    });
   };
+
+  const selectedUser = users.find((u) => String(u.id) === data.user_id);
+  const selectedOrder = orders.find((o) => String(o.id) === data.order_id);
 
   return (
-    <AdminLayout>
+    <>
       <Head title={`Edit Booking #${booking.id}`} />
+      <AdminLayout>
+        <AdminPageHeader
+          eyebrow="Commerce"
+          title={
+            <>
+              Edit Booking <em style={{ fontStyle: "italic" }}>#{booking.id}</em>
+            </>
+          }
+          meta={`Created ${booking.created_at}`}
+          action={
+            <div style={{ display: "flex", gap: 8 }}>
+              <AdminBtn
+                as="a"
+                href={route("admin.bookings.show", booking.id)}
+                variant="ghost"
+              >
+                <Icons.View /> View
+              </AdminBtn>
+              <AdminBtn
+                as="a"
+                href={route("admin.bookings.index")}
+                variant="ghost"
+              >
+                <Icons.Back /> Bookings
+              </AdminBtn>
+            </div>
+          }
+        />
 
-      <div style={{ display: "flex", alignItems: "center", gap: "var(--space-lg)", marginBottom: "var(--space-2xl)" }}>
-        <Link href={route("admin.bookings.show", booking.id)} style={{ fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-light)", textDecoration: "none" }}>
-          ← Booking #{booking.id}
-        </Link>
-        <h1 style={{ fontFamily: "var(--font-display)", fontSize: "clamp(1.75rem,3vw,2.25rem)", fontWeight: 300, color: "var(--color-text)", margin: 0 }}>
-          Edit Booking #{booking.id}
-        </h1>
-      </div>
-
-      <form onSubmit={handleSubmit}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "var(--space-lg)", alignItems: "start" }}>
-          <div>
-            <div style={sectionStyle}>
-              <div style={sectionHead}>Booking Details</div>
-              <div style={{ padding: "var(--space-xl)", display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--space-lg)" }}>
-                  <div>
+        <form onSubmit={handleSubmit}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0,1fr) 300px",
+              gap: 20,
+              alignItems: "start",
+            }}
+          >
+            {/* LEFT */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              {/* ── Booking Details ── */}
+              <Card title="Booking Details">
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column" }}>
                     <label style={labelStyle}>Date</label>
-                    <input type="date" value={data.booking_date} onChange={e => setData("booking_date", e.target.value)} style={inputStyle} />
-                    {errors.booking_date && <p style={errStyle}>{errors.booking_date}</p>}
+                    <input
+                      type="date"
+                      value={data.booking_date}
+                      onChange={(e) => setData("booking_date", e.target.value)}
+                      style={inputStyle}
+                    />
+                    {errors.booking_date && (
+                      <span style={errStyle}>{errors.booking_date}</span>
+                    )}
                   </div>
-                  <div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
                     <label style={labelStyle}>Time Slot</label>
-                    <select value={data.time_slot} onChange={e => setData("time_slot", e.target.value)} style={inputStyle}>
-  <option value="">Select time…</option>
-  {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-</select>
-                    {errors.time_slot && <p style={errStyle}>{errors.time_slot}</p>}
+                    <select
+                      value={data.time_slot}
+                      onChange={(e) => setData("time_slot", e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select time…</option>
+                      {timeSlots.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.time_slot && (
+                      <span style={errStyle}>{errors.time_slot}</span>
+                    )}
                   </div>
                 </div>
+              </Card>
 
-                <div>
-                  <label style={labelStyle}>Notes (optional)</label>
-                  <textarea
-                    value={data.notes}
-                    onChange={e => setData("notes", e.target.value)}
-                    rows={4}
-                    style={{ ...inputStyle, resize: "vertical" }}
-                    placeholder="Any notes about this booking…"
-                  />
-                  {errors.notes && <p style={errStyle}>{errors.notes}</p>}
+              {/* ── Notes ── */}
+              <Card title="Notes">
+                <textarea
+                  value={data.notes}
+                  onChange={(e) => setData("notes", e.target.value)}
+                  rows={4}
+                  placeholder="Any notes about this booking…"
+                  style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+                />
+                {errors.notes && <span style={errStyle}>{errors.notes}</span>}
+              </Card>
+
+              {/* ── Customer & Order ── */}
+              <Card title="Customer & Order">
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 14,
+                  }}
+                >
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <label style={labelStyle}>Customer</label>
+                    <select
+                      value={data.user_id}
+                      onChange={(e) => setData("user_id", e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">Select customer…</option>
+                      {users.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {u.name} — {u.email}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.user_id && (
+                      <span style={errStyle}>{errors.user_id}</span>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" }}>
+                    <label style={labelStyle}>Link to Order (optional)</label>
+                    <select
+                      value={data.order_id}
+                      onChange={(e) => setData("order_id", e.target.value)}
+                      style={inputStyle}
+                    >
+                      <option value="">No linked order</option>
+                      {orders.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.order_id && (
+                      <span style={errStyle}>{errors.order_id}</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </Card>
+            </div>
+
+            {/* RIGHT */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <Card title="Summary">
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  {[
+                    ["Booking", `#${booking.id}`],
+                    ["Date", data.booking_date || "—"],
+                    ["Time", data.time_slot || "—"],
+                    ["Customer", selectedUser?.name ?? "—"],
+                    ["Order", selectedOrder?.label ?? "None"],
+                  ].map(([k, v]) => (
+                    <div
+                      key={k}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        padding: "8px 0",
+                        borderBottom: "1px solid var(--color-border)",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "10px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.12em",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        {k}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-body)",
+                          fontSize: "12px",
+                          color: "var(--color-text)",
+                        }}
+                      >
+                        {v}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+
+              <Card title="Actions">
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 8 }}
+                >
+                  <AdminBtn
+                    type="button"
+                    variant="ghost"
+                    onClick={() => handleCancel(booking.id)}
+                  >
+                    <Icons.Edit /> Cancel Booking
+                  </AdminBtn>
+                  <AdminBtn
+                    type="button"
+                    variant="danger"
+                    onClick={() => setShowDelete(true)}
+                  >
+                    <Icons.Delete /> Delete Booking
+                  </AdminBtn>
+                </div>
+              </Card>
             </div>
           </div>
 
-          <div>
-            <div style={sectionStyle}>
-              <div style={sectionHead}>Customer & Order</div>
-              <div style={{ padding: "var(--space-xl)", display: "flex", flexDirection: "column", gap: "var(--space-lg)" }}>
-                <div>
-                  <label style={labelStyle}>Customer</label>
-                  <select value={data.user_id} onChange={e => setData("user_id", e.target.value)} style={inputStyle}>
-                    <option value="">Select customer…</option>
-                    {users.map(u => <option key={u.id} value={u.id}>{u.name} — {u.email}</option>)}
-                  </select>
-                  {errors.user_id && <p style={errStyle}>{errors.user_id}</p>}
-                </div>
-                <div>
-                  <label style={labelStyle}>Link to Order (optional)</label>
-                  <select value={data.order_id} onChange={e => setData("order_id", e.target.value)} style={inputStyle}>
-                    <option value="">No linked order</option>
-                    {orders.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                  </select>
-                  {errors.order_id && <p style={errStyle}>{errors.order_id}</p>}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-              <Link
+          {/* Sticky save bar */}
+          <div
+            style={{
+              position: "sticky",
+              bottom: 0,
+              zIndex: 40,
+              background: "var(--color-surface)",
+              borderTop: "1px solid var(--color-border)",
+              padding: "12px 20px",
+              margin: "24px -28px -32px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "11px",
+                color: "var(--color-text-muted)",
+              }}
+            >
+              Booking #{booking.id} · {data.booking_date || "no date"} ·{" "}
+              {data.time_slot || "no time"}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <AdminBtn
+                as="a"
                 href={route("admin.bookings.show", booking.id)}
-                style={{ flex: 1, padding: "0.75rem", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "0.1em", textTransform: "uppercase", background: "transparent", color: "var(--color-text-muted)", border: "1px solid var(--color-border)", cursor: "pointer", textAlign: "center", textDecoration: "none", display: "block" }}
+                variant="ghost"
+                size="sm"
               >
                 Cancel
-              </Link>
-              <button
+              </AdminBtn>
+              <AdminBtn
                 type="submit"
                 disabled={processing}
-                style={{ flex: 2, padding: "0.75rem", fontFamily: "var(--font-body)", fontSize: "var(--text-xs)", letterSpacing: "0.1em", textTransform: "uppercase", background: "var(--color-primary)", color: "#fff", border: "none", cursor: "pointer" }}
+                variant="accent"
               >
-                {processing ? "Saving…" : "Save Changes"}
-              </button>
+                <Icons.Check /> {processing ? "Saving…" : "Save Changes"}
+              </AdminBtn>
             </div>
           </div>
-        </div>
-      </form>
-    </AdminLayout>
+        </form>
+
+        {showDelete && (
+          <ConfirmModal
+            title={`Delete Booking #${booking.id}?`}
+            description={`This will permanently delete the order for ${booking.customer} including all items and any linked booking.`}
+            confirmLabel="Delete Booking"
+            onConfirm={handleDelete}
+            onCancel={() => setShowDelete(false)}
+          />
+        )}
+      </AdminLayout>
+    </>
   );
 }

@@ -462,7 +462,7 @@ useEffect(() => {
                           color:
                             isActive || isDone
                               ? "var(--color-text-inverse)"
-                              : "var(--color-text-light)",
+                              : "var(--color-text)",
                         }}
                       >
                         {isDone ? "✓" : stepIndex}
@@ -472,7 +472,7 @@ useEffect(() => {
                         style={{
                           color: isActive
                             ? "var(--color-primary)"
-                            : "var(--color-text-light)",
+                            : "var(--color-text-muted-light)",
                           fontWeight: isActive ? 500 : 400,
                         }}
                       >
@@ -905,7 +905,7 @@ useEffect(() => {
                         <div className="co-summary-row" key={item.id}>
                           <span>
                             {item.title}{" "}
-                            <span style={{ color: "var(--color-text-light)" }}>
+                            <span style={{ color: "var(--color-text)" }}>
                               × {item.quantity}
                             </span>
                           </span>

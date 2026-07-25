@@ -1,61 +1,230 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps } from "@/types";
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
+import React from "react";
 import DeleteUserForm from "./Partials/DeleteUserForm";
 import UpdatePasswordForm from "./Partials/UpdatePasswordForm";
 import UpdateProfileInformationForm from "./Partials/UpdateProfileInformationForm";
 import VendorDetails from "./Partials/VendorDetails";
 import ShippingAddresses, { ShippingAddress } from "./ShippingAddresses";
+import Card from "@/Components/App/Card";
 
-import { usePage } from '@inertiajs/react';
-
-export default function Edit() {
- const page = usePage<PageProps<{ mustVerifyEmail: boolean; status?: string; shipping_addresses: ShippingAddress[] }>>();
-
-
-  const { mustVerifyEmail, status, shipping_addresses } = page.props;
-
+/* ─────────────────────────────────────────────
+   Local heading helpers (same pattern as About.tsx)
+───────────────────────────────────────────── */
+function Ornament() {
   return (
-    <AuthenticatedLayout
-      header={
-        <h2 className="text-xl font-semibold leading-tight text-gray-800">
-          Profile
-        </h2>
-      }
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        margin: "1rem 0 1.5rem",
+      }}
     >
-      <Head title="Profile" />
-
-   <div className="mx-auto max-w-7xl grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-  {/* ---------- LEFT SIDE ---------- */}
-  <div className="space-y-6">
-    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-      <UpdateProfileInformationForm
-        mustVerifyEmail={mustVerifyEmail}
-        status={status}
-        className="max-w-xl"
+      <div
+        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
+      />
+      <div
+        style={{
+          width: 5,
+          height: 5,
+          background: "var(--color-accent)",
+          transform: "rotate(45deg)",
+        }}
+      />
+      <div
+        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
       />
     </div>
+  );
+}
 
-    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-      <UpdatePasswordForm className="max-w-xl" />
-    </div>
+function Eyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: "0.68rem",
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: "var(--color-accent)",
+        display: "block",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
 
-    <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8">
-      <DeleteUserForm className="max-w-xl" />
-    </div>
-  </div>
+function CardLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: "0.65rem",
+        letterSpacing: "0.18em",
+        textTransform: "uppercase",
+        color: "var(--color-text-light)",
+        display: "block",
+        marginBottom: "0.5rem",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
 
-  {/* ---------- RIGHT SIDE ---------- */}
-  <div className="bg-white p-4 shadow sm:rounded-lg sm:p-8 dark:bg-gray-800">
-    <VendorDetails />
+export default function Edit() {
+  const page =
+    usePage<
+      PageProps<{
+        mustVerifyEmail: boolean;
+        status?: string;
+        shipping_addresses: ShippingAddress[];
+      }>
+    >();
+  const { mustVerifyEmail, status, shipping_addresses } = page.props;
+  return (
+    <AuthenticatedLayout>
+      <Head title="Profile" />
 
-    {/* add some vertical breathing room before the addresses */}
-    <div className="mt-10">
-      <ShippingAddresses shipping_addresses={shipping_addresses} />
-    </div>
-  </div>
-</div>
+      <div
+        style={{
+          fontFamily: "var(--font-body)",
+          background: "var(--color-bg)",
+          minHeight: "100%",
+        }}
+      >
+        <style>{`
+          .pf-card {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color var(--transition-base), box-shadow var(--transition-base);
+          }
+          .pf-card:hover {
+            border-color: var(--color-accent-light);
+            box-shadow: var(--shadow-lg);
+          }
+          .pf-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-accent);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+          }
+          .pf-card:hover::before {
+            transform: scaleX(1);
+          }
+          .pf-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.75rem;
+          }
+          @media (min-width: 900px) {
+            .pf-grid {
+              grid-template-columns: 1fr 1fr;
+              align-items: start;
+            }
+          }
+          .pf-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1.75rem;
+          }
+        `}</style>
 
+        {/* ── Hero ── */}
+        <section
+          style={{
+            background: "var(--color-bg-dark)",
+            padding: "4rem 0 3rem",
+            borderBottom: "1px solid var(--color-border)",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "var(--container-max)",
+              margin: "0 auto",
+              padding: "0 7vw",
+              marginLeft:20
+            }}
+          >
+            <Eyebrow>Account</Eyebrow>
+            <Ornament />
+            <h1
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(2rem, 4vw, 2.75rem)",
+                fontWeight: 300,
+                color: "white",
+                lineHeight: 1.15,
+              }}
+            >
+              Your{" "}
+              <em
+                style={{
+                  fontStyle: "italic",
+                  color: "var(--color-accent-light)",
+                }}
+              >
+                Profile
+              </em>
+            </h1>
+          </div>
+        </section>
+
+        {/* ── Content ── */}
+        <section style={{ padding: "3.5rem 0 5rem" }}>
+          <div
+            style={{
+              maxWidth: "var(--container-max)",
+              margin: "0 auto",
+              padding: "0 7vw",
+            }}
+          >
+            <div className="pf-grid">
+              {/* ---------- LEFT SIDE ---------- */}
+
+              <div className="pf-stack">
+                <Card title="Profile Information">
+                  <UpdateProfileInformationForm
+                    mustVerifyEmail={mustVerifyEmail}
+                    status={status}
+                  />
+                </Card>
+                <Card title="Security">
+                  <UpdatePasswordForm />
+                </Card>
+                <Card title="Danger Zone">
+                  <DeleteUserForm />
+                </Card>
+              </div>
+
+              <div className="pf-stack">
+                <Card
+                  title="Vendor Details"
+                  badge={/* e.g. user.vendor?.status_label */ undefined}
+                >
+                  <VendorDetails />
+                </Card>
+                <Card title="Shipping Addresses">
+                  <ShippingAddresses shipping_addresses={shipping_addresses} />
+                </Card>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </AuthenticatedLayout>
   );
 }

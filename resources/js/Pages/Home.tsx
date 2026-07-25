@@ -238,7 +238,7 @@ export default function Home({
     null,
   );
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
-
+  console.log(categories);
   const [landscapeImages, setLandscapeImages] = useState<
     Record<number, string>
   >({});
@@ -385,40 +385,269 @@ export default function Home({
         </div>
 
         {/* ══ SPLIT INTRO ══ */}
-        <section
-          style={{
-            background: "var(--color-bg)",
-            padding: "7rem 0",
-            overflow: "hidden",
-          }}
-          data-aos="fade-up"
-        >
+        <style>{`
+  .split-intro {
+    background: var(--color-bg);
+    padding: 7rem 0;
+    overflow: hidden;
+  }
+  .split-intro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .split-intro-actions {
+    display: flex;
+    gap: 0.875rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .split-intro-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 28px;
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .split-intro-mosaic {
+    position: relative;
+    height: 520px;
+  }
+  .split-intro-accent-card {
+    position: absolute;
+    bottom: 22%;
+    right: -1.5rem;
+    background: var(--color-primary);
+    border: 1px solid rgba(201,169,110,0.3);
+    padding: 1.25rem 1.5rem;
+    min-width: 160px;
+  }
+
+  @media (max-width: 1024px) {
+    .split-intro { padding: 4.5rem 0; }
+    .split-intro-grid {
+      grid-template-columns: 1fr;
+      gap: 3rem;
+    }
+    .split-intro-mosaic { display: none; }
+    .split-intro-text-block { max-width: 100% !important; }
+  }
+
+  @media (max-width: 640px) {
+    .split-intro { padding: 3.25rem 0; }
+    .split-intro-grid { gap: 2rem; }
+    .split-intro-actions {
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .split-intro-btn {
+      width: 100%;
+      padding: 14px 20px;
+    }
+  }
+`}</style>
+
+        {/* ══ SPLIT INTRO ══ */}
+        <style>{`
+  .split-intro {
+    background: var(--color-bg);
+    padding: 7rem 0;
+    overflow: hidden;
+  }
+  .split-intro-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5rem;
+    align-items: center;
+  }
+  .split-intro-actions {
+    display: flex;
+    gap: 0.875rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .split-intro-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 13px 28px;
+    font-family: var(--font-body);
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .split-intro-mosaic {
+    position: relative;
+    height: 520px;
+  }
+  .split-intro-accent-card {
+    position: absolute;
+    bottom: 22%;
+    right: -1.5rem;
+    background: var(--color-primary);
+    border: 1px solid rgba(201,169,110,0.3);
+    padding: 1.25rem 1.5rem;
+    min-width: 160px;
+  }
+
+  /* Mobile/tablet image — simple single-image card, shown only below 1024px */
+  .split-intro-mosaic-mobile {
+    display: none;
+  }
+
+  @media (max-width: 1024px) {
+    .split-intro { padding: 4.5rem 0; }
+    .split-intro-grid {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    .split-intro-mosaic { display: none; }
+    .split-intro-text-block { max-width: 100% !important; }
+
+    .split-intro-mosaic-mobile {
+      display: block;
+      position: relative;
+      order: -1; /* image above the text on mobile */
+    }
+    .split-intro-mosaic-mobile-main {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+    }
+    .split-intro-mosaic-mobile-main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .split-intro-mosaic-mobile-inset {
+      position: absolute;
+      bottom: -1.25rem;
+      left: 1.25rem;
+      width: 34%;
+      aspect-ratio: 1 / 1;
+      background: var(--color-surface-warm);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.18);
+    }
+    .split-intro-mosaic-mobile-inset img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .split-intro-mosaic-mobile-badge {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      background: var(--color-primary);
+      border: 1px solid rgba(201,169,110,0.35);
+      padding: 0.6rem 0.9rem;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .split-intro-mosaic-mobile-main { aspect-ratio: 5 / 4; }
+    .split-intro-mosaic-mobile-inset { width: 30%; left: 1rem; bottom: -1rem; }
+  }
+
+  @media (max-width: 640px) {
+    .split-intro { padding: 3.25rem 0; }
+    .split-intro-grid { gap: 2rem; }
+    .split-intro-actions {
+      flex-direction: column;
+      gap: 0.625rem;
+    }
+    .split-intro-btn {
+      width: 100%;
+      padding: 14px 20px;
+    }
+  }
+`}</style>
+
+        {/* Our Story */}
+        <section className="split-intro" data-aos="fade-up">
           <div className="container-site">
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "5rem",
-                alignItems: "center",
-              }}
-              className="max-lg:grid-cols-1 max-lg:gap-12"
-            >
+            <div className="split-intro-grid">
+              {/* mobile/tablet: simple stacked image card, only rendered below 1024px */}
+              <div
+                className="split-intro-mosaic-mobile"
+                style={{ marginBottom: "2rem" }}
+              >
+                <div className="split-intro-mosaic-mobile-main">
+                  {categories[2]?.image && (
+                    <img src={`/storage/${categories[2].image}`} alt="" />
+                  )}
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: "rgba(28,26,23,0.14)",
+                    }}
+                  />
+                  <div className="split-intro-mosaic-mobile-badge">
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontSize: "1.35rem",
+                        fontWeight: 300,
+                        color: "var(--color-accent-light)",
+                        lineHeight: 1,
+                      }}
+                    >
+                      15+
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        fontSize: "0.5rem",
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "rgba(255,255,255,0.55)",
+                        marginTop: 3,
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      Years Excellence
+                    </div>
+                  </div>
+                </div>
+                {categories[4]?.image && (
+                  <div className="split-intro-mosaic-mobile-inset">
+                    <img src={`/storage/${categories[4].image}`} alt="" />
+                  </div>
+                )}
+              </div>
+
               {/* left: text */}
               <div>
                 <SectionEyebrow>Est. 2009 · Sydney CBD</SectionEyebrow>
                 <SectionHeading>
                   The art of hair,{" "}
                   <em
-                    style={{
-                      fontStyle: "italic",
-                      color: "var(--color-text)",
-                    }}
+                    style={{ fontStyle: "italic", color: "var(--color-text)" }}
                   >
                     elevated
                   </em>
                 </SectionHeading>
                 <GoldDivider centered={false} />
                 <p
+                  className="split-intro-text-block"
                   style={{
                     color: "var(--color-text-muted)",
                     lineHeight: 1.85,
@@ -433,6 +662,7 @@ export default function Home({
                   your lifestyle, your vision.
                 </p>
                 <p
+                  className="split-intro-text-block"
                   style={{
                     color: "var(--color-text-muted)",
                     lineHeight: 1.85,
@@ -445,30 +675,16 @@ export default function Home({
                   specialists, and bridal artists under one roof — each devoted
                   to making excellence feel effortless.
                 </p>
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.875rem",
-                    marginTop: "2.5rem",
-                    flexWrap: "wrap",
-                  }}
-                >
+
+                <div className="split-intro-actions">
                   <a
                     href={route("shop.search")}
+                    className="split-intro-btn"
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "13px 28px",
                       background: "var(--color-accent)",
                       color: "var(--color-bg-dark)",
                       border: "1px solid var(--color-accent)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "0.68rem",
                       fontWeight: 500,
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      textDecoration: "none",
                       transition: "background 250ms, border-color 250ms",
                     }}
                     onMouseEnter={(e) => {
@@ -486,7 +702,7 @@ export default function Home({
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="1.5"
-                      style={{ width: 13, height: 13 }}
+                      style={{ width: 13, height: 13, flexShrink: 0 }}
                     >
                       <path
                         strokeLinecap="round"
@@ -497,19 +713,12 @@ export default function Home({
                   </a>
                   <a
                     href={route("about")}
+                    className="split-intro-btn"
                     style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      padding: "13px 28px",
                       background: "transparent",
                       color: "var(--color-text)",
                       border: "1px solid var(--color-border)",
-                      fontFamily: "var(--font-body)",
-                      fontSize: "0.68rem",
                       fontWeight: 400,
-                      letterSpacing: "0.2em",
-                      textTransform: "uppercase",
-                      textDecoration: "none",
                       transition: "border-color 250ms",
                     }}
                     onMouseEnter={(e) => {
@@ -526,11 +735,8 @@ export default function Home({
                 </div>
               </div>
 
-              {/* right: stacked image mosaic */}
-              <div
-                style={{ position: "relative", height: 520 }}
-                className="max-lg:hidden"
-              >
+              {/* right: stacked image mosaic — hidden below 1024px via CSS */}
+              <div className="split-intro-mosaic">
                 {/* large background image */}
                 <div
                   style={{
@@ -563,6 +769,7 @@ export default function Home({
                     }}
                   />
                 </div>
+
                 {/* small inset image */}
                 <div
                   style={{
@@ -589,18 +796,9 @@ export default function Home({
                     />
                   )}
                 </div>
+
                 {/* accent card */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "22%",
-                    right: "-1.5rem",
-                    background: "var(--color-primary)",
-                    border: "1px solid rgba(201,169,110,0.3)",
-                    padding: "1.25rem 1.5rem",
-                    minWidth: 160,
-                  }}
-                >
+                <div className="split-intro-accent-card">
                   <div
                     style={{
                       fontFamily: "var(--font-display)",
@@ -625,6 +823,7 @@ export default function Home({
                     Years of Excellence
                   </div>
                 </div>
+
                 {/* vertical rule decoration */}
                 <div
                   style={{
@@ -738,6 +937,36 @@ export default function Home({
         </section>
 
         {/* ══ SERVICES BENTO ══ */}
+        <style>{`
+  .services-bento-desktop {
+    display: none;
+  }
+  .services-bento-mobile {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  @media (min-width: 1024px) {
+    .services-bento-desktop {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 240px);
+      gap: 10px;
+    }
+    .services-bento-mobile {
+      display: none;
+    }
+  }
+
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .services-bento-mobile {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+`}</style>
+
         <section
           id="services"
           style={{
@@ -763,10 +992,7 @@ export default function Home({
                 <SectionHeading>
                   Our{" "}
                   <em
-                    style={{
-                      fontStyle: "italic",
-                      color: "var(--color-text)",
-                    }}
+                    style={{ fontStyle: "italic", color: "var(--color-text)" }}
                   >
                     Services
                   </em>
@@ -806,16 +1032,8 @@ export default function Home({
               </a>
             </div>
 
-            {/* Desktop bento */}
-            <div
-              className="lg:grid hidden"
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gridTemplateRows: "repeat(3, 240px)",
-                gap: "10px",
-              }}
-            >
+            {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
+            <div className="services-bento-desktop">
               {categories.slice(0, 9).map((cat, idx) => (
                 <div
                   key={cat.id}
@@ -852,7 +1070,6 @@ export default function Home({
                       transition: "opacity 0.3s",
                     }}
                   />
-                  {/* hover tint */}
                   <div
                     style={{
                       position: "absolute",
@@ -863,7 +1080,6 @@ export default function Home({
                     }}
                     className="group-hover:opacity-100"
                   />
-                  {/* accent line */}
                   <div
                     style={{
                       position: "absolute",
@@ -934,8 +1150,8 @@ export default function Home({
               ))}
             </div>
 
-            {/* Mobile */}
-            <div className="lg:hidden grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+            <div className="services-bento-mobile">
               {categories.slice(0, 6).map((cat) => (
                 <div
                   key={cat.id}
@@ -978,10 +1194,21 @@ export default function Home({
                         fontFamily: "var(--font-display)",
                         fontSize: "1rem",
                         fontWeight: 300,
+                        color: "white",
                       }}
                     >
                       {cat.name}
                     </h3>
+                       <p
+                      style={{
+                        fontSize: "0.65rem",
+                        letterSpacing: "0.15em",
+                        textTransform: "uppercase",
+                        color: "rgba(255,255,255,0.5)",
+                      }}
+                    >
+                      {cat.products_count} treatments
+                    </p>
                   </div>
                 </div>
               ))}
@@ -989,7 +1216,6 @@ export default function Home({
           </div>
         </section>
 
-        {/* ══ DEPARTMENT MODAL ══ */}
         {/* ══ CATEGORY MODAL ══ */}
         {activeCategory && (
           <div
@@ -1100,7 +1326,6 @@ export default function Home({
                     onClick={() =>
                       (window.location.href = route(
                         "shop.search",
-                        // "category.show",
                         activeCategory.id,
                       ))
                     }
@@ -1121,284 +1346,316 @@ export default function Home({
           </div>
         )}
 
-        {/* ══ PILLARS ══ */}
-        <section
-          style={{
-            background: "var(--color-surface)",
-            borderTop: "1px solid var(--color-border)",
-            borderBottom: "1px solid var(--color-border)",
-            padding: "7rem 0",
-          }}
-          data-aos="fade-up"
-        >
-          <div className="container-site">
-            <div style={{ textAlign: "center", marginBottom: "4rem" }}>
-              <SectionEyebrow>
-                The RB Hair & Beauty Lounge Difference
-              </SectionEyebrow>
-              <SectionHeading>
-                Crafted for{" "}
-                <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
-                  Excellence
-                </em>
-              </SectionHeading>
-              <GoldDivider />
-            </div>
+      {/* ══ PILLARS ══ */}
+<style>{`
+  .pillars-section {
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--color-border);
+    padding: 7rem 0;
+  }
+  .pillars-heading-wrap {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+  .pillars-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--color-border);
+  }
+  .pillar-card {
+    background: var(--color-surface-warm);
+    padding: 3rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: background 300ms;
+  }
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                gap: "1px",
-                background: "var(--color-border)",
-              }}
+  @media (max-width: 1024px) {
+    .pillars-section { padding: 4.5rem 0; }
+    .pillars-heading-wrap { margin-bottom: 2.75rem; }
+    .pillars-grid {
+      /* explicit 2-up instead of auto-fit, avoids an odd single item
+         stretching full-width or wrapping off-center */
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .pillar-card { padding: 2.25rem 1.75rem; }
+  }
+
+  @media (max-width: 640px) {
+    .pillars-section { padding: 3.25rem 0; }
+    .pillars-heading-wrap { margin-bottom: 2rem; }
+    .pillars-grid {
+      grid-template-columns: 1fr;
+    }
+    .pillar-card { padding: 2rem 1.5rem; }
+  }
+`}</style>
+
+<section className="pillars-section" data-aos="fade-up">
+  <div className="container-site">
+    <div className="pillars-heading-wrap">
+      <SectionEyebrow>The RB Hair & Beauty Lounge Difference</SectionEyebrow>
+      <SectionHeading>
+        Crafted for{" "}
+        <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
+          Excellence
+        </em>
+      </SectionHeading>
+      <GoldDivider />
+    </div>
+
+    <div className="pillars-grid">
+      {pillars.map((p, i) => (
+        <div
+          key={i}
+          className="pillar-card group hover:bg-[var(--color-bg)]"
+          data-aos="fade-up"
+          data-aos-delay={i * 100}
+        >
+          {/* corner accent */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: 3,
+              height: 0,
+              background: "var(--color-accent)",
+              transition: "height 0.4s ease",
+            }}
+            className="group-hover:h-full"
+          />
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              marginBottom: "1.75rem",
+              border: "1px solid var(--color-accent-light)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="var(--color-accent)"
+              strokeWidth="1.5"
+              style={{ width: 22, height: 22 }}
             >
-              {pillars.map((p, i) => (
-                <div
-                  key={i}
-                  style={{
-                    background: "var(--color-surface-warm)",
-                    padding: "3rem 2.5rem",
-                    position: "relative",
-                    overflow: "hidden",
-                    transition: "background 300ms",
-                  }}
-                  className="group hover:bg-[var(--color-bg)]"
-                  data-aos="fade-up"
-                  data-aos-delay={i * 100}
+              <path strokeLinecap="round" strokeLinejoin="round" d={p.icon} />
+            </svg>
+          </div>
+          <h3
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "1.3rem",
+              fontWeight: 300,
+              color: "var(--color-text)",
+              marginBottom: "0.875rem",
+              letterSpacing: "0.01em",
+            }}
+          >
+            {p.title}
+          </h3>
+          <p
+            style={{
+              color: "var(--color-text-muted)",
+              lineHeight: 1.8,
+              fontSize: "0.9rem",
+            }}
+          >
+            {p.body}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
+
+      {/* ══ TESTIMONIALS ══ */}
+<style>{`
+  .testimonials-section {
+    background: var(--color-bg);
+    padding: 7rem 0;
+    overflow: hidden;
+  }
+  .testimonials-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 5rem;
+    align-items: start;
+  }
+  .testimonials-intro-text {
+    max-width: 280px;
+  }
+  .testimonials-card {
+    padding: 2.5rem;
+  }
+  .testimonials-quote {
+    font-size: 1.35rem;
+    margin-bottom: 2rem;
+  }
+  .testimonials-cards-wrap {
+    position: relative;
+  }
+
+  @media (max-width: 1024px) {
+    .testimonials-section { padding: 4.5rem 0; }
+    .testimonials-grid {
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+    }
+    .testimonials-intro-text { max-width: 100%; }
+  }
+
+  @media (max-width: 640px) {
+    .testimonials-section { padding: 3.25rem 0; }
+    .testimonials-card { padding: 1.75rem 1.5rem; }
+    .testimonials-quote { font-size: 1.1rem; margin-bottom: 1.5rem; }
+  }
+`}</style>
+
+<section className="testimonials-section" data-aos="fade-up">
+  <div className="container-site">
+    <div className="testimonials-grid">
+      {/* left: label + nav */}
+      <div style={{ paddingTop: "0.5rem" }}>
+        <SectionEyebrow>Client Love</SectionEyebrow>
+        <SectionHeading>
+          What our guests{" "}
+          <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
+            say
+          </em>
+        </SectionHeading>
+        <GoldDivider centered={false} />
+        <p
+          className="testimonials-intro-text"
+          style={{
+            color: "var(--color-text-muted)",
+            fontSize: "0.9rem",
+            lineHeight: 1.8,
+            marginTop: "1.5rem",
+          }}
+        >
+          Over 1,300 five-star reviews from guests who trust us with their
+          most important asset.
+        </p>
+
+        {/* nav dots */}
+        <div style={{ display: "flex", gap: 8, marginTop: "2.5rem" }}>
+          {testimonials.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveTestimonial(i)}
+              style={{
+                width: i === activeTestimonial ? 28 : 8,
+                height: 8,
+                background:
+                  i === activeTestimonial
+                    ? "var(--color-accent)"
+                    : "var(--color-border)",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                transition: "width 300ms ease, background 300ms ease",
+                flexShrink: 0,
+              }}
+              aria-label={`Testimonial ${i + 1}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* right: cards */}
+      <div className="testimonials-cards-wrap">
+        {testimonials.map((t, i) => (
+          <div
+            key={i}
+            className="testimonials-card"
+            style={{
+              position: i === 0 ? "relative" : "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              opacity: i === activeTestimonial ? 1 : 0,
+              transform: `translateY(${i === activeTestimonial ? 0 : 16}px)`,
+              transition: "opacity 500ms ease, transform 500ms ease",
+              pointerEvents: i === activeTestimonial ? "all" : "none",
+              background: "var(--color-surface-warm)",
+              border: "1px solid var(--color-border)",
+            }}
+          >
+            {/* stars */}
+            <div style={{ display: "flex", gap: 2, marginBottom: "1.5rem" }}>
+              {Array.from({ length: t.stars }).map((_, si) => (
+                <svg
+                  key={si}
+                  viewBox="0 0 24 24"
+                  fill="var(--color-accent)"
+                  style={{ width: 13, height: 13, flexShrink: 0 }}
                 >
-                  {/* corner accent */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: 3,
-                      height: 0,
-                      background: "var(--color-accent)",
-                      transition: "height 0.4s ease",
-                    }}
-                    className="group-hover:h-full"
-                  />
-                  <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      marginBottom: "1.75rem",
-                      border: "1px solid var(--color-accent-light)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="var(--color-accent)"
-                      strokeWidth="1.5"
-                      style={{ width: 22, height: 22 }}
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d={p.icon}
-                      />
-                    </svg>
-                  </div>
-                  <h3
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "1.3rem",
-                      fontWeight: 300,
-                      color: "var(--color-text)",
-                      marginBottom: "0.875rem",
-                      letterSpacing: "0.01em",
-                    }}
-                  >
-                    {p.title}
-                  </h3>
-                  <p
-                    style={{
-                      color: "var(--color-text-muted)",
-                      lineHeight: 1.8,
-                      fontSize: "0.9rem",
-                    }}
-                  >
-                    {p.body}
-                  </p>
-                </div>
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                </svg>
               ))}
             </div>
-          </div>
-        </section>
 
-        {/* ══ TESTIMONIALS ══ */}
-        <section
-          style={{
-            background: "var(--color-bg)",
-            padding: "7rem 0",
-            overflow: "hidden",
-          }}
-          data-aos="fade-up"
-        >
-          <div className="container-site">
-            <div
+            <p
+              className="testimonials-quote"
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 2fr",
-                gap: "5rem",
-                alignItems: "start",
+                fontFamily: "var(--font-display)",
+                fontWeight: 300,
+                color: "var(--color-text)",
+                lineHeight: 1.65,
+                fontStyle: "italic",
               }}
-              className="max-lg:grid-cols-1 max-lg:gap-10"
             >
-              {/* left: label + nav */}
-              <div style={{ paddingTop: "0.5rem" }}>
-                <SectionEyebrow>Client Love</SectionEyebrow>
-                <SectionHeading>
-                  What our guests{" "}
-                  <em
-                    style={{
-                      fontStyle: "italic",
-                      color: "var(--color-text)",
-                    }}
-                  >
-                    say
-                  </em>
-                </SectionHeading>
-                <GoldDivider centered={false} />
+              "{t.quote}"
+            </p>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div
+                style={{
+                  width: 1,
+                  height: 32,
+                  background: "var(--color-accent)",
+                  opacity: 0.5,
+                  flexShrink: 0,
+                }}
+              />
+              <div>
                 <p
                   style={{
-                    color: "var(--color-text-muted)",
-                    fontSize: "0.9rem",
-                    lineHeight: 1.8,
-                    marginTop: "1.5rem",
-                    maxWidth: 280,
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.8rem",
+                    fontWeight: 500,
+                    color: "var(--color-text)",
+                    letterSpacing: "0.04em",
                   }}
                 >
-                  Over 1,300 five-star reviews from guests who trust us with
-                  their most important asset.
+                  {t.name}
                 </p>
-                {/* nav dots */}
-                <div style={{ display: "flex", gap: 8, marginTop: "2.5rem" }}>
-                  {testimonials.map((_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setActiveTestimonial(i)}
-                      style={{
-                        width: i === activeTestimonial ? 28 : 8,
-                        height: 8,
-                        background:
-                          i === activeTestimonial
-                            ? "var(--color-accent)"
-                            : "var(--color-border)",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: 0,
-                        transition: "width 300ms ease, background 300ms ease",
-                      }}
-                      aria-label={`Testimonial ${i + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* right: cards */}
-              <div style={{ position: "relative" }}>
-                {testimonials.map((t, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      position: i === 0 ? "relative" : "absolute",
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      opacity: i === activeTestimonial ? 1 : 0,
-                      transform: `translateY(${i === activeTestimonial ? 0 : 16}px)`,
-                      transition: "opacity 500ms ease, transform 500ms ease",
-                      pointerEvents: i === activeTestimonial ? "all" : "none",
-                      background: "var(--color-surface-warm)",
-                      border: "1px solid var(--color-border)",
-                      padding: "2.5rem",
-                    }}
-                  >
-                    {/* top accent */}
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 2,
-                        marginBottom: "1.5rem",
-                      }}
-                    >
-                      {Array.from({ length: t.stars }).map((_, si) => (
-                        <svg
-                          key={si}
-                          viewBox="0 0 24 24"
-                          fill="var(--color-accent)"
-                          style={{ width: 13, height: 13 }}
-                        >
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ))}
-                    </div>
-                    <p
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1.35rem",
-                        fontWeight: 300,
-                        color: "var(--color-text)",
-                        lineHeight: 1.65,
-                        fontStyle: "italic",
-                        marginBottom: "2rem",
-                      }}
-                    >
-                      "{t.quote}"
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "1rem",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 1,
-                          height: 32,
-                          background: "var(--color-accent)",
-                          opacity: 0.5,
-                        }}
-                      />
-                      <div>
-                        <p
-                          style={{
-                            fontFamily: "var(--font-body)",
-                            fontSize: "0.8rem",
-                            fontWeight: 500,
-                            color: "var(--color-text)",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {t.name}
-                        </p>
-                        <p
-                          style={{
-                            fontSize: "0.65rem",
-                            letterSpacing: "0.12em",
-                            textTransform: "uppercase",
-                            color: "var(--color-text-muted)",
-                            marginTop: 2,
-                          }}
-                        >
-                          {t.service}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                <p
+                  style={{
+                    fontSize: "0.65rem",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: "var(--color-text-muted)",
+                    marginTop: 2,
+                  }}
+                >
+                  {t.service}
+                </p>
               </div>
             </div>
           </div>
-        </section>
+        ))}
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* ══ CTA BAND ══ */}
         <section

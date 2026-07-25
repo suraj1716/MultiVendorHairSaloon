@@ -4,7 +4,6 @@ import { Vendor } from "@/types";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-
 interface FooterCategory {
   id: number;
   name: string;
@@ -13,7 +12,7 @@ interface FooterCategory {
 
 export default function Footer() {
   const [vendor, setVendor] = useState<Vendor | null>(null);
- const [services, setServices] = useState<FooterCategory[]>([]);
+  const [services, setServices] = useState<FooterCategory[]>([]);
 
   useEffect(() => {
     axios.get("/api/vendor-details").then((res) => setVendor(res.data.data));
@@ -25,13 +24,16 @@ export default function Footer() {
       setVendor(res.data.data);
     });
   }, []);
-console.log('service',services)
+  console.log("service", services);
 
-const NAV_COLS = [
+  const NAV_COLS = [
     {
       heading: "Services",
-      links: services.map((c) => ({ label: c.name,  href: "/#services",
-                      scrollTo: "services", })),
+      links: services.map((c) => ({
+        label: c.name,
+        href: "/#services",
+        scrollTo: "services",
+      })),
     },
     {
       heading: "Explore",
@@ -49,19 +51,34 @@ const NAV_COLS = [
         { label: "Book Appointment", href: route("shop.search") },
         // { label: "Loyalty Club", href: "/loyalty" },
         // { label: "Student Offer", href: "/student-offer" },
-        { label: "Cancellation Policy", href: "/cancellation-policy" },
+        { label: "Cancellation Policy", href: route("cancellation-policy") },
         { label: "FAQs", href: "/faqs" },
       ],
     },
   ];
-const SOCIALS = [
+  const SOCIALS = [
     {
       label: "Instagram",
       icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          width="18"
+          height="18"
+        >
           <rect x="2" y="2" width="20" height="20" rx="5" />
           <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+          <circle
+            cx="17.5"
+            cy="6.5"
+            r="0.8"
+            fill="currentColor"
+            stroke="none"
+          />
         </svg>
       ),
       url: vendor?.instagram_url,
@@ -95,12 +112,11 @@ const SOCIALS = [
     },
   ].filter((s) => s.url); // hide any platform the vendor hasn't set
 
-
   return (
     <>
       <style>{`
         .footer-root {
-          background-color: var(--color-bg-dark);
+          background-color: var(--color-primary);
           color: var(--color-text-inverse);
           font-family: var(--font-body);
         }
@@ -108,7 +124,7 @@ const SOCIALS = [
           display: block;
           width: 100%;
           height: 64px;
-          color: var(--color-bg-dark);
+          color: var(--color-primary);
         }
 
         /* ── TOP STRIP ── */
@@ -416,35 +432,16 @@ const SOCIALS = [
           />
         </svg>
 
-        {/* Top strip */}
-        <div className="footer-top-strip">
-          <div className="footer-top-inner">
-            <span className="footer-tagline">
-              Crafted for every strand, every story.
-            </span>
-            <div className="footer-socials">
-              {SOCIALS.map((s) => (
 
-     <a key={s.label}
-      href={s.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={s.label}
-      className="footer-social-btn"
-    >
-      {s.icon}
-    </a>
-  ))}
-            </div>
-          </div>
-        </div>
 
         {/* Main grid */}
         <div className="footer-main">
           {/* Brand column */}
           <div className="footer-brand-col">
             <a href="/" className="footer-brand-logo">
-              Maison <em>Éclat</em>
+              RB Hair &<></>
+              <br />
+              <em> Beauty Lounge</em>
             </a>
             <div className="footer-brand-rule" />
             <p className="footer-brand-desc">
@@ -464,21 +461,21 @@ const SOCIALS = [
           </div>
 
           {/* Nav columns */}
-        {NAV_COLS.map((col) => (
-  <div key={col.heading}>
-    <p className="footer-col-heading">{col.heading}</p>
-    <ul className="footer-nav-list">
-      {col.links.map((link) => (
-        <li key={link.label}>
-          <a href={link.href}>{link.label}</a>
-        </li>
-      ))}
-      {col.heading === "Services" && services.length === 0 && (
-        <li style={{ opacity: 0.4, fontSize: 12 }}>Loading…</li>
-      )}
-    </ul>
-  </div>
-))}
+          {NAV_COLS.map((col) => (
+            <div key={col.heading}>
+              <p className="footer-col-heading">{col.heading}</p>
+              <ul className="footer-nav-list">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <a href={link.href}>{link.label}</a>
+                  </li>
+                ))}
+                {col.heading === "Services" && services.length === 0 && (
+                  <li style={{ opacity: 0.4, fontSize: 12 }}>Loading…</li>
+                )}
+              </ul>
+            </div>
+          ))}
 
           {/* Newsletter + hours */}
           <div className="footer-nl-col">
@@ -558,7 +555,8 @@ const SOCIALS = [
         <div className="footer-bottom">
           <div className="footer-bottom-inner">
             <p className="footer-copy">
-              © {new Date().getFullYear()} Maison Éclat. All rights reserved.
+              © {new Date().getFullYear()} RB Hair & Beauty Lounge. All rights
+              reserved.
               <span className="footer-copy-sep">·</span>
               <a href="/">Privacy Policy</a>
               <span className="footer-copy-sep">·</span>

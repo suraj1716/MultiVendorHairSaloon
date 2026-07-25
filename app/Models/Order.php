@@ -19,7 +19,7 @@ class Order extends Model
 
     ];
 
-  protected $fillable = [
+protected $fillable = [
     'is_read',
     'stripe_charge_id',
     'stripe_amount',
@@ -41,6 +41,10 @@ class Order extends Model
     'voucher_id',
     'voucher_discount',
     'discount_amount',
+    'refund_amount',
+    'refunded_at',
+    'refund_id',
+    'refund_reason',
 ];
 
 

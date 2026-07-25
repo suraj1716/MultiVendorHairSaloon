@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Head, router } from "@inertiajs/react";
 import AdminLayout from "../AdminLayout";
+import { createPortal } from "react-dom";
+
 import {
   AdminPageHeader,
   AdminBtn,
@@ -146,12 +148,25 @@ function SectionCard({
     </div>
   );
 }
-
+const menuItemStyle: React.CSSProperties = {
+  width: "100%",
+  textAlign: "left",
+  background: "transparent",
+  border: "none",
+  padding: "8px 10px",
+  fontFamily: "var(--font-body)",
+  fontSize: "12px",
+  letterSpacing: "0.04em",
+  color: "var(--color-text)",
+  cursor: "pointer",
+  borderRadius: "var(--radius-sm)",
+  zIndex: 1000,
+};
 export default function OrderShow({ order, statuses, flash }: Props) {
   const [showDelete, setShowDelete] = useState(false);
   const [status, setStatus] = useState(order.status);
   const [saving, setSaving] = useState(false);
-console.log(order.total_price)
+
   const handleStatusSave = () => {
     setSaving(true);
     router.patch(
@@ -163,11 +178,56 @@ console.log(order.total_price)
       },
     );
   };
-console.log('order refund state:', {
-  refund_amount: order.refund_amount,
-  voucher_discount: order.voucher_discount,
-  refunded_types: order.refunded_types
-});
+  console.log("order refund state:", {
+    refund_amount: order.refund_amount,
+    voucher_discount: order.voucher_discount,
+    refunded_types: order.refunded_types,
+  });
+
+  const [refundMenuOpen, setRefundMenuOpen] = useState(false);
+  const [refundAmount, setRefundAmount] = useState<string>("");
+
+  const maxRefundable = order.total_price - (order.refund_amount ?? 0);
+
+  const handleCustomRefund = () => {
+    const amount = parseFloat(refundAmount);
+
+    if (isNaN(amount) || amount <= 0) {
+      alert("Enter a valid refund amount.");
+      return;
+    }
+    if (amount > maxRefundable) {
+      alert(
+        `Amount cannot exceed the refundable total of $${maxRefundable.toFixed(2)}.`,
+      );
+      return;
+    }
+    if (!confirm(`Refund $${amount.toFixed(2)} for this order?`)) return;
+
+    router.post(
+      route("admin.orders.refund", order.id),
+      { type: "custom", amount },
+      { preserveScroll: true, onSuccess: () => setRefundAmount("") },
+    );
+  };
+
+  const refundMenuRef = useRef<HTMLDivElement>(null);
+
+  const refundPortalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node;
+      const clickedTrigger = refundMenuRef.current?.contains(target);
+      const clickedPortal = refundPortalRef.current?.contains(target);
+      if (!clickedTrigger && !clickedPortal) {
+        setRefundMenuOpen(false);
+      }
+    };
+    if (refundMenuOpen)
+      document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [refundMenuOpen]);
 
   const handleRefund = (
     type: "full" | "booking_fee" | "except_booking_fee",
@@ -188,15 +248,26 @@ console.log('order refund state:', {
   const handleDelete = () => {
     router.delete(route("admin.orders.destroy", order.id));
   };
-const stripeLikeMethods = ["stripe", "card", "link", "afterpay_clearpay", "klarna", "zip"];
-const isStripeOrder = order.payment_method ? stripeLikeMethods.includes(order.payment_method) : false;
-const isVoucherCovered = Number(order.voucher_discount) > 0;
-const isFullyRefunded = order.refunded_types.includes("full");
+  const stripeLikeMethods = [
+    "stripe",
+    "card",
+    "link",
+    "afterpay_clearpay",
+    "klarna",
+    "zip",
+  ];
+  const isStripeOrder = order.payment_method
+    ? stripeLikeMethods.includes(order.payment_method)
+    : false;
+  const isVoucherCovered = Number(order.voucher_discount) > 0;
+  const isFullyRefunded = order.refunded_types.includes("full");
 
-// Partial refund buttons work if EITHER the order is Stripe-paid (partial charge refund)
-// OR the order was voucher-covered (partial voucher restore) — or both, for mixed orders.
-const canPartialRefund = isStripeOrder || isVoucherCovered;
-const bothPartialsUsed = order.refunded_types.includes("booking_fee") && order.refunded_types.includes("except_booking_fee");
+  // Partial refund buttons work if EITHER the order is Stripe-paid (partial charge refund)
+  // OR the order was voucher-covered (partial voucher restore) — or both, for mixed orders.
+  const canPartialRefund = isStripeOrder || isVoucherCovered;
+  const bothPartialsUsed =
+    order.refunded_types.includes("booking_fee") &&
+    order.refunded_types.includes("except_booking_fee");
 
   const isWalkIn = !!order.payment_method && !order.payment_intent;
   return (
@@ -223,37 +294,144 @@ const bothPartialsUsed = order.refunded_types.includes("booking_fee") && order.r
             <div style={{ display: "flex", gap: 8 }}>
               <AdminBtn
                 as="a"
+                href={route("admin.orders.index")}
+                variant="ghost"
+              >
+                <Icons.Back /> Orders
+              </AdminBtn>
+              <AdminBtn
+                as="a"
                 href={route("admin.orders.edit", order.id)}
                 variant="ghost"
               >
                 <Icons.Edit /> Edit
               </AdminBtn>
+
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {!isFullyRefunded && (
+                  <div
+                    ref={refundMenuRef}
+                    style={{ position: "relative", display: "inline-block" }}
+                  >
+                    <AdminBtn onClick={() => setRefundMenuOpen((o) => !o)}>
+                      Refund ▾
+                    </AdminBtn>
+                    {refundMenuOpen &&
+                      refundMenuRef.current &&
+                      createPortal(
+                        <div
+                          ref={refundPortalRef}
+                          style={{
+                            position: "fixed",
+                            top:
+                              refundMenuRef.current.getBoundingClientRect()
+                                .bottom + 6,
+                            left:
+                              refundMenuRef.current.getBoundingClientRect()
+                                .right - 240,
+                            zIndex: 9999,
+                            background: "var(--color-surface)",
+                            border: "1px solid var(--color-border)",
+                            borderRadius: "var(--radius-sm)",
+                            boxShadow: "var(--shadow-lg)",
+                            padding: "10px",
+                            width: 240,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              handleRefund("full");
+                              setRefundMenuOpen(false);
+                            }}
+                            disabled={isFullyRefunded || bothPartialsUsed}
+                            style={menuItemStyle}
+                          >
+                            Refund Full
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              handleRefund("except_booking_fee");
+                              setRefundMenuOpen(false);
+                            }}
+                            disabled={
+                              isFullyRefunded ||
+                              !canPartialRefund ||
+                              order.refunded_types.includes(
+                                "except_booking_fee",
+                              )
+                            }
+                            style={menuItemStyle}
+                          >
+                            Refund Except Booking Fee
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              handleRefund("booking_fee");
+                              setRefundMenuOpen(false);
+                            }}
+                            disabled={
+                              isFullyRefunded ||
+                              !canPartialRefund ||
+                              order.refunded_types.includes("booking_fee")
+                            }
+                            style={menuItemStyle}
+                          >
+                            Refund Booking Fee Only
+                          </button>
+
+                          <div
+                            style={{
+                              borderTop: "1px solid var(--color-border)",
+                              paddingTop: "8px",
+                              display: "flex",
+                              gap: "6px",
+                            }}
+                          >
+                            <input
+                              type="number"
+                              min={0}
+                              max={maxRefundable}
+                              step="0.01"
+                              placeholder={`Max $${maxRefundable.toFixed(2)}`}
+                              value={refundAmount}
+                              onChange={(e) => setRefundAmount(e.target.value)}
+                              style={{
+                                flex: 1,
+                                minWidth: 0,
+                                padding: "6px 8px",
+                                fontFamily: "var(--font-body)",
+                                fontSize: "12px",
+                                border: "1px solid var(--color-border)",
+                                borderRadius: "var(--radius-sm)",
+                              }}
+                            />
+                            <button
+                              onClick={() => {
+                                handleCustomRefund();
+                                setRefundMenuOpen(false);
+                              }}
+                              style={{
+                                ...menuItemStyle,
+                                width: "auto",
+                                padding: "6px 10px",
+                              }}
+                            >
+                              Refund
+                            </button>
+                          </div>
+                        </div>,
+                        document.body,
+                      )}
+                  </div>
+                )}
+              </div>
               <AdminBtn onClick={() => setShowDelete(true)} variant="danger">
                 <Icons.Delete /> Delete Order
-              </AdminBtn>
-<AdminBtn onClick={() => handleRefund("full")} disabled={isFullyRefunded || bothPartialsUsed}>
-  Refund Full
-</AdminBtn>
-
-<AdminBtn
-  onClick={() => handleRefund("except_booking_fee")}
-  disabled={isFullyRefunded || !canPartialRefund || order.refunded_types.includes("except_booking_fee")}
->
-  Refund Except Booking Fee
-</AdminBtn>
-
-<AdminBtn
-  onClick={() => handleRefund("booking_fee")}
-  disabled={isFullyRefunded || !canPartialRefund || order.refunded_types.includes("booking_fee")}
->
-  Refund Booking Fee Only
-</AdminBtn>
-              <AdminBtn
-                as="a"
-                href={route("admin.orders.index")}
-                variant="ghost"
-              >
-                <Icons.Back /> Orders
               </AdminBtn>
             </div>
           }
@@ -399,50 +577,136 @@ const bothPartialsUsed = order.refunded_types.includes("booking_fee") && order.r
                       </tr>
                     ))}
                   </tbody>
-                 <tfoot>
+                  <tfoot>
+                    {order.booking_fee > 0 && (
+                      <tr
+                        style={{
+                          borderTop: "1px solid var(--color-border)",
+                          background: "var(--color-bg-alt)",
+                        }}
+                      >
+                        <td
+                          colSpan={4}
+                          style={{
+                            padding: "10px 12px",
+                            textAlign: "right",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "11px",
+                            color: "var(--color-text-muted)",
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Booking Fee
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px 12px",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "13px",
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
+                          A${Number(order.booking_fee).toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
 
-  {order.booking_fee > 0 && (
-    <tr style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
-      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "11px", color: "var(--color-text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-        Booking Fee
-      </td>
-      <td style={{ padding: "10px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-text-muted)" }}>
-        A${Number(order.booking_fee).toFixed(2)}
-      </td>
-    </tr>
-  )}
+                    {Number(order.voucher_discount) > 0 && (
+                      <tr
+                        style={{
+                          borderTop: "1px solid var(--color-border)",
+                          background: "var(--color-bg-alt)",
+                        }}
+                      >
+                        <td
+                          colSpan={4}
+                          style={{
+                            padding: "10px 12px",
+                            textAlign: "right",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "11px",
+                            color: "var(--color-text-muted)",
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          Gift Card / Voucher Applied
+                        </td>
+                        <td
+                          style={{
+                            padding: "10px 12px",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "13px",
+                            color: "var(--color-error)",
+                          }}
+                        >
+                          −A${Number(order.voucher_discount).toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
 
-  {Number(order.voucher_discount) > 0 && (
-    <tr style={{ borderTop: "1px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
-      <td colSpan={4} style={{ padding: "10px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "11px", color: "var(--color-text-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-        Gift Card / Voucher Applied
-      </td>
-      <td style={{ padding: "10px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-error)" }}>
-        −A${Number(order.voucher_discount).toFixed(2)}
-      </td>
-    </tr>
-  )}
+                    <tr
+                      style={{
+                        borderTop: "2px solid var(--color-border)",
+                        background: "var(--color-bg-alt)",
+                      }}
+                    >
+                      <td
+                        colSpan={4}
+                        style={{
+                          padding: "12px",
+                          textAlign: "right",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "10px",
+                          letterSpacing: "0.14em",
+                          textTransform: "uppercase",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        Order Total
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          fontFamily: "var(--font-display)",
+                          fontSize: "1.2rem",
+                          color: "var(--color-primary)",
+                        }}
+                      >
+                        A${Number(order.gross_total).toFixed(2)}
+                      </td>
+                    </tr>
 
- <tr style={{ borderTop: "2px solid var(--color-border)", background: "var(--color-bg-alt)" }}>
-  <td colSpan={4} style={{ padding: "12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "10px", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
-    Order Total
-  </td>
-  <td style={{ padding: "12px", fontFamily: "var(--font-display)", fontSize: "1.2rem", color: "var(--color-primary)" }}>
-    A${Number(order.gross_total).toFixed(2)}
-  </td>
-</tr>
-
-{Number(order.voucher_discount) > 0 && (
-  <tr style={{ background: "var(--color-bg-alt)" }}>
-    <td colSpan={4} style={{ padding: "6px 12px", textAlign: "right", fontFamily: "var(--font-body)", fontSize: "10px", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--color-text-muted)" }}>
-      Amount Charged
-    </td>
-    <td style={{ padding: "6px 12px", fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-text-muted)" }}>
-      A${Number(order.total_price).toFixed(2)}
-    </td>
-  </tr>
-)}
-</tfoot>
+                    {Number(order.voucher_discount) > 0 && (
+                      <tr style={{ background: "var(--color-bg-alt)" }}>
+                        <td
+                          colSpan={4}
+                          style={{
+                            padding: "6px 12px",
+                            textAlign: "right",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "10px",
+                            letterSpacing: "0.1em",
+                            textTransform: "uppercase",
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
+                          Amount Charged
+                        </td>
+                        <td
+                          style={{
+                            padding: "6px 12px",
+                            fontFamily: "var(--font-body)",
+                            fontSize: "13px",
+                            color: "var(--color-text-muted)",
+                          }}
+                        >
+                          A${Number(order.total_price).toFixed(2)}
+                        </td>
+                      </tr>
+                    )}
+                  </tfoot>
                 </table>
               </div>
             </SectionCard>

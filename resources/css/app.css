@@ -16,7 +16,7 @@
 
 :root {
   /* --- Brand Colors (jewel-tone) --- */
-  --color-primary:        #1e8a39;   /* deep forest green */
+  --color-primary:        #188533;   /* deep forest green */
   --color-primary-light:  #0ca239;
   --color-primary-dark:   #0b9632;
   --color-primary-50:     #F5FAF6;   /* very light tint — for bg-alt */
@@ -30,7 +30,7 @@
   /* --- Neutrals --- */
   --color-bg:             #f8fdf6;   /* warm off-white */
   --color-bg-alt:         var(--color-primary-50);   /* slightly deeper warm */
-  --color-bg-dark:        #0d7527;   /* rich near-blackGreen */
+  --color-bg-dark:        #144921;   /* rich near-blackGreen */
   --color-bg-dark-black:        #1C1A17;   /* rich near-black */
 
   --color-surface:        #FFFFFF;
@@ -39,6 +39,7 @@
   /* --- Text --- */
   --color-text:           #1C1A17;
   --color-text-muted:     #6B6560;
+    --color-text-muted-light:     #a49e9a;
   --color-text-light:     #ffffff;
   --color-text-inverse:   #ffffff;
 
@@ -84,6 +85,7 @@
 
   /* --- Layout --- */
   --container-max:  1280px;
+  --radius-no:      0px;
   --radius-sm:      4px;
   --radius-md:      8px;
   --radius-lg:      16px;
@@ -241,7 +243,7 @@ a:hover { color: var(--color-primary-light); }
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-no);
   border: 1px solid transparent;
   cursor: pointer;
   transition: all var(--transition-base);

@@ -1,16 +1,15 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { Dialog, Disclosure, Transition } from "@headlessui/react";
-import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import { Dialog, Transition } from "@headlessui/react";
 import { Link, usePage, router } from "@inertiajs/react";
-import { Search, User } from "lucide-react";
+import { Search, User, X, ChevronRight } from "lucide-react";
 import MiniCartDropdown from "./MiniCartDropdown";
-import LoginModal from "@/Pages/Auth/Login";
-import { PageProps } from "@/types";
+import { PageProps, Vendor } from "@/types";
 import { Bars3Icon } from "@heroicons/react/24/outline";
-import RegisterModal from "@/Pages/Auth/Register";
 import { useAuthModal } from "@/Contexts/AuthModalContext";
+import axios from "axios";
+import UserCircleIcon from "@heroicons/react/24/solid/UserCircleIcon";
 
 interface Category {
   id: string;
@@ -32,29 +31,6 @@ interface CategoryGroup {
   id: number;
   name: string;
   active: boolean;
-}
-
-function LogoOrnament() {
-  return (
-    <div
-      style={{ display: "flex", alignItems: "center", gap: 6, margin: "3px 0" }}
-    >
-      <div
-        style={{ width: 28, height: 1, background: "var(--color-accent)" }}
-      />
-      <div
-        style={{
-          width: 4,
-          height: 4,
-          background: "var(--color-accent)",
-          transform: "rotate(45deg)",
-        }}
-      />
-      <div
-        style={{ width: 28, height: 1, background: "var(--color-accent)" }}
-      />
-    </div>
-  );
 }
 
 function NavLink({
@@ -87,12 +63,12 @@ function SearchOverlay({
   onClose: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [query, setQuery] = useState(""); // ← controlled input
+  const [query, setQuery] = useState("");
 
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 80);
-      setQuery(""); // ← clear on open
+      setQuery("");
     }
   }, [open]);
 
@@ -109,8 +85,6 @@ function SearchOverlay({
     router.get(route("shop.search"), { keyword: term.trim() });
     onClose();
   };
-
-
 
   const suggestions = [
     "Balayage",
@@ -142,7 +116,7 @@ function SearchOverlay({
           right: 0,
           background: "var(--color-surface)",
           zIndex: 999,
-          padding: "48px 40px 36px",
+          padding: "48px 24px 32px",
           borderBottom: "1px solid var(--color-border)",
           boxShadow: "var(--shadow-xl)",
         }}
@@ -171,7 +145,6 @@ function SearchOverlay({
               paddingBottom: 12,
             }}
           >
-            {/* Search icon — clicking it triggers search */}
             <button
               onClick={() => handleSearch(query)}
               style={{
@@ -180,6 +153,7 @@ function SearchOverlay({
                 cursor: "pointer",
                 padding: 0,
                 display: "flex",
+                flexShrink: 0,
               }}
               aria-label="Submit search"
             >
@@ -200,10 +174,11 @@ function SearchOverlay({
               placeholder="Search services, treatments…"
               style={{
                 flex: 1,
+                minWidth: 0,
                 border: "none",
                 outline: "none",
                 fontFamily: "var(--font-display)",
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: 300,
                 fontStyle: "italic",
                 color: "var(--color-text)",
@@ -223,15 +198,20 @@ function SearchOverlay({
                 letterSpacing: "0.15em",
                 textTransform: "uppercase",
                 color: "var(--color-text-muted)",
+                flexShrink: 0,
               }}
             >
               Close
             </button>
           </div>
 
-          {/* Suggestion pills */}
           <div
-            style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 20 }}
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 20,
+            }}
           >
             {suggestions.map((s) => (
               <button
@@ -327,8 +307,7 @@ function CollectionsDropdown({
 }
 
 export default function Navbar() {
-  const page = usePage();
-  const { auth, keyword, categoryGroups, productGroups } = usePage<
+  const { auth, categoryGroups, productGroups } = usePage<
     PageProps<{
       keyword: string;
       departments: Department[];
@@ -338,28 +317,64 @@ export default function Navbar() {
     }>
   >().props;
   const user = auth?.user ?? null;
-  const groups = (categoryGroups as CategoryGroup[]) ?? [];
-  const pGroups = (productGroups as ProductGroup[]) ?? [];
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [collectionsOpen, setCollectionsOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const isAdmin = auth?.user?.roles?.includes("Admin") ?? false;
+  const { url } = usePage();
+  const onHomePage = url === "/" || url.startsWith("/#");
+  const [vendor, setVendor] = useState<Vendor | null>(null);
 
-const { url } = usePage();
-const onHomePage = url === "/" || url.startsWith("/#");
+  useEffect(() => {
+    axios.get("/api/vendor-details").then((res) => setVendor(res.data.data));
+  }, []);
 
+  const SOCIALS = [
+    {
+      label: "Instagram",
+      icon: (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          width="16"
+          height="16"
+        >
+          <rect x="2" y="2" width="20" height="20" rx="5" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+        </svg>
+      ),
+      url: vendor?.instagram_url,
+    },
+    {
+      label: "Facebook",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+        </svg>
+      ),
+      url: vendor?.facebook_url,
+    },
+    {
+      label: "TikTok",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+          <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.77 1.52V6.78a4.85 4.85 0 01-1-.09z" />
+        </svg>
+      ),
+      url: vendor?.tiktok_url,
+    },
+  ].filter((s) => s.url);
 
   const { openLogin, openRegister } = useAuthModal();
 
-  const collectionsRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (
-        collectionsRef.current &&
-        !collectionsRef.current.contains(e.target as Node)
-      )
-        setCollectionsOpen(false);
       if (
         userDropdownRef.current &&
         !userDropdownRef.current.contains(e.target as Node)
@@ -372,7 +387,7 @@ const onHomePage = url === "/" || url.startsWith("/#");
 
   useEffect(() => {
     setMobileOpen(false);
-  }, []);
+  }, [url]);
 
   const iconBtnStyle: React.CSSProperties = {
     background: "none",
@@ -387,7 +402,31 @@ const onHomePage = url === "/" || url.startsWith("/#");
     position: "relative",
     transition: "color var(--transition-fast)",
     padding: 0,
+    flexShrink: 0,
   };
+
+  const mobileNavItems: {
+    label: string;
+    href: string;
+    scrollTo?: string;
+  }[] = [
+    { label: "Book Services", href: route("shop.search") },
+    { label: "Services", href: "/#services", scrollTo: "services" },
+    { label: "About", href: route("about") },
+    { label: "Gallery", href: route("gallery.index") },
+    { label: "Gift Cards", href: route("gift-voucher.shop") },
+    { label: "Contact Us", href: route("contact.index") },
+  ];
+
+  const mobileAccountItems: { label: string; href: string }[] = [
+    ...(isAdmin
+      ? [{ label: "Admin Dashboard", href: route("admin.dashboard") }]
+      : []),
+    { label: "Vouchers", href: route("vouchers.index") },
+    { label: "Profile", href: route("profile.edit") },
+    { label: "Bookings", href: route("bookings.history") },
+    { label: "Orders", href: route("orders.history") },
+  ];
 
   return (
     <>
@@ -423,18 +462,6 @@ const onHomePage = url === "/" || url.startsWith("/#");
         .nav-dropdown-item:hover { background: var(--color-bg-alt); color: var(--color-primary); padding-left: 30px; }
         .nav-icon-btn:hover { color: var(--color-primary) !important; }
 
-        .subnav-link {
-          font-family: var(--font-body); font-size: 10px; font-weight: 400;
-          letter-spacing: 0.2em; text-transform: uppercase;
-          color: var(--color-text-muted); text-decoration: none;
-          padding: 0 20px; height: 100%; display: flex; align-items: center;
-          border-right: 1px solid var(--color-border);
-          transition: color var(--transition-fast), background var(--transition-fast);
-        }
-        .subnav-link:first-child { border-left: 1px solid var(--color-border); }
-        .subnav-link:hover { color: var(--color-primary); background: rgba(201,169,110,0.08); }
-        .subnav-link.featured { color: var(--color-accent-dark); font-weight: 500; }
-
         .user-menu-item {
           display: block; padding: 9px 16px;
           font-family: var(--font-body); font-size: 11px;
@@ -446,212 +473,249 @@ const onHomePage = url === "/" || url.startsWith("/#");
         .user-menu-item:hover { background: var(--color-bg-alt); color: var(--color-primary); }
         .user-menu-item.danger:hover { background: rgba(192,57,43,0.08); color: var(--color-error); }
 
-        /* ── Full-screen mobile menu ── */
-        .fs-panel {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100dvh;
-  overflow: hidden;
-  background: var(--color-primary-dark);
-}
+        .footer-socials {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .footer-social-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: var(--radius-full);
+          border: 1px solid rgba(255,255,255,0.5);
+          color: var(--color-text-inverse);
+          background: transparent;
+          cursor: pointer;
+          text-decoration: none;
+          transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
+          flex-shrink: 0;
+        }
+        .footer-social-btn:hover {
+          color: var(--color-accent-light);
+          border-color: var(--color-accent);
+          background: rgba(201,169,110,0.1);
+        }
 
-        /* Left dark half */
-        .fs-left {
+        /* ══════════════════════════════════════
+           MOBILE DRAWER — full-screen tab layout
+           ══════════════════════════════════════ */
+        .fs-panel {
+          position: fixed;
+          inset: 0;
+          width: 100%;
+          height: 100dvh;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
           background: var(--color-primary-dark);
-          position: relative;
-          overflow: hidden;
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 2rem 1.5rem;
         }
-        .fs-left::before {
-          content: '';
-          position: absolute;
-          top: -80px; left: -80px;
-          width: 280px; height: 280px;
+
+        .fs-header {
+          position: sticky;
+          top: 0;
+          z-index: 5;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 18px 20px;
+          background: var(--color-primary-dark);
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          flex-shrink: 0;
+        }
+        .fs-header-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .fs-header-brand img {
+          height: 34px;
+          width: auto;
+        }
+        .fs-close {
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
-          border: 50px solid rgba(201,169,110,0.08);
-          pointer-events: none;
+          border: 1px solid rgba(201,169,110,0.3);
+          background: rgba(201,169,110,0.08);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: var(--color-accent-light);
+          flex-shrink: 0;
+          transition: background var(--transition-fast);
         }
-        .fs-left::after {
-          content: '';
-          position: absolute;
-          bottom: 30%; right: -60px;
-          width: 180px; height: 180px;
-          border-radius: 50%;
-          border: 30px solid rgba(74,124,47,0.15);
-          pointer-events: none;
+        .fs-close:hover { background: rgba(201,169,110,0.18); }
+
+        /* Auth block */
+        .fs-auth {
+          padding: 20px;
+          border-bottom: 1px solid rgba(255,255,255,0.08);
+          flex-shrink: 0;
         }
-        .fs-left-accent-line {
-          width: 40px; height: 1px;
-          background: var(--color-accent);
-          opacity: 0.5;
-          margin-bottom: 1.25rem;
-          position: relative; z-index: 1;
-        }
-        .fs-left-brand {
-          font-family: var(--font-display);
-          font-size: 2.5rem;
-          font-weight: 300;
-          font-style: italic;
-          color: var(--color-text-inverse);
-          line-height: 1.1;
-          position: relative; z-index: 1;
-          margin: 0;
-        }
-        .fs-left-brand span { display: block; color: var(--color-accent); }
-        .fs-left-tagline {
+        .fs-auth-guest-label {
           font-family: var(--font-body);
           font-size: 0.65rem;
           letter-spacing: 0.2em;
           text-transform: uppercase;
           color: rgba(253,250,246,0.4);
-          margin-top: 0.75rem;
-          position: relative; z-index: 1;
+          margin-bottom: 12px;
+        }
+        .fs-auth-buttons {
+          display: flex;
+          gap: 10px;
+        }
+        .fs-btn-signin {
+          flex: 1;
+          text-align: center;
+          padding: 13px 0;
+          background: var(--color-accent);
+          color: var(--color-primary-dark);
+          border: none;
+          border-radius: 2px;
+          font-family: var(--font-body); font-size: 0.68rem;
+          letter-spacing: 0.14em; text-transform: uppercase;
+          cursor: pointer; font-weight: 600;
+          transition: background var(--transition-fast);
+        }
+        .fs-btn-signin:hover { background: var(--color-accent-light); }
+        .fs-btn-register {
+          flex: 1;
+          text-align: center;
+          padding: 13px 0;
+          background: transparent;
+          color: rgba(253,250,246,0.75);
+          border: 1px solid rgba(255,255,255,0.2);
+          border-radius: 2px;
+          font-family: var(--font-body); font-size: 0.68rem;
+          letter-spacing: 0.14em; text-transform: uppercase;
+          cursor: pointer; text-decoration: none;
+          transition: border-color var(--transition-fast), color var(--transition-fast);
+        }
+        .fs-btn-register:hover { border-color: var(--color-accent); color: var(--color-accent-light); }
+
+        .fs-user-row {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+        .fs-avatar {
+          width: 52px;
+          height: 52px;
+          border-radius: 50%;
+          object-fit: cover;
+          flex-shrink: 0;
+          border: 1.5px solid var(--color-accent);
+        }
+        .fs-user-name {
+          font-family: var(--font-body); font-size: 0.85rem;
+          letter-spacing: 0.05em; text-transform: none;
+          color: var(--color-text-inverse); margin: 0; font-weight: 600;
+        }
+        .fs-user-sub {
+          font-family: var(--font-body); font-size: 0.68rem;
+          color: rgba(253,250,246,0.45); letter-spacing: 0.08em; margin: 2px 0 0;
         }
 
-        /* Right light half */
-        .fs-right {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  background: transparent;
-}
-        .fs-close {
-  position: absolute;
-  top: 1.25rem; right: 1.25rem;
-  width: 2.25rem; height: 2.25rem;
-  border-radius: 50%;
-  border: 1px solid rgba(201,169,110,0.25);
-  background: rgba(201,169,110,0.08);
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer;
-  color: var(--color-accent-light);
-  z-index: 10;
-  transition: background var(--transition-fast);
-}
-.fs-close:hover { background: rgba(201,169,110,0.18); }
+        /* Account grid — proper tab-like buttons, not pills */
+        .fs-account-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 8px;
+          margin-top: 16px;
+        }
+        .fs-account-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px 8px;
+          border: 1px solid rgba(201,169,110,0.25);
+          background: rgba(201,169,110,0.06);
+          font-family: var(--font-body); font-size: 0.65rem;
+          letter-spacing: 0.08em; text-transform: uppercase;
+          color: var(--color-accent-light); text-decoration: none;
+          cursor: pointer; border-radius: 2px; text-align: center;
+          transition: background var(--transition-fast), color var(--transition-fast);
+        }
+        .fs-account-btn:hover { background: rgba(201,169,110,0.16); }
+        .fs-account-btn.danger {
+          border-color: rgba(192,57,43,0.3); color: #e08080;
+          grid-column: span 2;
+        }
+        .fs-account-btn.danger:hover { background: rgba(192,57,43,0.14); color: #fff; }
 
-.fs-auth {
-  padding: 4rem 1.5rem 1.5rem;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
-}
-.fs-auth-guest-label {
-  font-family: var(--font-body);
-  font-size: 0.6rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: rgba(253,250,246,0.35);
-  margin-bottom: 0.75rem;
-}
-.fs-btn-signin {
-  display: block; width: 100%; padding: 0.7rem 0;
-  background: var(--color-accent);
-  color: var(--color-primary-dark);
-  border: none;
-  font-family: var(--font-body); font-size: 0.6rem;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  cursor: pointer; margin-bottom: 0.5rem; font-weight: 600;
-  transition: background var(--transition-fast);
-}
-.fs-btn-signin:hover { background: var(--color-accent-light); }
-.fs-btn-register {
-  display: block; width: 100%; padding: 0.7rem 0;
-  background: transparent;
-  color: rgba(253,250,246,0.55);
-  border: 1px solid rgba(255,255,255,0.15);
-  font-family: var(--font-body); font-size: 0.6rem;
-  letter-spacing: 0.18em; text-transform: uppercase;
-  cursor: pointer; text-align: center; text-decoration: none;
-  transition: border-color var(--transition-fast), color var(--transition-fast);
-}
-.fs-btn-register:hover { border-color: var(--color-accent); color: var(--color-accent-light); }
+        /* Main nav — full-width tab buttons, each covers full row */
+        .fs-nav {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          padding: 8px 0;
+        }
+        .fs-nav-link {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          padding: 20px 20px;
+          font-family: var(--font-display);
+          font-size: 1.25rem; font-weight: 400;
+          color: rgba(253,250,246,0.85); text-decoration: none;
+          border-bottom: 1px solid rgba(255,255,255,0.07);
+          background: transparent;
+          transition: background var(--transition-fast), color var(--transition-fast);
+        }
+        .fs-nav-link:active,
+        .fs-nav-link:hover {
+          background: rgba(201,169,110,0.08);
+          color: var(--color-accent-light);
+        }
+        .fs-nav-arrow {
+          color: var(--color-accent);
+          opacity: 0.6;
+          flex-shrink: 0;
+          margin-left: 12px;
+        }
 
-.fs-user-name { font-family: var(--font-body); font-size: 0.65rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--color-text-inverse); margin: 0; }
-.fs-user-sub { font-family: var(--font-body); font-size: 0.6rem; color: rgba(253,250,246,0.4); letter-spacing: 0.1em; margin: 0; }
-.fs-chip {
-  padding: 0.25rem 0.65rem;
-  border: 1px solid rgba(201,169,110,0.25);
-  font-family: var(--font-body); font-size: 0.55rem;
-  letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--color-accent-light); text-decoration: none;
-  background: rgba(201,169,110,0.07); cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
-}
-.fs-chip:hover { background: var(--color-accent); color: var(--color-primary-dark); border-color: var(--color-accent); }
-.fs-chip.danger { border-color: rgba(192,57,43,0.3); color: #e07070; }
-.fs-chip.danger:hover { background: var(--color-error); color: #fff; border-color: var(--color-error); }
+        .fs-cta {
+          padding: 18px 20px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+          flex-shrink: 0;
+        }
+        .fs-cta-btn {
+          display: block; text-align: center; padding: 16px 0;
+          background: var(--color-accent); color: var(--color-primary-dark);
+          font-family: var(--font-body); font-size: 0.7rem; font-weight: 700;
+          letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none;
+          border-radius: 2px;
+          transition: background var(--transition-fast);
+        }
+        .fs-cta-btn:hover { background: var(--color-accent-light); }
 
-.fs-nav { flex: 1; padding: 0.5rem 0; }
-.fs-nav-link {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 1rem 1.5rem;
-  font-family: var(--font-display);
-  font-size: 1.5rem; font-weight: 300; font-style: italic;
-  color: rgba(253,250,246,0.7); text-decoration: none;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  transition: color var(--transition-fast), padding-left var(--transition-base);
-}
-.fs-nav-link:hover { color: var(--color-accent-light); padding-left: 2rem; }
-.fs-nav-arrow { color: var(--color-accent); opacity: 0; font-size: 1rem; transition: opacity var(--transition-fast), transform var(--transition-fast); }
-.fs-nav-link:hover .fs-nav-arrow { opacity: 1; transform: translateX(4px); }
-
-.fs-disclosure-btn {
-  display: flex; align-items: center; justify-content: space-between;
-  width: 100%; padding: 1rem 1.5rem;
-  font-family: var(--font-display);
-  font-size: 1.5rem; font-weight: 300; font-style: italic;
-  color: rgba(253,250,246,0.7);
-  background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.06);
-  cursor: pointer; text-align: left;
-  transition: color var(--transition-fast), padding-left var(--transition-base);
-}
-.fs-disclosure-btn:hover { color: var(--color-accent-light); padding-left: 2rem; }
-
-.fs-sub-item {
-  display: block; width: 100%; padding: 0.7rem 2.5rem;
-  font-family: var(--font-body); font-size: 0.6rem;
-  letter-spacing: 0.15em; text-transform: uppercase;
-  color: rgba(253,250,246,0.4);
-  background: rgba(0,0,0,0.15);
-  border: none; border-bottom: 1px solid rgba(255,255,255,0.04);
-  cursor: pointer; text-align: left;
-  transition: color var(--transition-fast), background var(--transition-fast);
-}
-.fs-sub-item:hover { color: var(--color-accent-light); background: rgba(201,169,110,0.08); }
-
-.fs-cta { padding: 1.25rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); }
-.fs-cta-btn {
-  display: block; text-align: center; padding: 0.85rem 0;
-  background: var(--color-accent); color: var(--color-primary-dark);
-  font-family: var(--font-body); font-size: 0.6rem; font-weight: 600;
-  letter-spacing: 0.22em; text-transform: uppercase; text-decoration: none;
-  transition: background var(--transition-fast);
-}
-.fs-cta-btn:hover { background: var(--color-accent-light); }
-
-.fs-currency {
-  padding: 0.85rem 1.5rem;
-  display: flex; align-items: center; gap: 0.6rem;
-  font-family: var(--font-body); font-size: 0.6rem;
-  letter-spacing: 0.12em; color: rgba(253,250,246,0.3);
-  text-decoration: none; border-top: 1px solid rgba(255,255,255,0.06);
-}
+        .fs-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 14px 20px 24px;
+          flex-shrink: 0;
+        }
+        .fs-currency {
+          display: flex; align-items: center; gap: 8px;
+          font-family: var(--font-body); font-size: 0.65rem;
+          letter-spacing: 0.1em; color: rgba(253,250,246,0.5);
+          text-decoration: none;
+        }
       `}</style>
 
-      {/* ══ MOBILE DRAWER ══ */}
+      {/* ══ MOBILE DRAWER — full screen, tab-style nav ══ */}
       <Dialog
         open={mobileOpen}
         onClose={setMobileOpen}
         className="relative z-[150] lg:hidden"
       >
-        {/* Backdrop */}
         <Transition
           show={mobileOpen}
           as={Fragment}
@@ -668,7 +732,6 @@ const onHomePage = url === "/" || url.startsWith("/#");
           />
         </Transition>
 
-        {/* Panel */}
         <div className="fixed inset-0 z-[160]">
           <Transition
             show={mobileOpen}
@@ -681,41 +744,27 @@ const onHomePage = url === "/" || url.startsWith("/#");
             leaveTo="translate-x-full"
           >
             <Dialog.Panel className="fs-panel">
-              {/* LEFT: dark decorative */}
-              <div className="fs-left">
-                <div className="fs-left-accent-line" />
-                <p className="fs-left-brand">RB Hair & Beauty Lounge Studio</p>
-                <p className="fs-left-tagline">Est. 2020 · Melbourne</p>
-              </div>
-
-              {/* RIGHT: nav */}
-              <div className="fs-right">
+              {/* Header: brand + close */}
+              <div className="fs-header">
+                <div className="fs-header-brand">
+                  <img src="/images/logo.png" alt="RB Hair & Beauty Lounge" />
+                </div>
                 <button
                   type="button"
                   onClick={() => setMobileOpen(false)}
                   className="fs-close"
                   aria-label="Close menu"
                 >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  >
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
+                  <X size={18} strokeWidth={2} />
                 </button>
+              </div>
 
-                {/* Auth */}
-                <div className="fs-auth">
-                  {!user ? (
-                    <>
-                      <p className="fs-auth-guest-label">Your account</p>
-
+              {/* Auth */}
+              <div className="fs-auth">
+                {!user ? (
+                  <>
+                    <p className="fs-auth-guest-label">Your account</p>
+                    <div className="fs-auth-buttons">
                       <button
                         onClick={() => {
                           setMobileOpen(false);
@@ -725,7 +774,6 @@ const onHomePage = url === "/" || url.startsWith("/#");
                       >
                         Sign In
                       </button>
-
                       <button
                         onClick={() => {
                           setMobileOpen(false);
@@ -735,153 +783,121 @@ const onHomePage = url === "/" || url.startsWith("/#");
                       >
                         Create Account
                       </button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="fs-user-row">
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="fs-user-row">
+                      {user.avatar ? (
                         <img
                           src={user.avatar}
                           alt={user.name}
                           className="fs-avatar"
                         />
-
-                        <div style={{ textAlign: "left" }}>
-                          <p className="fs-user-name">{user.name}</p>
-                          <p className="fs-user-sub">My Account</p>
-                        </div>
-
-                        <ChevronDownIcon
-                          style={{
-                            width: "1rem",
-                            height: "1rem",
-                            marginLeft: "auto",
-                            color: "var(--color-text-light)",
-                            transform: "rotate(180deg)", // always open
-                            flexShrink: 0,
-                          }}
+                      ) : (
+                        <UserCircleIcon
+                          className="fs-avatar"
+                          style={{ color: "var(--color-text-light)" }}
                         />
+                      )}
+                      <div>
+                        <p className="fs-user-name">{user.name}</p>
+                        <p className="fs-user-sub">My Account</p>
                       </div>
+                    </div>
 
-                      {/* Always visible when logged in */}
-                      <div className="fs-user-chips">
+                    <div className="fs-account-grid">
+                      {mobileAccountItems.map((item) => (
                         <Link
-                          href={route("vouchers.index")}
-                          className="fs-chip"
+                          key={item.label}
+                          href={item.href}
+                          className="fs-account-btn"
                           onClick={() => setMobileOpen(false)}
                         >
-                          Vouchers
+                          {item.label}
                         </Link>
+                      ))}
+                      <Link
+                        href={route("logout")}
+                        method="post"
+                        as="button"
+                        className="fs-account-btn danger"
+                        onClick={() => setMobileOpen(false)}
+                      >
+                        Logout
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </div>
 
-                        <Link
-                          href={route("profile.edit")}
-                          className="fs-chip"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          Profile
-                        </Link>
-
-                        <Link
-                          href={route("bookings.history")}
-                          className="fs-chip"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          Bookings
-                        </Link>
-
-                        <Link
-                          href={route("orders.history")}
-                          className="fs-chip"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          Orders
-                        </Link>
-
-                        <Link
-                          href={route("logout")}
-                          method="post"
-                          as="button"
-                          className="fs-chip danger"
-                          onClick={() => setMobileOpen(false)}
-                        >
-                          Logout
-                        </Link>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Nav links */}
-                <nav className="fs-nav">
-
-
-                  {[
-                     { label: "Book Services", href: route("shop.search") },
-                    {
-                      label: "Services",
-                      href: "/#services",
-                      scrollTo: "services",
-                    },
-                    { label: "About", href: route("about") },
-                    { label: "Gallery", href: route("gallery.index") },
-                    { label: "Gift Cards", href: route("gift-voucher.shop") },
-                    { label: "Contact Us", href: route("contact.index") },
-                  ].map((item: any) => (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="fs-nav-link"
-                      onClick={(e) => {
-                        if (item.requiresAuth && !user) {
-                          e.preventDefault();
-                          setMobileOpen(false);
-                          openLogin();
-                          return;
-                        }
-
-                        if (item.scrollTo) {
-                          const onHomePage = window.location.pathname === "/";
-                          setMobileOpen(false);
-
-                          if (onHomePage) {
-                            e.preventDefault();
-                            // slight delay lets the mobile drawer close before scrolling
-                            setTimeout(() => {
-                              const el = document.getElementById(item.scrollTo);
-                              el?.scrollIntoView({ behavior: "smooth" });
-                            }, 200);
-                          }
-                          return;
-                        }
-
-                        setMobileOpen(false);
-                      }}
-                    >
-                      {item.label}
-                      <span className="fs-nav-arrow">→</span>
-                    </Link>
-                  ))}
-                </nav>
-
-                {/* CTA */}
-                <div className="fs-cta">
+              {/* Nav links — full-width tabs */}
+              <nav className="fs-nav">
+                {mobileNavItems.map((item) => (
                   <Link
-                    href={route("bookings.store")}
-                    className="fs-cta-btn"
-                    onClick={() => setMobileOpen(false)}
+                    key={item.label}
+                    href={item.href}
+                    className="fs-nav-link"
+                    onClick={(e) => {
+                      if (item.scrollTo) {
+                        const isHome = window.location.pathname === "/";
+                        setMobileOpen(false);
+                        if (isHome) {
+                          e.preventDefault();
+                          setTimeout(() => {
+                            document
+                              .getElementById(item.scrollTo!)
+                              ?.scrollIntoView({ behavior: "smooth" });
+                          }, 200);
+                        }
+                        return;
+                      }
+                      setMobileOpen(false);
+                    }}
                   >
-                    Book a Consultation
+                    {item.label}
+                    <ChevronRight size={20} className="fs-nav-arrow" />
                   </Link>
-                </div>
+                ))}
+              </nav>
 
-                {/* Currency */}
+              {/* CTA */}
+              <div className="fs-cta">
+                <Link
+                  href={route("bookings.store")}
+                  className="fs-cta-btn"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Book a Consultation
+                </Link>
+              </div>
+
+              {/* Footer: currency + socials */}
+              <div className="fs-footer">
                 <a href="#" className="fs-currency">
                   <img
                     src="https://tailwindcss.com/plus-assets/img/flags/flag-australia.svg"
                     alt="AUD"
-                    style={{ width: 18, height: "auto" }}
+                    style={{ width: 16, height: "auto" }}
                   />
-                  AUD — Australian Dollar
+                  AUD
                 </a>
+                {SOCIALS.length > 0 && (
+                  <div className="footer-socials">
+                    {SOCIALS.map((s) => (
+                      <a
+                        key={s.label}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={s.label}
+                        className="footer-social-btn"
+                      >
+                        {s.icon}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             </Dialog.Panel>
           </Transition>
@@ -893,33 +909,119 @@ const onHomePage = url === "/" || url.startsWith("/#");
 
       {/* ══ PRIMARY NAV WRAPPER (sticky) ══ */}
       <div className="sticky top-0 z-50">
-        {/* ══ ANNOUNCEMENT BAR — plain, no sticky ══ */}
+        {/* ══ ANNOUNCEMENT BAR — desktop ══ */}
         <div
-          className="bg-white border-b"
+          className="hidden md:flex"
           style={{
             background: "var(--color-primary)",
             color: "var(--color-text-inverse)",
-            textAlign: "center",
             fontFamily: "var(--font-body)",
             fontSize: 10,
             fontWeight: 400,
-            letterSpacing: "0.22em",
+            letterSpacing: "0.2em",
             textTransform: "uppercase",
-            padding: "10px 24px",
-            display: "flex",
+            padding: "10px 40px",
             alignItems: "center",
-            justifyContent: "center",
-            gap: 20,
+            gap: 16,
           }}
         >
-          <span style={{ color: "var(--color-accent-light)" }}>✦</span>
-          Complimentary consultation with every new client booking &nbsp;—&nbsp;
-          <span style={{ color: "var(--color-accent-light)" }}>✦</span>
+          <div style={{ flex: "1 1 0", minWidth: 0 }}>
+            <p
+              style={{
+                fontSize: 13,
+                color: "white",
+                fontWeight: 600,
+                letterSpacing: "0.08em",
+                whiteSpace: "nowrap",
+                margin: 0,
+              }}
+            >
+              Call: (+61) 414-226-056
+            </p>
+          </div>
+
+          <div style={{ flex: "0 1 auto", textAlign: "center", whiteSpace: "nowrap" }}>
+            <span style={{ color: "var(--color-accent-light)" }}>✦</span>{" "}
+            Complimentary consultation with every new client booking{" "}
+            <span style={{ color: "var(--color-accent-light)" }}>✦</span>
+          </div>
+
+          <div
+            style={{
+              flex: "1 1 0",
+              minWidth: 0,
+              display: "flex",
+              justifyContent: "flex-end",
+            }}
+          >
+            <div className="footer-socials">
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="footer-social-btn"
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* ══ HEADER — plain, no sticky ══ */}
+        {/* ══ ANNOUNCEMENT BAR — mobile ══ */}
+        <div
+          className="flex md:hidden"
+          style={{
+            background: "var(--color-primary)",
+            color: "var(--color-text-inverse)",
+            fontFamily: "var(--font-body)",
+            fontSize: 10,
+            fontWeight: 400,
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+            padding: "10px 16px",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}
+        >
+          <a
+            href="tel:+61414226056"
+            style={{
+              fontSize: 12,
+              color: "white",
+              fontWeight: 700,
+              letterSpacing: "0.05em",
+              whiteSpace: "nowrap",
+              textDecoration: "none",
+            }}
+          >
+            Call +61 414 226 056
+          </a>
+
+          {SOCIALS.length > 0 && (
+            <div className="footer-socials">
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={s.label}
+                  className="footer-social-btn"
+                >
+                  {s.icon}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ══ HEADER ══ */}
         <header
-          className="bg-white border-b"
           style={{
             background: "var(--color-surface)",
             borderBottom: "1px solid var(--color-border)",
@@ -929,77 +1031,93 @@ const onHomePage = url === "/" || url.startsWith("/#");
             style={{
               maxWidth: "var(--container-max)",
               margin: "0 auto",
-              padding: "0 40px",
+              padding: "0 24px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              height: 80,
-              gap: 24,
+              height: 76,
+              gap: 16,
             }}
-            className="max-lg:!px-10"
+            className="lg:!px-10"
           >
-            {/* 1: Logo */}
+            {/* Logo */}
             <Link
-  href={route("home")}
-  style={{
-    textDecoration: "none",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "flex-start",
-    marginRight: 64,
-    flexShrink: 0,
-  }}
->
-  <img
-    src="/images/logo.png"
-    alt="RB Hair & Beauty Lounge"
-    style={{
-      height: 55,
-      width: "auto",
-      objectFit: "contain",
-    }}
-  />
+              href={route("home")}
+              style={{
+                textDecoration: "none",
+                display: "flex",
+                alignItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <img
+                src="/images/logo.png"
+                alt="RB Hair & Beauty Lounge"
+                style={{
+                  height: 48,
+                  width: "auto",
+                  objectFit: "contain",
+                }}
+              />
+            </Link>
 
-</Link>
+            {/* Nav links — desktop only */}
+            <nav
+              className="hidden lg:flex"
+              style={{
+                alignItems: "center",
+                gap: 32,
+                flexShrink: 0,
+                margin: "0 auto",
+              }}
+            >
+              <NavLink
+                href="/#services"
+                active={onHomePage}
+                onClick={(e) => {
+                  const onHomePageClick = window.location.pathname === "/";
+                  if (onHomePageClick) {
+                    e.preventDefault();
+                    document
+                      .getElementById("services")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }
+                }}
+              >
+                Services
+              </NavLink>
+              <NavLink href={route("about")} active={url.startsWith("/about")}>
+                About
+              </NavLink>
+              <NavLink
+                href={route("gallery.index")}
+                active={url.startsWith("/gallery")}
+              >
+                Gallery
+              </NavLink>
+              <NavLink
+                href={route("gift-voucher.shop")}
+                active={url.startsWith("/gift-voucher")}
+              >
+                Gift Vouchers
+              </NavLink>
+              <NavLink
+                href={route("contact.index")}
+                active={url.startsWith("/contact")}
+              >
+                Contact
+              </NavLink>
+            </nav>
 
-            {/* 2: Nav links */}
-
-
-<nav
-  className="hidden lg:flex"
-  style={{ alignItems: "center", gap: 36, flexShrink: 0 }}
->
-  <NavLink
-    href="/#services"
-    active={onHomePage}
-    onClick={(e) => {
-      const onHomePageClick = window.location.pathname === "/";
-      if (onHomePageClick) {
-        e.preventDefault();
-        const el = document.getElementById("services");
-        el?.scrollIntoView({ behavior: "smooth" });
-      }
-    }}
-  >
-    Services
-  </NavLink>
-  <NavLink href={route("about")} active={url.startsWith("/about")}>About</NavLink>
-  <NavLink href={route("gallery.index")} active={url.startsWith("/gallery")}>Gallery</NavLink>
-  <NavLink href={route("gift-voucher.shop")} active={url.startsWith("/gift-voucher")}>Gift Vouchers</NavLink>
-  <NavLink href={route("contact.index")} active={url.startsWith("/contact")}>Contact</NavLink>
-</nav>
-
-            {/* 3: Icons (search, cart, account) */}
+            {/* Icons + Book Now */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 4,
+                gap: 6,
                 flexShrink: 0,
-                marginLeft: "auto", // pushes icons + button group to the right
               }}
             >
-              {/* Search */}
               <button
                 onClick={() => setSearchOpen(true)}
                 style={iconBtnStyle}
@@ -1009,14 +1127,13 @@ const onHomePage = url === "/" || url.startsWith("/#");
                 <Search size={18} strokeWidth={1.5} />
               </button>
 
-              {/* Cart */}
-              <div style={{ position: "relative" }}>
+              <div style={{ position: "relative", display: "flex" }}>
                 <MiniCartDropdown />
               </div>
 
               {/* User — desktop only */}
               <div
-                className="hidden lg:block"
+                className="hidden lg:flex"
                 style={{ position: "relative" }}
                 ref={userDropdownRef}
               >
@@ -1034,17 +1151,31 @@ const onHomePage = url === "/" || url.startsWith("/#");
                         cursor: "pointer",
                         padding: 0,
                         background: "none",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
                       }}
                     >
-                      <img
-                        src={user.avatar}
-                        alt={user.name}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                      ) : (
+                        <UserCircleIcon
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            color: "var(--color-text-muted)",
+                          }}
+                        />
+                      )}
                     </button>
 
                     {userDropdownOpen && (
@@ -1061,19 +1192,17 @@ const onHomePage = url === "/" || url.startsWith("/#");
                         }}
                       >
                         {[
-                          {
-                            label: "Admin Dashboard",
-                            href: route("admin.dashboard"),
-                          },
-                          {
-                            label: "Your Vouchers",
-                            href: route("vouchers.index"),
-                          },
+                          ...(isAdmin
+                            ? [
+                                {
+                                  label: "Admin Dashboard",
+                                  href: route("admin.dashboard"),
+                                },
+                              ]
+                            : []),
+                          { label: "Your Vouchers", href: route("vouchers.index") },
                           { label: "Profile", href: route("profile.edit") },
-                          {
-                            label: "Bookings",
-                            href: route("bookings.history"),
-                          },
+                          { label: "Bookings", href: route("bookings.history") },
                           { label: "Orders", href: route("orders.history") },
                         ].map((item) => (
                           <Link
@@ -1152,41 +1281,41 @@ const onHomePage = url === "/" || url.startsWith("/#");
                 )}
               </div>
 
-              {/* Hamburger — mobile only */}
-              <div className="lg:hidden" style={{ marginLeft: 4 }}>
-                <button
-                  onClick={() => setMobileOpen(true)}
-                  style={iconBtnStyle}
-                  aria-label="Open menu"
-                >
-                  <Bars3Icon className="size-5" />
-                </button>
-              </div>
-            </div>
+              {/* Book Now — desktop only */}
+              <Link
+                href={route("shop.search")}
+                className="hidden lg:inline-flex"
+                style={{
+                  marginLeft: 10,
+                  padding: "10px 22px",
+                  background: "var(--color-primary)",
+                  color: "var(--color-text-inverse)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  border: "1px solid var(--color-primary)",
+                  transition: "all var(--transition-base)",
+                  whiteSpace: "nowrap",
+                  alignItems: "center",
+                  flexShrink: 0,
+                }}
+              >
+                Book Now
+              </Link>
 
-            {/* 4: Book Now — desktop only */}
-            <Link
-              href={route("shop.search")}
-              className="hidden lg:inline-flex"
-              style={{
-                padding: "9px 22px",
-                background: "var(--color-primary)",
-                color: "var(--color-text-inverse)",
-                fontFamily: "var(--font-body)",
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                textDecoration: "none",
-                border: "1px solid var(--color-primary)",
-                transition: "all var(--transition-base)",
-                whiteSpace: "nowrap",
-                alignItems: "center",
-                flexShrink: 0,
-              }}
-            >
-              Book Now
-            </Link>
+             {/* Hamburger — mobile only */}
+<button
+  onClick={() => setMobileOpen(true)}
+  style={{ ...iconBtnStyle, display: undefined }}
+  aria-label="Open menu"
+  className="lg:hidden flex items-center justify-center"
+>
+  <Bars3Icon className="size-5" />
+</button>
+            </div>
           </div>
         </header>
       </div>

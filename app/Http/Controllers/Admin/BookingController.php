@@ -95,7 +95,7 @@ class BookingController extends Controller
                     'vendor'      => $booking->order->vendor?->store_name ?? '—',
                     'items'       => $booking->order->orderItems->map(fn($i) => [
                         'id'       => $i->id,
-                        'title'    => $i->product?->name ?? '—',
+                        'title'    => $i->product?->title ?? '—',
                         'quantity' => $i->quantity,
                         'price'    => $i->price,
                         'subtotal' => $i->quantity * $i->price,

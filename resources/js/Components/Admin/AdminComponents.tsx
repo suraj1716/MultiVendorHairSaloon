@@ -685,12 +685,12 @@ export function AdminBtn({
     },
     ghost: {
       bg: "transparent",
-      color: "var(--color-text-muted)",
+      color: "var(--color-text-light)",
       border: "var(--color-border)",
     },
     danger: {
-      bg: "transparent",
-      color: "var(--color-error)",
+      bg: "var(--color-error)",
+      color: "var(--color-text-light)",
       border: "var(--color-error)",
     },
   };

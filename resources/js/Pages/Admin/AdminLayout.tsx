@@ -449,7 +449,7 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
   <img
     src="/images/logo.png"
     alt="RB Hair & Beauty Lounge"
-    style={{ height: 64, width: "auto", objectFit: "contain" }}
+    style={{ height: 54, width: "auto", objectFit: "contain" }}
   />
 
 </div>

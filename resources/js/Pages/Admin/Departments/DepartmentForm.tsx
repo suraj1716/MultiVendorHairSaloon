@@ -192,9 +192,7 @@ const handleSubmit = () => {
         />
 
         <FlashMessage flash={flash} />
-<pre style={{ background: "blue", color: "white", padding: 8, fontSize: 11 }}>
-  ERRORS: {JSON.stringify(errors)}
-</pre>
+
         <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 20, alignItems: "start" }}>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>

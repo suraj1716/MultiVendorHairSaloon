@@ -160,7 +160,7 @@ function CartItem({ item }: { item: CartItemType }) {
           onClick={onDeleteClick}
           style={{
             background: "transparent",
-            color: "var(--color-text-light)",
+            color: "var(--color-error)",
             border: "1px solid var(--color-border)",
             fontFamily: "var(--font-body)",
             fontSize: "var(--text-xs)",
@@ -172,13 +172,13 @@ function CartItem({ item }: { item: CartItemType }) {
           }}
           onMouseEnter={(e) => {
             const b = e.currentTarget as HTMLButtonElement;
-            b.style.borderColor = "var(--color-error)";
+            b.style.borderColor = "var(--color-text)";
             b.style.color = "var(--color-error)";
           }}
           onMouseLeave={(e) => {
             const b = e.currentTarget as HTMLButtonElement;
             b.style.borderColor = "var(--color-border)";
-            b.style.color = "var(--color-text-light)";
+            b.style.color = "var(--color-error)";
           }}
         >
           Remove
