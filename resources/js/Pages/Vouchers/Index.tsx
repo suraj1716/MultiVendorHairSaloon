@@ -1,6 +1,9 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { useForm, router } from "@inertiajs/react";
 import { useState } from "react";
+import Button from "@/Components/App/ui/Button";
+import { Eyebrow } from "@/Components/App/ui/SectionHeading";
+import { input as sharedInput } from "@/Components/App/formStyles";
 
 type Voucher = {
   id?: number;
@@ -427,7 +430,7 @@ export default function Vouchers({
     <AuthenticatedLayout>
       <div
         style={{
-          maxWidth: "960px",
+          maxWidth: "1230px",
           margin: "0 auto",
           padding: "var(--space-4xl) var(--space-lg)",
           fontFamily: "var(--font-body)",
@@ -438,19 +441,9 @@ export default function Vouchers({
       >
         {/* ── Page heading ── */}
         <div>
-          <span
-            style={{
-              display: "block",
-              fontFamily: "var(--font-body)",
-              fontSize: "var(--text-xs)",
-              letterSpacing: "0.25em",
-              textTransform: "uppercase",
-              color: "var(--color-accent)",
-              marginBottom: "var(--space-sm)",
-            }}
-          >
-            Promotions & Rewards
-          </span>
+          <div style={{ marginBottom: "var(--space-sm)" }}>
+            <Eyebrow>Promotions & Rewards</Eyebrow>
+          </div>
           <h1
             style={{
               fontFamily: "var(--font-display)",
@@ -613,37 +606,17 @@ export default function Vouchers({
                   outline: "none",
                 }}
               />
-              <button
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() =>
                   navigator.clipboard.writeText(
                     `${window.location.origin}/login?ref=${referral_code}`
                   )
                 }
-                style={{
-                  background: "var(--color-primary)",
-                  color: "var(--color-text-inverse)",
-                  fontFamily: "var(--font-body)",
-                  fontSize: "var(--text-xs)",
-                  fontWeight: 500,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  padding: "0.65rem 1.5rem",
-                  border: "1px solid var(--color-primary)",
-                  cursor: "pointer",
-                  transition: "background var(--transition-fast)",
-                  whiteSpace: "nowrap",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--color-primary-light)")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--color-primary)")
-                }
               >
                 Copy Link
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -680,18 +653,7 @@ export default function Vouchers({
               placeholder="Enter voucher or gift code"
               value={data.code}
               onChange={(e) => setData("code", e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: "200px",
-                padding: "0.75rem 1rem",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--text-sm)",
-                color: "var(--color-text)",
-                background: "var(--color-bg)",
-                border: "1px solid var(--color-border)",
-                outline: "none",
-                transition: "border-color var(--transition-fast)",
-              }}
+              style={{ ...sharedInput, flex: 1, minWidth: "200px" }}
               onFocus={(e) =>
                 ((e.currentTarget as HTMLInputElement).style.borderColor =
                   "var(--color-primary)")
@@ -701,36 +663,9 @@ export default function Vouchers({
                   "var(--color-border)")
               }
             />
-            <button
-              type="submit"
-              disabled={processing}
-              style={{
-                background: processing ? "var(--color-border)" : "var(--color-accent)",
-                color: processing ? "var(--color-text-light)" : "var(--color-bg-dark)",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--text-xs)",
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                padding: "0.75rem 2rem",
-                border: "none",
-                cursor: processing ? "not-allowed" : "pointer",
-                transition: "background var(--transition-fast)",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => {
-                if (!processing)
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--color-accent-dark)";
-              }}
-              onMouseLeave={(e) => {
-                if (!processing)
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--color-accent)";
-              }}
-            >
+            <Button type="submit" variant="accent" disabled={processing}>
               {processing ? "Checking…" : "Check Code"}
-            </button>
+            </Button>
           </form>
 
           {error && (

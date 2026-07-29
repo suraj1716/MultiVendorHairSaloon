@@ -23,8 +23,8 @@
   --color-primary-100:    #E9F5EB;
   --color-primary-200:    #D9EEDD;
 
-  --color-accent:         #facc15;   /* warm gold */
-  --color-accent-light:   #facc15;
+  --color-accent:         #ede80a;   /* warm gold */
+  --color-accent-light:   #f3ef18;
   --color-accent-dark:    #e5c522;
 
   /* --- Neutrals --- */
@@ -39,8 +39,8 @@
   /* --- Text --- */
   --color-text:           #1C1A17;
   --color-text-muted:     #6B6560;
-    --color-text-muted-light:     #a49e9a;
-  --color-text-light:     #ffffff;
+    --color-text-muted-light:     #ffffff;
+  --color-text-light:     #cac8c5;
   --color-text-inverse:   #ffffff;
 
   /* --- UI --- */
@@ -312,7 +312,17 @@ a:hover { color: var(--color-primary-light); }
   color: var(--color-text);
   border-color: var(--color-border-dark);
 }
+.btn-danger {
+  background: transparent;
+  color: var(--color-error);
+  border-color: var(--color-error);
+}
 
+.btn-danger:hover {
+  background: var(--color-error);
+  color: white;
+  border-color: var(--color-error);
+}
 .btn-sm {
   padding: 0.5rem 1.25rem;
   font-size: var(--text-xs);
@@ -322,6 +332,41 @@ a:hover { color: var(--color-primary-light); }
   padding: 1rem 2.5rem;
   font-size: var(--text-base);
 }
+
+/* ============================================================
+   Pagination
+   ============================================================ */
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: var(--space-2xl);
+}
+.pagination-link {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  letter-spacing: 0.05em;
+  padding: 8px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  background: var(--color-surface);
+  text-decoration: none;
+  transition: border-color var(--transition-fast), color var(--transition-fast), background var(--transition-fast);
+}
+.pagination-link:hover { border-color: var(--color-accent); color: var(--color-text); }
+.pagination-link.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+}
+.pagination-link.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
 
 /* ============================================================
    CARDS

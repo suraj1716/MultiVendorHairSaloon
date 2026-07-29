@@ -29,6 +29,8 @@ use App\Filament\Resources\BookingResource\Pages\CreateBooking;
 use App\Http\Controllers\StaffController;
 use App\Http\Controllers\VoucherController;
 
+
+Route::get('/.well-known/appspecific/com.chrome.devtools.json', fn () => response()->noContent());
 // ── Public: storage file serving ────────────────────────────────────────────
 Route::get('/storage/{path}', function (string $path) {
     $fullPath = storage_path('app/public/' . $path);

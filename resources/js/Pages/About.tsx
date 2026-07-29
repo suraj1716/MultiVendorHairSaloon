@@ -2,6 +2,11 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import React, { useEffect, useRef, useState } from "react";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import SectionHeading, {
+  Eyebrow,
+  Ornament,
+  Title,
+} from "@/Components/App/ui/SectionHeading";
 
 /* ─────────────────────────────────────────────
    Static data
@@ -11,14 +16,16 @@ const team = [
     name: "Sandesh Rajbhandari",
     role: "Promoter",
     bio: "Bringing a family legacy of hairdressing expertise from Nepal to Sydney, Sandesh helps lead RB Hair & Beauty Lounge with a focus on exceptional guest experience.",
-    img: "https://i.pravatar.cc/300?img=68", // replace with real photo
+    img: "/images/sandesh.jpg", // replace with real photo
+    objectPosition: "center 20%",
     specialty: "Client Experience",
   },
   {
     name: "Mausami Rajbhandari Piya",
     role: "Managing Director",
     bio: "Mausami leads a skilled and passionate team of stylists, bringing polish and expertise to every service at RB Hair & Beauty Lounge.",
-    img: "https://i.pravatar.cc/300?img=47", // replace with real photo
+    img: "/images/mausami.jpg", // replace with real photo
+    objectPosition: "center top",
     specialty: "Hairdressing & Beauty",
   },
 ];
@@ -48,113 +55,28 @@ const values = [
 
 const milestones = [
   {
-    year: "2009",
-    event: "RB Hair & Beauty Lounge opens its doors in Sydney CBD with a team of three.",
+    year: "2018",
+    event:
+      "RB Hair & Beauty Lounge opens its doors in Sydney CBD with a team of three.",
   },
   {
-    year: "2013",
+    year: "2020",
     event:
       "Expanded to a full-floor atelier and launched our signature Scalp Ritual.",
   },
   {
-    year: "2017",
+    year: "2022",
     event: "Named Best Luxury Salon in NSW at the Australian Hair Awards.",
   },
   {
-    year: "2021",
+    year: "2024",
     event: "Launched our online product boutique and gift voucher experience.",
   },
   {
-    year: "2024",
-    event: "Celebrated 15 years and 2,700+ transformed clients.",
+    year: "2026",
+    event: "Celebrated 8 years and 500+ transformed clients.",
   },
 ];
-
-/* ─────────────────────────────────────────────
-   Helpers
-───────────────────────────────────────────── */
-function Ornament({ center = false }: { center?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        margin: "1.25rem 0",
-        justifyContent: center ? "center" : "flex-start",
-      }}
-    >
-      <div
-        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
-      />
-      <div
-        style={{
-          width: 5,
-          height: 5,
-          background: "var(--color-accent)",
-          transform: "rotate(45deg)",
-        }}
-      />
-      <div
-        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
-      />
-    </div>
-  );
-}
-
-function Eyebrow({
-  children,
-  center = false,
-}: {
-  children: React.ReactNode;
-  center?: boolean;
-}) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "0.68rem",
-        letterSpacing: "0.28em",
-        textTransform: "uppercase",
-        color: "var(--color-accent)",
-        display: "block",
-        textAlign: center ? "center" : "left",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function SectionHeading({
-  eyebrow,
-  title,
-  center = false,
-}: {
-  eyebrow: string;
-  title: React.ReactNode;
-  center?: boolean;
-}) {
-  return (
-    <div
-      style={{ textAlign: center ? "center" : "left", marginBottom: "3rem" }}
-    >
-      <Eyebrow center={center}>{eyebrow}</Eyebrow>
-      <Ornament center={center} />
-      <h2
-        style={{
-          fontFamily: "var(--font-display)",
-          fontSize: "clamp(1.75rem, 4vw, 2.75rem)",
-          fontWeight: 300,
-          color: "var(--color-text)",
-          lineHeight: 1.15,
-        }}
-      >
-        {title}
-      </h2>
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────
    Component
@@ -258,7 +180,7 @@ const About: React.FC = () => {
             }}
           >
             <div style={{ maxWidth: 580 }} data-aos="fade-right">
-              <Eyebrow>Our Story</Eyebrow>
+              <Eyebrow tone="light">Our Story</Eyebrow>
               <Ornament />
               <h1
                 style={{
@@ -369,35 +291,63 @@ const About: React.FC = () => {
           >
             {/* text */}
             <div data-aos="fade-right">
-   <SectionHeading
-  eyebrow="Who We Are"
-  title={<>Welcome to <em style={{ fontStyle: "italic", color: "var(--color-accent)" }}>RB Hair & Beauty Lounge</em></>}
-/>
+              <Eyebrow>About Us</Eyebrow>
+              <Ornament />
 
-<div style={{
-  display: "flex",
-  alignItems: "center",
-  gap: "12px",
-  marginBottom: "0.5rem",
-}}>
-  <img
-    src="/images/tafe-logo.png"
-    alt="TAFE Certified"
-    style={{ height: 64, width: "auto", objectFit: "contain" }}
-  />
-  <span style={{
-    fontFamily: "var(--font-body)",
-    fontSize: "0.8rem",
-    letterSpacing: "0.05em",
-    color: "var(--color-text-muted)",
-  }}>
-    Australian Certified Hairdressers and Beauticians
-  </span>
-</div>
+              <Title tone="light">
+                Welcome to{" "}
+                <em
+                  style={{
+                    fontStyle: "italic",
+                    color: "var(--color-primary)",
+                    marginTop: -20,
+                  }}
+                >
+                  RB Hair & Beauty Lounge
+                </em>
+              </Title>
 
-<p style={{ color: "var(--color-text-muted)", lineHeight: 1.85, marginBottom: "1.25rem" }}>
-  RB Hair & Beauty Lounge Australia is led by Mausami Rajbhandari Piya and her husband Sandesh Rajbhandari, together with a team of skilled and passionate stylists. Originally from Nepal, their family's hairdressing experience spans across Sydney, Australia. The Rajbhandari family come together at RB Hair & Beauty Lounge to offer guests exceptional hairdressing delivered with polish and expertise.
-</p>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginBottom: "0.5rem",
+                }}
+              >
+                <img
+                  src="/images/tafe-logo.png"
+                  alt="TAFE Certified"
+                  style={{ height: 64, width: "auto", objectFit: "contain" }}
+                />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.8rem",
+                    letterSpacing: "0.05em",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  Australian Certified Hairdressers and Beauticians
+                </span>
+              </div>
+
+              <p
+                style={{
+                  color: "var(--color-text-muted)",
+                  lineHeight: 1.85,
+                  marginBottom: "1.25rem",
+                  marginTop: "2rem",
+                }}
+              >
+                RB Hair & Beauty Lounge Australia is led by Mausami Rajbhandari
+                Piya and her husband Sandesh Rajbhandari, together with a team
+                of skilled and passionate stylists. Originally from Nepal, their
+                family's hairdressing experience spans across Sydney, Australia.
+                The Rajbhandari family come together at RB Hair & Beauty Lounge
+                to offer guests exceptional hairdressing delivered with polish
+                and expertise.
+              </p>
               <p
                 style={{
                   color: "var(--color-text-muted)",
@@ -532,23 +482,21 @@ const About: React.FC = () => {
             }}
           >
             <div data-aos="fade-up">
-              <SectionHeading
-                eyebrow="What We Stand For"
-                title={
-                  <>
-                    Our{" "}
-                    <em
-                      style={{
-                        fontStyle: "italic",
-                        color: "var(--color-text)",
-                      }}
-                    >
-                      Values
-                    </em>
-                  </>
-                }
-                center
-              />
+              <div className="pillars-heading-wrap mb-24">
+                <Eyebrow center>What We Stand For</Eyebrow>
+                <Title center>
+                  Our{" "}
+                  <em
+                    style={{
+                      fontStyle: "italic",
+                      color: "var(--color-primary)",
+                    }}
+                  >
+                    Values
+                  </em>
+                </Title>
+                <Ornament center />
+              </div>
             </div>
 
             <div
@@ -656,25 +604,21 @@ const About: React.FC = () => {
               padding: "0 7vw",
             }}
           >
-            <div id="team" data-aos="fade-up">
-  <SectionHeading
-    eyebrow="The Artisans"
-    title={
-      <>
-        Meet Our{" "}
-        <em
-          style={{
-            fontStyle: "italic",
-            color: "var(--color-text)",
-          }}
-        >
-          Team
-        </em>
-      </>
-    }
-    center
-  />
-</div>
+            <div id="team" data-aos="fade-up" className="mb-24">
+              <Eyebrow center>The Artisans</Eyebrow>
+              <Title center>
+                Meet Our{" "}
+                <em
+                  style={{
+                    fontStyle: "italic",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  Team
+                </em>
+              </Title>
+              <Ornament center />
+            </div>
 
             <div
               style={{
@@ -703,7 +647,7 @@ const About: React.FC = () => {
                     style={{
                       position: "relative",
                       overflow: "hidden",
-                      height: 260,
+                      height: 320,
                     }}
                   >
                     <img
@@ -713,6 +657,8 @@ const About: React.FC = () => {
                         width: "100%",
                         height: "100%",
                         objectFit: "cover",
+                        objectPosition:
+                          member.objectPosition ?? "center center",
                         transition: "transform 0.6s ease",
                       }}
                       className="group-hover:scale-105"
@@ -810,24 +756,20 @@ const About: React.FC = () => {
               padding: "0 7vw",
             }}
           >
-            <div data-aos="fade-up">
-              <SectionHeading
-                eyebrow="Our Journey"
-                title={
-                  <>
-                    Fifteen Years of{" "}
-                    <em
-                      style={{
-                        fontStyle: "italic",
-                        color: "var(--color-text)",
-                      }}
-                    >
-                      Excellence
-                    </em>
-                  </>
-                }
-                center
-              />
+            <div data-aos="fade-up" className="mb-24">
+              <Eyebrow center>Our Journey</Eyebrow>
+              <Title center>
+                Eight Years of{" "}
+                <em
+                  style={{
+                    fontStyle: "italic",
+                    color: "var(--color-primary)",
+                  }}
+                >
+                  Excellence
+                </em>
+              </Title>
+              <Ornament center />
             </div>
 
             <div
@@ -887,7 +829,7 @@ const About: React.FC = () => {
                           fontSize: "1.5rem",
                           fontWeight: 400,
                           fontStyle: "italic",
-                          color: "var(--color-accent)",
+                          color: "var(--color-primary)",
                           display: "block",
                           marginBottom: 4,
                         }}
@@ -912,7 +854,7 @@ const About: React.FC = () => {
                           transform: "translateY(-50%)",
                           width: 10,
                           height: 10,
-                          background: "var(--color-accent)",
+                          background: "var(--color-primary)",
                           borderRadius: "50%",
                           border: "2px solid var(--color-bg-alt)",
                         }}
@@ -966,7 +908,9 @@ const About: React.FC = () => {
             }}
             data-aos="fade-up"
           >
-            <Eyebrow center>Ready to Experience RB Hair & Beauty Lounge?</Eyebrow>
+            <Eyebrow tone="light" center>
+              Ready to Experience RB Hair & Beauty Lounge?
+            </Eyebrow>
             <Ornament center />
             <h2
               style={{
@@ -977,6 +921,7 @@ const About: React.FC = () => {
                 lineHeight: 1.15,
                 maxWidth: 600,
                 margin: "0 auto 1.25rem",
+                marginTop: 20,
               }}
             >
               Your most beautiful hair starts with a{" "}

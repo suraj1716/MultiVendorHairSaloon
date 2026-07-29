@@ -3194,6 +3194,7 @@ namespace App\Models {
      * @property \Illuminate\Support\Carbon|null $refunded_at
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
+     * @property mixed $payout_id
      * @property float|null $vendor_subtotal
      * @property float|null $website_payment_comission
      * @property float|null $online_payment_comission
@@ -3253,6 +3254,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereOnlinePaymentComission($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereWebsitePaymentComission($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereVendorSubtotal($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order wherePayoutId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Order>|Order whereRefundedAt($value)
@@ -3875,11 +3877,14 @@ namespace App\Models {
      *
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
-     * @property string $until
-     * @property string $starting_from
+     * @property \Illuminate\Support\Carbon $until
+     * @property \Illuminate\Support\Carbon $starting_from
      * @property float $amount
      * @property mixed $vendor_id
      * @property int $id
+     * @property-read \App\Models\Vendor $vendor
+     * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> $orders
+     * @property-read int|null $orders_count
      * @method static \Illuminate\Database\Eloquent\Builder<Payout>|Payout whereId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Payout>|Payout whereVendorId($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Payout>|Payout whereAmount($value)
@@ -7423,6 +7428,7 @@ namespace App\Models {
     /**
      * App\Models\Vendor
      *
+     * @property string|null $youtube_url
      * @property string|null $tiktok_url
      * @property string|null $instagram_url
      * @property string|null $facebook_url
@@ -7465,6 +7471,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereFacebookUrl($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereInstagramUrl($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereTiktokUrl($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor whereYoutubeUrl($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Vendor>|Vendor query()

@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VendorController as AdminVendorController;
 use App\Http\Controllers\Admin\AdminVoucherController;
 use App\Http\Controllers\Admin\GalleryController;
+use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\RosterController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -147,7 +148,19 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
             Route::post('/bookings/{booking}/assign', [RosterController::class, 'assign'])->name('assign');
             Route::post('/bookings/{booking}/deassign', [RosterController::class, 'deassign'])->name('deassign');
         });
+
+
+        Route::prefix('payouts')->name('payouts.')->group(function () {
+            Route::get('/', [PayoutController::class, 'index'])->name('index');
+            Route::post('/preview', [PayoutController::class, 'preview'])->name('preview');
+            Route::get('/{payout}', [PayoutController::class, 'show'])->name('show');
+            Route::post('/', [PayoutController::class, 'store'])->name('store');
+            Route::delete('/{payout}', [PayoutController::class, 'destroy'])->name('destroy');
+        });
     });
+
+
+
 
 
 Route::get('/staff-for-booking', [StaffController::class, 'forBooking'])

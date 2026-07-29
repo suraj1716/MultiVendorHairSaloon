@@ -3,6 +3,12 @@ import { useForm, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps } from "@/types";
 import PageHero from "@/Components/Page/PageHero";
+import Card from "@/Components/App/Card";
+import Button from "@/Components/App/ui/Button";
+import Select from "@/Components/App/ui/Select";
+import FormField from "@/Components/App/ui/Formfield";
+import RadioGroup from "@/Components/App/ui/Radiogroup";
+import FileDropzone from "@/Components/App/ui/Filedropzone";
 
 interface DepartmentOption {
   id: number;
@@ -16,6 +22,25 @@ interface DepartmentOption {
       title: string;
     }[];
   }[];
+}
+
+const dayNames = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+function formatTime(time?: string) {
+  if (!time) return "—";
+  const [hourStr, minuteStr] = time.split(":");
+  const hour = parseInt(hourStr, 10);
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${displayHour}:${minuteStr} ${period}`;
 }
 
 const Contact: React.FC = () => {
@@ -39,11 +64,8 @@ const Contact: React.FC = () => {
     })),
   }));
 
-  const reasons = [
-    { value: "", label: "Select reason" },
-    ...((contactReasons as { value: string; label: string }[]) || []),
-  ];
-  console.log("vendor", vendor);
+  const reasonOptions = (contactReasons as { value: string; label: string }[]) || [];
+
   const { data, setData, post, processing, errors, reset } = useForm({
     name: "",
     email: "",
@@ -58,7 +80,6 @@ const Contact: React.FC = () => {
     preferredContact: "email",
   });
 
-  // vendor[0] now available for the contact info card below
   const isGettingQuote = data.reason === "getting_quote";
 
   const selectedDepartment = departments.find(
@@ -67,11 +88,6 @@ const Contact: React.FC = () => {
   const selectedCategory = selectedDepartment?.categories.find(
     (c) => c.id.toString() === data.category,
   );
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] ?? null;
-    setData("file", file);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +104,8 @@ const Contact: React.FC = () => {
 
   return (
     <AuthenticatedLayout>
-      <style>{`
+
+  <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
 
 .file-upload-error {
@@ -485,7 +502,6 @@ const Contact: React.FC = () => {
           background: var(--color-surface-warm);
         }
       `}</style>
-
       <div className="contact-page">
         <PageHero
           eyebrow="We'd love to hear from you"
@@ -510,36 +526,20 @@ const Contact: React.FC = () => {
                 encType="multipart/form-data"
                 noValidate
               >
-                {/* Reason */}
-                <div className="form-group">
-                  <label htmlFor="reason">Reason for Contact</label>
-                  <div className="select-wrapper">
-                    <select
-                      id="reason"
-                      value={data.reason}
-                      onChange={(e) => setData("reason", e.target.value)}
-                      required
-                    >
-                      {reasons.map((r) => (
-                        <option
-                          key={r.value}
-                          value={r.value}
-                          disabled={r.value === ""}
-                        >
-                          {r.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {errors.reason && (
-                    <p className="field-error">{errors.reason}</p>
-                  )}
-                </div>
+                <FormField id="reason" label="Reason for Contact" error={errors.reason}>
+                  <Select
+                    id="reason"
+                    value={data.reason}
+                    onChange={(v) => setData("reason", v)}
+                    placeholder="Select reason"
+                    options={reasonOptions}
+                    required
+                  />
+                </FormField>
 
                 {/* Name + Email */}
                 <div className="form-row">
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label htmlFor="name">Full Name</label>
+                  <FormField id="name" label="Full Name" error={errors.name} noMargin>
                     <input
                       id="name"
                       type="text"
@@ -548,12 +548,8 @@ const Contact: React.FC = () => {
                       placeholder="Jane Smith"
                       required
                     />
-                    {errors.name && (
-                      <p className="field-error">{errors.name}</p>
-                    )}
-                  </div>
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label htmlFor="email">Email Address</label>
+                  </FormField>
+                  <FormField id="email" label="Email Address" error={errors.email} noMargin>
                     <input
                       id="email"
                       type="email"
@@ -562,19 +558,12 @@ const Contact: React.FC = () => {
                       placeholder="you@example.com"
                       required
                     />
-                    {errors.email && (
-                      <p className="field-error">{errors.email}</p>
-                    )}
-                  </div>
+                  </FormField>
                 </div>
 
                 {/* Phone + Preferred contact */}
-                <div
-                  className="form-row"
-                  style={{ marginTop: "var(--space-xl)" }}
-                >
-                  <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label htmlFor="phone">Phone (optional)</label>
+                <div className="form-row" style={{ marginTop: "var(--space-xl)" }}>
+                  <FormField id="phone" label="Phone (optional)" noMargin>
                     <input
                       id="phone"
                       type="tel"
@@ -582,122 +571,81 @@ const Contact: React.FC = () => {
                       onChange={(e) => setData("phone", e.target.value)}
                       placeholder="+61 4XX XXX XXX"
                     />
-                  </div>
+                  </FormField>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Preferred Contact Method</label>
-                    <div className="radio-group">
-                      {["email", "phone"].map((opt) => (
-                        <div className="radio-option" key={opt}>
-                          <input
-                            type="radio"
-                            id={`contact-${opt}`}
-                            name="preferredContact"
-                            value={opt}
-                            checked={data.preferredContact === opt}
-                            onChange={() => setData("preferredContact", opt)}
-                          />
-                          <label htmlFor={`contact-${opt}`}>{opt}</label>
-                        </div>
-                      ))}
-                    </div>
+                    <RadioGroup
+                      name="preferredContact"
+                      value={data.preferredContact}
+                      onChange={(v) => setData("preferredContact", v)}
+                      options={[
+                        { value: "email", label: "email" },
+                        { value: "phone", label: "phone" },
+                      ]}
+                    />
                   </div>
                 </div>
 
                 {/* Quote fields */}
                 {isGettingQuote && (
                   <>
-                    <div
-                      className="quote-section-divider"
-                      style={{ marginTop: "var(--space-xl)" }}
-                    >
+                    <div className="quote-section-divider" style={{ marginTop: "var(--space-xl)" }}>
                       <span>Quote Details</span>
                     </div>
 
-                    <div className="form-group">
-                      <label htmlFor="department">Department</label>
-                      <div className="select-wrapper">
-                        <select
-                          id="department"
-                          value={data.department}
-                          onChange={(e) => {
-                            setData("department", e.target.value);
-                            setData("category", "");
-                            setData("product", "");
-                          }}
-                          required
-                        >
-                          <option value="">Select Department</option>
-                          {departments.map((d) => (
-                            <option key={d.id} value={d.id}>
-                              {d.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      {errors.department && (
-                        <p className="field-error">{errors.department}</p>
-                      )}
-                    </div>
+                    <FormField id="department" label="Department" error={errors.department}>
+                      <Select
+                        id="department"
+                        value={data.department}
+                        onChange={(v) => {
+                          setData("department", v);
+                          setData("category", "");
+                          setData("product", "");
+                        }}
+                        placeholder="Select Department"
+                        options={departments.map((d) => ({ value: d.id, label: d.name }))}
+                        required
+                      />
+                    </FormField>
 
                     {selectedDepartment && (
-                      <div className="form-group">
-                        <label htmlFor="category">Category</label>
-                        <div className="select-wrapper">
-                          <select
-                            id="category"
-                            value={data.category}
-                            onChange={(e) => {
-                              setData("category", e.target.value);
-                              setData("product", "");
-                            }}
-                            required
-                          >
-                            <option value="">Select Category</option>
-                            {selectedDepartment.categories.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.name}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        {errors.category && (
-                          <p className="field-error">{errors.category}</p>
-                        )}
-                      </div>
+                      <FormField id="category" label="Category" error={errors.category}>
+                        <Select
+                          id="category"
+                          value={data.category}
+                          onChange={(v) => {
+                            setData("category", v);
+                            setData("product", "");
+                          }}
+                          placeholder="Select Category"
+                          options={selectedDepartment.categories.map((c) => ({
+                            value: c.id,
+                            label: c.name,
+                          }))}
+                          required
+                        />
+                      </FormField>
                     )}
 
                     {selectedCategory && (
-                      <div className="form-group">
-                        <label htmlFor="product">Product</label>
-                        <div className="select-wrapper">
-                          <select
-                            id="product"
-                            value={data.product}
-                            onChange={(e) => setData("product", e.target.value)}
-                            required
-                            style={{ color: "#1a1a1a", background: "#ffffff" }}
-                          >
-                            <option value="">Select Product</option>
-                            {(() => {
-                              return selectedCategory.products.map((p) => {
-                                return (
-                                  <option key={p.id} value={p.id}>
-                                    {p.title}
-                                  </option>
-                                );
-                              });
-                            })()}
-                          </select>
-                        </div>
-                        {errors.product && (
-                          <p className="field-error">{errors.product}</p>
-                        )}
-                      </div>
+                      <FormField id="product" label="Product" error={errors.product}>
+                        <Select
+                          id="product"
+                          value={data.product}
+                          onChange={(v) => setData("product", v)}
+                          placeholder="Select Product"
+                          options={selectedCategory.products.map((p) => ({
+                            value: p.id,
+                            label: p.title,
+                          }))}
+                          required
+                          style={{ color: "#1a1a1a", background: "#ffffff" }}
+                        />
+                      </FormField>
                     )}
 
                     <div className="form-row">
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label htmlFor="quantity">Quantity</label>
+                      <FormField id="quantity" label="Quantity" error={errors.quantity} noMargin>
                         <input
                           id="quantity"
                           type="number"
@@ -707,60 +655,27 @@ const Contact: React.FC = () => {
                           placeholder="e.g. 50"
                           required
                         />
-                        {errors.quantity && (
-                          <p className="field-error">{errors.quantity}</p>
-                        )}
-                      </div>
-                      <div className="form-group" style={{ marginBottom: 0 }}>
-                        <label>Upload File (optional)</label>
-                        <div
-                          className="file-upload-area"
-                          onClick={() =>
-                            document.getElementById("file-input")?.click()
-                          }
-                        >
-                          <input
-                            id="file-input"
-                            type="file"
-                            onChange={handleFileChange}
-                            accept="image/*,application/pdf"
-                            style={{ display: "none" }}
-                          />
-                          <p className="file-upload-text">
-                            {data.file ? (
-                              <span style={{ color: "var(--color-primary)" }}>
-                                {(data.file as File).name}
-                              </span>
-                            ) : (
-                              <>
-                                <span>Browse</span> or drag & drop
-                                <br />
-                                <span
-                                  style={{
-                                    fontSize: "var(--text-xs)",
-                                    color: "var(--color-text-light)",
-                                  }}
-                                >
-                                  PDF, JPG, PNG
-                                </span>
-                              </>
-                            )}
-                          </p>
-                        </div>
-                        {errors.file && (
-                          <p className="field-error">{errors.file}</p>
-                        )}
-                      </div>
+                      </FormField>
+                      <FormField id="file-input" label="Upload File (optional)" error={errors.file} noMargin>
+                        <FileDropzone
+                          id="file-input"
+                          file={data.file}
+                          onChange={(file) => setData("file", file)}
+                          accept="image/*,application/pdf"
+                          hint="PDF, JPG, PNG"
+                        />
+                      </FormField>
                     </div>
                   </>
                 )}
 
                 {/* Message */}
-                <div
-                  className="form-group"
+                <FormField
+                  id="message"
+                  label="Your Message"
+                  error={errors.message}
                   style={{ marginTop: "var(--space-xl)" }}
                 >
-                  <label htmlFor="message">Your Message</label>
                   <textarea
                     id="message"
                     value={data.message}
@@ -768,140 +683,112 @@ const Contact: React.FC = () => {
                     placeholder="Tell us how we can help..."
                     required
                   />
-                  {errors.message && (
-                    <p className="field-error">{errors.message}</p>
-                  )}
-                </div>
+                </FormField>
 
-                <button
+                <Button
                   type="submit"
-                  className="btn-submit"
+                  variant="accent"
                   disabled={processing}
+                  className="btn-submit"
+                  style={{ width: "100%" }}
                 >
                   {processing ? "Sending…" : "Send Message →"}
-                </button>
+                </Button>
               </form>
             </div>
 
             {/* Sidebar */}
             <div className="sidebar">
               {/* Contact info */}
-              <div className="info-card">
-                <div className="info-card-header">
-                  <h3>Contact Information</h3>
-                </div>
-                <div className="info-card-body">
-                  {[
-                    {
-                      icon: "📍",
-                      label: "Address",
-                      content: vendor?.data?.store_address || "Address not set",
-                    },
-                    {
-                      icon: "📞",
-                      label: "Phone",
-                      content: vendor?.data?.phone || "Phone not set",
-                      href: vendor?.data?.phone
-                        ? `tel:${vendor?.data?.phone.replace(/\s+/g, "")}`
-                        : undefined,
-                    },
-                    {
-                      icon: "✉️",
-                      label: "Email",
-                      content: vendor?.data?.email || "Email not set",
-                      href: vendor?.data?.email
-                        ? `mailto:${vendor?.data?.email}`
-                        : undefined,
-                    },
-                  ].map(({ icon, label, content, href }) => (
-                    <div className="info-row" key={label}>
-                      <div className="info-row-icon">{icon}</div>
-                      <div className="info-row-content">
-                        <strong>{label}</strong>
-                        {href ? (
-                          <a href={href}>{content}</a>
-                        ) : (
-                          <span>{content}</span>
-                        )}
-                      </div>
+              <Card title="Contact Information" titleSize="14px">
+                {[
+                  {
+                    icon: "📍",
+                    label: "Address",
+                    content: vendor?.data?.store_address || "Address not set",
+                  },
+                  {
+                    icon: "📞",
+                    label: "Phone",
+                    content: vendor?.data?.phone || "Phone not set",
+                    href: vendor?.data?.phone
+                      ? `tel:${vendor?.data?.phone.replace(/\s+/g, "")}`
+                      : undefined,
+                  },
+                  {
+                    icon: "✉️",
+                    label: "Email",
+                    content: vendor?.data?.email || "Email not set",
+                    href: vendor?.data?.email
+                      ? `mailto:${vendor?.data?.email}`
+                      : undefined,
+                  },
+                ].map(({ icon, label, content, href }) => (
+                  <div className="info-row" key={label}>
+                    <div className="info-row-icon">{icon}</div>
+                    <div className="info-row-content">
+                      <strong>{label}</strong>
+                      {href ? <a href={href}>{content}</a> : <span>{content}</span>}
                     </div>
-                  ))}
-
-                  <div className="social-row">
-                    {[
-                      { label: "Facebook", url: vendor?.data?.facebook_url },
-                      { label: "Instagram", url: vendor?.data?.instagram_url },
-                      { label: "TikTok", url: vendor?.data?.tiktok_url },
-                    ]
-                      .filter((s) => s.url)
-                      .map((s) => (
-                        <a
-                          key={s.label}
-                          href={s.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="social-btn"
-                        >
-                          {s.label}
-                        </a>
-                      ))}
                   </div>
+                ))}
+
+                <div className="social-row">
+                  {[
+                    { label: "Facebook", url: vendor?.data?.facebook_url },
+                    { label: "Instagram", url: vendor?.data?.instagram_url },
+                    { label: "TikTok", url: vendor?.data?.tiktok_url },
+                  ]
+                    .filter((s) => s.url)
+                    .map((s) => (
+                      <a
+                        key={s.label}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="social-btn"
+                      >
+                        {s.label}
+                      </a>
+                    ))}
                 </div>
-              </div>
+              </Card>
 
-             {/* Hours */}
-<div className="info-card">
-  <div className="info-card-header">
-    <h3>Business Hours</h3>
-  </div>
-  <div className="info-card-body">
-
-    <div className="hours-grid">
-      {(() => {
-        const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-        const raw = vendor?.data?.recurring_closed_days ?? [];
-        const closedDays: number[] = raw.map((d: any) => Number(d));
-        const startTime = vendor?.data?.business_start_time;
-        const endTime = vendor?.data?.business_end_time;
-
-        const formatTime = (time?: string) => {
-          if (!time) return "—";
-          const [hourStr, minuteStr] = time.split(":");
-          const hour = parseInt(hourStr, 10);
-          const period = hour >= 12 ? "PM" : "AM";
-          const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-          return `${displayHour}:${minuteStr} ${period}`;
-        };
-
-        return dayNames.map((day, index) => {
-          const isClosed = closedDays.includes(index);
-          return (
-            <React.Fragment key={day}>
-              <span className="hours-day">{day}  {isClosed ? "(Closed)" : "(Open)"}</span>
-              <span className={isClosed ? "hours-time hours-closed" : "hours-time"}>
-                {isClosed ? "Closed" : `${formatTime(startTime)} – ${formatTime(endTime)}`}
-              </span>
-            </React.Fragment>
-          );
-        });
-      })()}
-    </div>
-  </div>
-</div>
+              {/* Hours */}
+              <Card title="Business Hours" titleSize="14px">
+                <div className="hours-grid">
+                  {dayNames.map((day, index) => {
+                    const isClosed = closedDays.includes(index);
+                    return (
+                      <React.Fragment key={day}>
+                        <span className="hours-day">
+                          {day} {isClosed ? "(Closed)" : "(Open)"}
+                        </span>
+                        <span className={isClosed ? "hours-time hours-closed" : "hours-time"}>
+                          {isClosed
+                            ? "Closed"
+                            : `${formatTime(vendor?.data?.business_start_time)} – ${formatTime(vendor?.data?.business_end_time)}`}
+                        </span>
+                      </React.Fragment>
+                    );
+                  })}
+                </div>
+              </Card>
 
               {/* Map */}
               <div className="map-card">
-                <iframe
-                  title="Company Location"
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3153.019777120943!2d144.96305831573905!3d-37.813611879751115!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x6ad65d43b01b4e5b%3A0x8dd1a4a1d34c892a!2sMelbourne%20VIC%2C%20Australia!5e0!3m2!1sen!2sus!4v1627485040554!5m2!1sen!2sus"
-                  width="100%"
-                  height="220"
-                  loading="lazy"
-                  style={{ border: 0, display: "block" }}
-                  allowFullScreen
-                  aria-hidden="false"
-                  tabIndex={0}
-                />
+               <iframe
+  title="Location"
+  width="100%"
+  height="400"
+  style={{ border: 0 }}
+  loading="lazy"
+  allowFullScreen
+  referrerPolicy="no-referrer-when-downgrade"
+  src={`https://www.google.com/maps?q=${encodeURIComponent(
+    vendor?.data?.store_address ?? ""
+  )}&output=embed`}
+/>
               </div>
             </div>
           </div>

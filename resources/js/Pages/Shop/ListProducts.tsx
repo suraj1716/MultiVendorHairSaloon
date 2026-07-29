@@ -11,6 +11,7 @@ import {
 } from "@/types";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
 import { ChevronDown, ShoppingBag, Plus, Minus, Trash2 } from "lucide-react";
+import PageHero from "@/Components/Page/PageHero";
 
 type ProfileProps = PageProps<{
   allProducts: PaginationProps<Product>;
@@ -191,7 +192,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
           text-align: center;
           position: relative;
           overflow: hidden;
-          z-index:1000
+          z-index:1
         }
         .sp-hero::before {
           content: '';
@@ -663,36 +664,49 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
         .sp-tray-footer-total span { color: var(--color-primary); font-weight: 400; }
 
         /* RESPONSIVE */
-        @media (max-width: 640px) {
-          .sp-body { padding: 24px 14px 120px; }
-          .sp-info-desc { display: none; }
-          .sp-cat-header { padding: 12px 14px; }
-          .sp-product-row { padding: 11px 14px; gap: 10px; }
-          .sp-thumb { width: 42px; height: 42px; }
-          .sp-tray-bar { padding: 11px 14px; }
-          .sp-tray-item { padding: 10px 14px; }
-          .sp-tray-footer { padding: 12px 14px; }
-          .sp-tray-panel-header { padding: 13px 14px; }
-        }
+       @media (max-width: 640px) {
+  .sp-body { padding: 24px 14px 120px; }
+  .sp-info-desc { display: none; }
+  .sp-cat-header { padding: 12px 14px; }
+  .sp-product-row { padding: 11px 14px; gap: 10px; }
+  .sp-thumb { width: 42px; height: 42px; }
+  .sp-tray-bar { padding: 11px 14px; }
+  .sp-tray-item { padding: 10px 14px; }
+  .sp-tray-panel-header { padding: 13px 14px; }
+
+  .sp-tray-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .sp-tray-footer-total {
+    text-align: right;
+     padding-right: 35px;
+
+  }
+  .sp-tray-footer-actions {
+    display: flex;
+    gap: 10px;
+  }
+  .sp-tray-footer-actions .btn {
+    flex: 1;
+    justify-content: center;
+    white-space: nowrap;
+  }
+}
       `}</style>
 
       <div className="sp-page">
 
         {/* Hero */}
-        <div className="sp-hero">
-          <span className="sp-hero-eyebrow">Our Services</span>
-          <h1 className="sp-hero-title">
-            {filters.keyword ? (
-              <>Results for <em>"{filters.keyword}"</em></>
-            ) : (
-              <>Book a <em>Service</em></>
-            )}
-          </h1>
-          <p className="sp-hero-sub">
-            Select services below, then add your entire selection to cart at once
-          </p>
-        </div>
 
+    <PageHero
+                eyebrow="Our Services"
+                title={<>Book <em>Services</em></>}
+                subtitle="  Select services below, then add your entire selection to cart at once."
+                breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Shop" }]}
+              />
         <div className="sp-body">
 
           {/* Search banner */}
@@ -856,7 +870,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                       />
                     </div>
                     <span className="sp-tray-item-name">{item.product.title}</span>
-                    <div className="sp-qty">
+                    {/* <div className="sp-qty">
                       <button className="sp-qty-btn" onClick={(e) => { e.stopPropagation(); changeQty(item.product.id, -1); }}>
                         <Minus size={11} />
                       </button>
@@ -864,7 +878,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                       <button className="sp-qty-btn" onClick={(e) => { e.stopPropagation(); changeQty(item.product.id, 1); }}>
                         <Plus size={11} />
                       </button>
-                    </div>
+                    </div> */}
                     <span className="sp-tray-item-price">
                       <CurrencyFormatter amount={(item.product.price ?? 0) * item.quantity} currency="AUD" />
                     </span>
@@ -878,7 +892,7 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                   <div className="sp-tray-footer-total">
                     Total&nbsp;&nbsp;<span><CurrencyFormatter amount={cartTotal} currency="AUD" /></span>
                   </div>
-                  <div style={{ display: "flex", gap: "10px" }}>
+                  <div style={{ display: "flex", gap: "24px" }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => { setCart({}); setTrayOpen(false); }}>
                       Clear all
                     </button>

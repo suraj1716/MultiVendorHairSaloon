@@ -283,7 +283,8 @@ class CartController extends Controller
                 $totalPrice = round($rawTotal - $orderDiscount, 2);
 
                 $onlineFee = round(($totalPrice * 0.029) + 0.30, 4);
-                $platformFee = round($totalPrice * 0.10, 4);
+                $platformFeePercent = config('app.platform_fee_pct');
+                $platformFee = round($totalPrice * ($platformFeePercent / 100), 4);
                 $vendorSubtotal = round($totalPrice - $onlineFee - $platformFee, 4);
 
                 $order = Order::create([
@@ -405,7 +406,7 @@ class CartController extends Controller
                             'quantity' => 1,
                         ];
                     }
-               }
+                }
             }
 
             // ── Redeem the voucher synchronously, once, for the combined discount ──
@@ -441,7 +442,7 @@ class CartController extends Controller
             $combinedTotalDue = round($combinedTotal - $discountToApply, 2);
 
             // ── Fully covered by voucher: skip Stripe entirely ──
-          // ── Fully covered by voucher: skip Stripe entirely ──
+            // ── Fully covered by voucher: skip Stripe entirely ──
             if ($combinedTotalDue <= 0) {
                 foreach ($orders as $order) {
                     $order->status = OrderStatusEnum::Paid->value;

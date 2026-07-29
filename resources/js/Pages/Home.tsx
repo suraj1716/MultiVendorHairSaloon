@@ -28,6 +28,8 @@ import {
   TicketIcon,
   ShoppingBagIcon,
 } from "@heroicons/react/24/solid";
+import { Eyebrow, Ornament, Title } from "@/Components/App/ui/SectionHeading";
+import BentoTile from "@/Components/App/ui/BentoTile";
 
 /* ─────────────────────────────────────────────
    Types
@@ -77,25 +79,25 @@ const getIconByIndex = (index: number) => {
 ───────────────────────────────────────────── */
 const stats = [
   {
-    end: 2700,
+    end: 500,
     suffix: "+",
     label: "Happy Clients",
     icon: "M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 7a4 4 0 100 8 4 4 0 000-8z",
   },
   {
-    end: 1300,
+    end: 200,
     suffix: "+",
     label: "5-Star Reviews",
     icon: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
   },
   {
-    end: 48,
+    end: 5,
     suffix: "",
     label: "Expert Stylists",
     icon: "M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z",
   },
   {
-    end: 15,
+    end: 8,
     suffix: "y",
     label: "Years of Excellence",
     icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
@@ -154,74 +156,6 @@ const testimonials = [
 ];
 
 /* ─────────────────────────────────────────────
-   Sub-components
-───────────────────────────────────────────── */
-function GoldDivider({ centered = true }: { centered?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: centered ? "center" : "flex-start",
-        gap: 10,
-        margin: "1.25rem 0 0",
-      }}
-    >
-      <div
-        style={{ width: 48, height: 1, background: "var(--color-accent)" }}
-      />
-      <div
-        style={{
-          width: 5,
-          height: 5,
-          background: "var(--color-accent)",
-          transform: "rotate(45deg)",
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{ width: 48, height: 1, background: "var(--color-accent)" }}
-      />
-    </div>
-  );
-}
-
-function SectionEyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "0.65rem",
-        letterSpacing: "0.3em",
-        textTransform: "uppercase",
-        color: "var(--color-accent)",
-        display: "block",
-        marginBottom: "0.6rem",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <h2
-      style={{
-        fontFamily: "var(--font-display)",
-        fontSize: "clamp(1.9rem, 3.5vw, 2.75rem)",
-        fontWeight: 300,
-        color: "var(--color-text)",
-        lineHeight: 1.15,
-        letterSpacing: "-0.01em",
-      }}
-    >
-      {children}
-    </h2>
-  );
-}
-
-/* ─────────────────────────────────────────────
    Main
 ───────────────────────────────────────────── */
 export default function Home({
@@ -238,7 +172,6 @@ export default function Home({
     null,
   );
   const [activeCategory, setActiveCategory] = useState<Category | null>(null);
-  console.log(categories);
   const [landscapeImages, setLandscapeImages] = useState<
     Record<number, string>
   >({});
@@ -315,16 +248,6 @@ export default function Home({
     return () => clearInterval(t);
   }, []);
 
-  const eyebrow: React.CSSProperties = {
-    fontFamily: "var(--font-body)",
-    fontSize: "0.7rem",
-    letterSpacing: "0.25em",
-    textTransform: "uppercase",
-    color: "var(--color-accent)",
-    display: "block",
-    marginBottom: "0.5rem",
-  };
-
   return (
     <div
       className=" isolate"
@@ -383,76 +306,6 @@ export default function Home({
             ))}
           </div>
         </div>
-
-        {/* ══ SPLIT INTRO ══ */}
-        <style>{`
-  .split-intro {
-    background: var(--color-bg);
-    padding: 7rem 0;
-    overflow: hidden;
-  }
-  .split-intro-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5rem;
-    align-items: center;
-  }
-  .split-intro-actions {
-    display: flex;
-    gap: 0.875rem;
-    margin-top: 2.5rem;
-    flex-wrap: wrap;
-  }
-  .split-intro-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 13px 28px;
-    font-family: var(--font-body);
-    font-size: 0.68rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-  .split-intro-mosaic {
-    position: relative;
-    height: 520px;
-  }
-  .split-intro-accent-card {
-    position: absolute;
-    bottom: 22%;
-    right: -1.5rem;
-    background: var(--color-primary);
-    border: 1px solid rgba(201,169,110,0.3);
-    padding: 1.25rem 1.5rem;
-    min-width: 160px;
-  }
-
-  @media (max-width: 1024px) {
-    .split-intro { padding: 4.5rem 0; }
-    .split-intro-grid {
-      grid-template-columns: 1fr;
-      gap: 3rem;
-    }
-    .split-intro-mosaic { display: none; }
-    .split-intro-text-block { max-width: 100% !important; }
-  }
-
-  @media (max-width: 640px) {
-    .split-intro { padding: 3.25rem 0; }
-    .split-intro-grid { gap: 2rem; }
-    .split-intro-actions {
-      flex-direction: column;
-      gap: 0.625rem;
-    }
-    .split-intro-btn {
-      width: 100%;
-      padding: 14px 20px;
-    }
-  }
-`}</style>
 
         {/* ══ SPLIT INTRO ══ */}
         <style>{`
@@ -636,16 +489,16 @@ export default function Home({
 
               {/* left: text */}
               <div>
-                <SectionEyebrow>Est. 2009 · Sydney CBD</SectionEyebrow>
-                <SectionHeading>
+                <Eyebrow>Est. 2009 · Sydney CBD</Eyebrow>
+                <Title>
                   The art of hair,{" "}
                   <em
-                    style={{ fontStyle: "italic", color: "var(--color-text)" }}
+                    style={{ fontStyle: "italic", color: "var(--color-primary)" }}
                   >
                     elevated
                   </em>
-                </SectionHeading>
-                <GoldDivider centered={false} />
+                </Title>
+                <Ornament center={false} />
                 <p
                   className="split-intro-text-block"
                   style={{
@@ -982,22 +835,22 @@ export default function Home({
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "flex-end",
-                marginBottom: "3rem",
+                marginBottom: "-1rem",
                 flexWrap: "wrap",
                 gap: "1rem",
               }}
             >
               <div>
-                <SectionEyebrow>What We Offer</SectionEyebrow>
-                <SectionHeading>
+                <Eyebrow>What We Offer</Eyebrow>
+                <Title>
                   Our{" "}
                   <em
-                    style={{ fontStyle: "italic", color: "var(--color-text)" }}
+                    style={{ fontStyle: "italic", color: "var(--color-primary)" }}
                   >
                     Services
                   </em>
-                </SectionHeading>
-                <GoldDivider centered={false} />
+                </Title>
+                <Ornament center={false} />
               </div>
               <a
                 href={route("shop.search")}
@@ -1013,6 +866,7 @@ export default function Home({
                   gap: 6,
                   borderBottom: "1px solid var(--color-accent)",
                   paddingBottom: 2,
+                  marginBottom:50
                 }}
               >
                 View All Services
@@ -1034,185 +888,35 @@ export default function Home({
 
             {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
             <div className="services-bento-desktop">
-              {categories.slice(0, 9).map((cat, idx) => (
-                <div
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat)}
-                  style={{
-                    position: "relative",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                    gridColumn:
-                      idx === 0 ? "span 2" : idx === 5 ? "span 2" : "span 1",
-                  }}
-                  className="group"
-                  data-aos="fade-up"
-                  data-aos-delay={idx * 50}
-                >
-                  <img
-                    src={`/storage/${cat.image}`}
-                    alt={cat.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      transition: "transform 0.7s ease",
-                    }}
-                    className="group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background:
-                        "linear-gradient(to top, rgba(18,16,13,0.85) 0%, rgba(18,16,13,0.1) 55%, transparent 100%)",
-                      transition: "opacity 0.3s",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: "rgba(201,169,110,0.06)",
-                      opacity: 0,
-                      transition: "opacity 0.3s",
-                    }}
-                    className="group-hover:opacity-100"
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      height: 2,
-                      width: "0%",
-                      background: "var(--color-accent)",
-                      transition: "width 0.4s ease",
-                    }}
-                    className="group-hover:w-full"
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      padding: "1.5rem",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: idx === 0 || idx === 5 ? "1.6rem" : "1.25rem",
-                        fontWeight: 300,
-                        color: "white",
-                        letterSpacing: "0.01em",
-                        marginBottom: 4,
-                      }}
-                    >
-                      {cat.name}
-                    </h3>
-                    <p
-                      style={{
-                        fontSize: "0.65rem",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: "rgba(255,255,255,0.5)",
-                      }}
-                    >
-                      {cat.products_count} treatments
-                    </p>
-                  </div>
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: "1rem",
-                      right: "1rem",
-                      opacity: 0,
-                      transition: "opacity 0.3s 0.05s",
-                    }}
-                    className="group-hover:opacity-100"
-                  >
-                    <span
-                      style={{
-                        border: "1px solid rgba(201,169,110,0.6)",
-                        color: "var(--color-accent-light)",
-                        padding: "4px 14px",
-                        fontSize: "0.62rem",
-                        letterSpacing: "0.12em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      Explore
-                    </span>
-                  </div>
-                </div>
-              ))}
+             {categories.slice(0, 9).map((cat, idx) => (
+  <BentoTile
+    key={cat.id}
+    image={`/storage/${cat.image}`}
+    title={cat.name}
+    subtitle={`${cat.products_count} treatments`}
+    size={idx === 0 || idx === 5 ? "hero" : "normal"}
+    footer="Explore"
+    onOpen={() => setActiveCategory(cat)}
+    index={idx}
+    style={{ gridColumn: idx === 0 || idx === 5 ? "span 2" : "span 1" }}
+  />
+))}
             </div>
 
-            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
-            <div className="services-bento-mobile">
-              {categories.slice(0, 6).map((cat) => (
-                <div
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat)}
-                  style={{
-                    position: "relative",
-                    height: "175px",
-                    overflow: "hidden",
-                    cursor: "pointer",
-                  }}
-                >
-                  <img
-                    src={`/storage/${cat.image}`}
-                    alt={cat.name}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background:
-                        "linear-gradient(to top, rgba(18,16,13,0.8), transparent 55%)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      padding: "0.875rem 1rem",
-                      color: "white",
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontFamily: "var(--font-display)",
-                        fontSize: "1rem",
-                        fontWeight: 300,
-                        color: "white",
-                      }}
-                    >
-                      {cat.name}
-                    </h3>
-                       <p
-                      style={{
-                        fontSize: "0.65rem",
-                        letterSpacing: "0.15em",
-                        textTransform: "uppercase",
-                        color: "rgba(255,255,255,0.5)",
-                      }}
-                    >
-                      {cat.products_count} treatments
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+<div className="services-bento-mobile">
+  {categories.slice(0, 6).map((cat, idx) => (
+    <BentoTile
+      key={cat.id}
+      image={`/storage/${cat.image}`}
+      title={cat.name}
+      subtitle={`${cat.products_count} treatments`}
+      onOpen={() => setActiveCategory(cat)}
+      index={idx}
+      style={{ height: 175, minHeight: 175 }}
+    />
+  ))}
+</div>
           </div>
         </section>
 
@@ -1295,7 +999,7 @@ export default function Home({
               </div>
 
               <div style={{ padding: "2rem 2rem 2.5rem" }}>
-                <span style={eyebrow}>Category</span>
+                <Eyebrow>Category</Eyebrow>
 
                 <h3
                   style={{
@@ -1396,14 +1100,14 @@ export default function Home({
 <section className="pillars-section" data-aos="fade-up">
   <div className="container-site">
     <div className="pillars-heading-wrap">
-      <SectionEyebrow>The RB Hair & Beauty Lounge Difference</SectionEyebrow>
-      <SectionHeading>
+      <Eyebrow center>The RB Hair & Beauty Lounge Difference</Eyebrow>
+      <Title center>
         Crafted for{" "}
-        <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
+        <em style={{ fontStyle: "italic", color: "var(--color-primary)" }}>
           Excellence
         </em>
-      </SectionHeading>
-      <GoldDivider />
+      </Title>
+      <Ornament center />
     </div>
 
     <div className="pillars-grid">
@@ -1422,7 +1126,7 @@ export default function Home({
               left: 0,
               width: 3,
               height: 0,
-              background: "var(--color-accent)",
+              background: "var(--color-text-muted)",
               transition: "height 0.4s ease",
             }}
             className="group-hover:h-full"
@@ -1432,7 +1136,7 @@ export default function Home({
               width: 52,
               height: 52,
               marginBottom: "1.75rem",
-              border: "1px solid var(--color-accent-light)",
+              border: "1px solid var(--color-text-muted-light)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1441,7 +1145,7 @@ export default function Home({
             <svg
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--color-accent)"
+              stroke="var(--color-text-muted)"
               strokeWidth="1.5"
               style={{ width: 22, height: 22 }}
             >
@@ -1523,14 +1227,14 @@ export default function Home({
     <div className="testimonials-grid">
       {/* left: label + nav */}
       <div style={{ paddingTop: "0.5rem" }}>
-        <SectionEyebrow>Client Love</SectionEyebrow>
-        <SectionHeading>
+        <Eyebrow>Client Love</Eyebrow>
+        <Title>
           What our guests{" "}
-          <em style={{ fontStyle: "italic", color: "var(--color-text)" }}>
+          <em style={{ fontStyle: "italic", color: "var(--color-primary)" }}>
             say
           </em>
-        </SectionHeading>
-        <GoldDivider centered={false} />
+        </Title>
+        <Ornament center={false} />
         <p
           className="testimonials-intro-text"
           style={{
@@ -1660,7 +1364,7 @@ export default function Home({
         {/* ══ CTA BAND ══ */}
         <section
           style={{
-            background: "var(--color-bg-dark-black)",
+            background: "var(--color-primary)",
             padding: "7rem 0",
             position: "relative",
             overflow: "hidden",
@@ -1724,7 +1428,7 @@ export default function Home({
             style={{ textAlign: "center", position: "relative", zIndex: 1 }}
             data-aos="fade-up"
           >
-            <SectionEyebrow>Our Promise</SectionEyebrow>
+            <Eyebrow center>Our Promise</Eyebrow>
             <h2
               style={{
                 fontFamily: "var(--font-display)",
@@ -1817,214 +1521,6 @@ export default function Home({
             </div>
           </div>
         </section>
-
-        {/* Product group , currently commented out for this project */}
-        {false && (
-          <>
-            {productGroups?.map((group, index) => {
-              const groupProducts = Array.isArray(group.products?.data)
-                ? group.products.data
-                : [];
-              const image = landscapeImages[group.id];
-              const isEven = index % 2 === 0;
-              return (
-                <section
-                  key={group.id}
-                  id={`product-group-${group.id}`}
-                  style={{
-                    background: isEven
-                      ? "var(--color-bg)"
-                      : "var(--color-bg-alt)",
-                    paddingTop: "4rem",
-                  }}
-                >
-                  <div className="container-site">
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "flex-end",
-                        marginBottom: "2rem",
-                      }}
-                      data-aos="fade-up"
-                    >
-                      <div>
-                        <span style={eyebrow}>Featured</span>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.75rem",
-                          }}
-                        >
-                          {getIconByIndex(index)}
-                          <h2
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "clamp(1.5rem, 3vw, 2rem)",
-                              fontWeight: 400,
-                              color: "var(--color-text)",
-                            }}
-                          >
-                            {group.name}
-                          </h2>
-                        </div>
-                      </div>
-                      <Link
-                        href={route("productGroup.show", {
-                          productGroup: group.slug,
-                        })}
-                      >
-                        View All →
-                      </Link>
-                    </div>
-                    <ProductCarousel
-                      title=""
-                      products={groupProducts}
-                      wrapperClassName="scroll-mt-20"
-                      sectionClassName="px-0"
-                    />
-                  </div>
-                  {image && (
-                    <img
-                      src={`/storage/${image}`}
-                      alt={group.name}
-                      style={{
-                        width: "100%",
-                        marginTop: "3rem",
-                        objectFit: "cover",
-                        height: 320,
-                        display: "block",
-                      }}
-                    />
-                  )}
-                </section>
-              );
-            })}
-          </>
-        )}
-
-        {/* Category group , currently commented out for this project */}
-        {false && (
-          <>
-            {categoryGroups.map((group, index) => (
-              <section
-                key={group.id}
-                id={`category-group-${group.id}`}
-                style={{
-                  background:
-                    index % 2 === 0 ? "var(--color-bg-alt)" : "var(--color-bg)",
-                  paddingBlock: "4rem",
-                }}
-              >
-                <div className="container-site">
-                  <div style={{ marginBottom: "2rem" }} data-aos="fade-up">
-                    <span style={eyebrow}>Browse</span>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "0.75rem",
-                      }}
-                    >
-                      {getIconByIndex(index + 3)}
-                      <h2
-                        style={{
-                          fontFamily: "var(--font-display)",
-                          fontSize: "clamp(1.5rem, 3vw, 2rem)",
-                          fontWeight: 400,
-                          color: "var(--color-text)",
-                        }}
-                      >
-                        {group.name}
-                      </h2>
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(200px, 1fr))",
-                      gap: "16px",
-                    }}
-                  >
-                    {group.categories.map((category, ci) => (
-                      <Link
-                        key={category.id}
-                        href={route("category.show", category.id)}
-                        style={{
-                          position: "relative",
-                          display: "block",
-                          height: 240,
-                          borderRadius: "var(--radius-md)",
-                          overflow: "hidden",
-                          textDecoration: "none",
-                        }}
-                        className="group"
-                        data-aos="fade-up"
-                        data-aos-delay={ci * 60}
-                      >
-                        {category.image && (
-                          <img
-                            src={`/storage/${category.image}`}
-                            alt={category.name}
-                            style={{
-                              width: "100%",
-                              height: "100%",
-                              objectFit: "cover",
-                              transition: "transform 0.5s ease",
-                            }}
-                            className="group-hover:scale-105"
-                          />
-                        )}
-                        <div
-                          style={{
-                            position: "absolute",
-                            inset: 0,
-                            background:
-                              "linear-gradient(to top, rgba(28,26,23,0.65) 0%, transparent 60%)",
-                          }}
-                        />
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: 0,
-                            left: 0,
-                            height: 2,
-                            width: "0%",
-                            background: "var(--color-accent)",
-                            transition: "width 0.35s ease",
-                          }}
-                          className="group-hover:w-full"
-                        />
-                        <div
-                          style={{
-                            position: "absolute",
-                            bottom: 0,
-                            left: 0,
-                            padding: "1rem 1.25rem",
-                            color: "white",
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "1.1rem",
-                              fontWeight: 400,
-                              letterSpacing: "0.02em",
-                            }}
-                          >
-                            {category.name}
-                          </span>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            ))}
-          </>
-        )}
       </AuthenticatedLayout>
     </div>
   );

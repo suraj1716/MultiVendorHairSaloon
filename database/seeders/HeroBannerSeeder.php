@@ -24,7 +24,7 @@ class HeroBannerSeeder extends Seeder
                 'subtitle'    => 'From sun-kissed balayage to bold colour corrections, our colourists turn vision into reality.',
                 'button_text' => 'Explore Colour Services',
                 'button_link' => '/shop',
-                'image'       => 'classic-manicure.jpg',
+                'image'       => 'hair-color1.jpg',
                 'is_active'   => true,
             ],
             [
@@ -32,15 +32,15 @@ class HeroBannerSeeder extends Seeder
                 'subtitle'    => 'Indulge in our signature scalp treatments and restorative hair rituals — because you deserve more than a haircut.',
                 'button_text' => 'View Treatments',
                 'button_link' => '/shop',
-                'image'       => 'deep-conditioning.jpg',
+                'image'       => 'brazilian-keratin-treatment.jpg',
                 'is_active'   => true,
             ],
             [
-                'title'       => 'Bridal Hair, Perfected',
+                'title'       => 'Hair, Perfected',
                 'subtitle'    => 'Your wedding day deserves flawless hair. Our bridal team crafts looks that photograph beautifully and last all day.',
                 'button_text' => 'Enquire Now',
                 'button_link' => '/contact',
-                'image'       => 'classic-pedicure.jpg',
+                'image'       => 'brazilian-keratin-treatment.jpg',
                 'is_active'   => false,
             ],
         ];

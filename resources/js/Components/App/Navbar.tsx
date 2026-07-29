@@ -10,6 +10,7 @@ import { Bars3Icon } from "@heroicons/react/24/outline";
 import { useAuthModal } from "@/Contexts/AuthModalContext";
 import axios from "axios";
 import UserCircleIcon from "@heroicons/react/24/solid/UserCircleIcon";
+import { formatAustralianPhone } from "@/utils/PhoneFormat";
 
 interface Category {
   id: string;
@@ -32,7 +33,14 @@ interface CategoryGroup {
   name: string;
   active: boolean;
 }
-
+// Shared container style so the announcement bar and header always
+// line up — same maxWidth + padding used in all three rows below
+const containerStyle: React.CSSProperties = {
+  width: "100%",
+  maxWidth: "var(--container-max)",
+  margin: "0 auto",
+  padding: "0 24px",
+};
 function NavLink({
   href,
   children,
@@ -320,7 +328,8 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const isAdmin = auth?.user?.roles?.includes("Admin") ?? false;
+  const isAdmin =  auth?.user?.roles?.includes("Admin") ||
+  auth?.user?.roles?.includes("Vendor");
   const { url } = usePage();
   const onHomePage = url === "/" || url.startsWith("/#");
   const [vendor, setVendor] = useState<Vendor | null>(null);
@@ -328,6 +337,8 @@ export default function Navbar() {
   useEffect(() => {
     axios.get("/api/vendor-details").then((res) => setVendor(res.data.data));
   }, []);
+
+  console.log(vendor?.phone);
 
   const SOCIALS = [
     {
@@ -345,7 +356,13 @@ export default function Navbar() {
         >
           <rect x="2" y="2" width="20" height="20" rx="5" />
           <circle cx="12" cy="12" r="4" />
-          <circle cx="17.5" cy="6.5" r="0.8" fill="currentColor" stroke="none" />
+          <circle
+            cx="17.5"
+            cy="6.5"
+            r="0.8"
+            fill="currentColor"
+            stroke="none"
+          />
         </svg>
       ),
       url: vendor?.instagram_url,
@@ -358,6 +375,15 @@ export default function Navbar() {
         </svg>
       ),
       url: vendor?.facebook_url,
+    },
+    {
+      label: "YouTube",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+          <path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.6 3.5 12 3.5 12 3.5s-7.6 0-9.4.6A3 3 0 0 0 .5 6.2 31.4 31.4 0 0 0 0 12a31.4 31.4 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.8.6 9.4.6 9.4.6s7.6 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.4 31.4 0 0 0 24 12a31.4 31.4 0 0 0-.5-5.8ZM9.75 15.5v-7L16 12l-6.25 3.5Z" />
+        </svg>
+      ),
+      url: vendor?.youtube_url,
     },
     {
       label: "TikTok",
@@ -920,53 +946,68 @@ export default function Navbar() {
             fontWeight: 400,
             letterSpacing: "0.2em",
             textTransform: "uppercase",
-            padding: "10px 40px",
-            alignItems: "center",
-            gap: 16,
+            padding: "10px 0",
           }}
         >
-          <div style={{ flex: "1 1 0", minWidth: 0 }}>
-            <p
-              style={{
-                fontSize: 13,
-                color: "white",
-                fontWeight: 600,
-                letterSpacing: "0.08em",
-                whiteSpace: "nowrap",
-                margin: 0,
-              }}
-            >
-              Call: (+61) 414-226-056
-            </p>
-          </div>
-
-          <div style={{ flex: "0 1 auto", textAlign: "center", whiteSpace: "nowrap" }}>
-            <span style={{ color: "var(--color-accent-light)" }}>✦</span>{" "}
-            Complimentary consultation with every new client booking{" "}
-            <span style={{ color: "var(--color-accent-light)" }}>✦</span>
-          </div>
-
           <div
+            className="lg:!px-10"
             style={{
-              flex: "1 1 0",
-              minWidth: 0,
+              ...containerStyle,
               display: "flex",
-              justifyContent: "flex-end",
+              alignItems: "center",
+              gap: 16,
             }}
           >
-            <div className="footer-socials">
-              {SOCIALS.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="footer-social-btn"
-                >
-                  {s.icon}
-                </a>
-              ))}
+            <div style={{ flex: "1 1 0", minWidth: 0 }}>
+              <a
+                href={`tel:${vendor?.phone}`}
+                style={{
+                  fontSize: 13,
+                  color: "white",
+                  fontWeight: 600,
+                  letterSpacing: "0.08em",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Call: {formatAustralianPhone(vendor?.phone)}
+              </a>
+            </div>
+
+            <div
+              style={{
+                flex: "0 1 auto",
+                textAlign: "center",
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ color: "var(--color-accent-light)" }}>✦</span>{" "}
+              Complimentary consultation with every new client booking{" "}
+              <span style={{ color: "var(--color-accent-light)" }}>✦</span>
+            </div>
+
+            <div
+              style={{
+                flex: "1 1 0",
+                minWidth: 0,
+                display: "flex",
+                justifyContent: "flex-end",
+              }}
+            >
+              <div className="footer-socials">
+                {SOCIALS.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="footer-social-btn"
+                  >
+                    {s.icon}
+                  </a>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -982,42 +1023,50 @@ export default function Navbar() {
             fontWeight: 400,
             letterSpacing: "0.15em",
             textTransform: "uppercase",
-            padding: "10px 16px",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 12,
+            padding: "10px 0",
           }}
         >
-          <a
-            href="tel:+61414226056"
+          <div
             style={{
-              fontSize: 12,
-              color: "white",
-              fontWeight: 700,
-              letterSpacing: "0.05em",
-              whiteSpace: "nowrap",
-              textDecoration: "none",
+              ...containerStyle,
+              padding: "0 16px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
             }}
           >
-            Call +61 414 226 056
-          </a>
+            <a
+              href="tel:+61414226056"
+              style={{
+                fontSize: 12,
+                color: "white",
+                fontWeight: 700,
+                letterSpacing: "0.05em",
+                whiteSpace: "nowrap",
+                textDecoration: "none",
+              }}
+            >
+              Call: {formatAustralianPhone(vendor?.phone)}
+            </a>
 
-          {SOCIALS.length > 0 && (
-            <div className="footer-socials">
-              {SOCIALS.map((s) => (
-                <a
-                  key={s.label}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="footer-social-btn"
-                >
-                  {s.icon}
-                </a>
-              ))}
-            </div>
-          )}
+            {SOCIALS.length > 0 && (
+              <div className="footer-socials">
+                {SOCIALS.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.label}
+                    className="footer-social-btn"
+                  >
+                    {s.icon}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ══ HEADER ══ */}
@@ -1029,9 +1078,7 @@ export default function Navbar() {
         >
           <div
             style={{
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 24px",
+              ...containerStyle,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -1200,9 +1247,15 @@ export default function Navbar() {
                                 },
                               ]
                             : []),
-                          { label: "Your Vouchers", href: route("vouchers.index") },
+                          {
+                            label: "Your Vouchers",
+                            href: route("vouchers.index"),
+                          },
                           { label: "Profile", href: route("profile.edit") },
-                          { label: "Bookings", href: route("bookings.history") },
+                          {
+                            label: "Bookings",
+                            href: route("bookings.history"),
+                          },
                           { label: "Orders", href: route("orders.history") },
                         ].map((item) => (
                           <Link
@@ -1306,15 +1359,15 @@ export default function Navbar() {
                 Book Now
               </Link>
 
-             {/* Hamburger — mobile only */}
-<button
-  onClick={() => setMobileOpen(true)}
-  style={{ ...iconBtnStyle, display: undefined }}
-  aria-label="Open menu"
-  className="lg:hidden flex items-center justify-center"
->
-  <Bars3Icon className="size-5" />
-</button>
+              {/* Hamburger — mobile only */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                style={{ ...iconBtnStyle, display: undefined }}
+                aria-label="Open menu"
+                className="lg:hidden flex items-center justify-center"
+              >
+                <Bars3Icon className="size-5" />
+              </button>
             </div>
           </div>
         </header>

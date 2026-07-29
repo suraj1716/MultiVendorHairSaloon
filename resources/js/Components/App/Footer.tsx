@@ -1,6 +1,7 @@
 "use client";
 
 import { Vendor } from "@/types";
+import { formatAustralianPhone } from "@/utils/PhoneFormat";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
@@ -100,6 +101,15 @@ export default function Footer() {
         </svg>
       ),
       url: vendor?.facebook_url,
+    },
+    {
+      label: "Youtube",
+      icon: (
+        <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+          <path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z" />
+        </svg>
+      ),
+      url: vendor?.youtube_url,
     },
     {
       label: "TikTok",
@@ -231,6 +241,10 @@ export default function Footer() {
           color: --var(--color-text-light);
           line-height: 1.5;
         }
+          .footer-contact-list a {
+  color: inherit;
+  text-decoration: none;
+}
         .footer-contact-dot {
           color: var(--color-accent);
           flex-shrink: 0;
@@ -335,7 +349,7 @@ export default function Footer() {
 
         /* ── BOTTOM BAR ── */
         .footer-bottom {
-          border-top: 1px solid rgba(255,255,255,0.07);
+          border-top: 1px solid rgba(255,255,255,0.15);
         }
         .footer-bottom-inner {
           max-width: var(--container-max);
@@ -349,7 +363,7 @@ export default function Footer() {
         }
         .footer-copy {
           font-size: 11px;
-          color: rgba(255,255,255,0.22);
+          color: --var(--color-text-muted);
           letter-spacing: 0.04em;
           display: flex;
           align-items: center;
@@ -357,7 +371,7 @@ export default function Footer() {
           flex-wrap: wrap;
         }
         .footer-copy a {
-          color: rgba(255,255,255,0.22);
+          color: --var(--color-text-muted);
           text-decoration: none;
           transition: color var(--transition-fast);
         }
@@ -371,7 +385,7 @@ export default function Footer() {
           align-items: center;
           gap: 6px;
           font-size: 11px;
-          color: rgba(255,255,255,0.18);
+          color: --var(--color-text-light);
           letter-spacing: 0.05em;
         }
         .footer-badge-dot {
@@ -420,7 +434,7 @@ export default function Footer() {
 
       <footer className="footer-root">
         {/* Wave */}
-        <svg
+        {/* <svg
           className="footer-wave"
           viewBox="0 0 1440 64"
           preserveAspectRatio="none"
@@ -430,127 +444,140 @@ export default function Footer() {
             fill="currentColor"
             d="M0,32 C180,64 360,0 540,32 C720,64 900,0 1080,32 C1260,64 1380,16 1440,32 L1440,64 L0,64 Z"
           />
-        </svg>
-
-
+        </svg> */}
 
         {/* Main grid */}
-        <div className="footer-main">
-          {/* Brand column */}
-          <div className="footer-brand-col">
-            <a href="/" className="footer-brand-logo">
-              RB Hair &<></>
-              <br />
-              <em> Beauty Lounge</em>
-            </a>
-            <div className="footer-brand-rule" />
-            <p className="footer-brand-desc">
-              A luxury atelier where precision meets artistry. Every appointment
-              is an experience tailored entirely to you.
-            </p>
-            <ul className="footer-contact-list">
-              {[vendor?.store_address, vendor?.email, vendor?.phone]
-                .filter(Boolean)
-                .map((item) => (
-                  <li key={item}>
-                    <span className="footer-contact-dot">◆</span>
-                    {item}
-                  </li>
-                ))}
-            </ul>
-          </div>
 
-          {/* Nav columns */}
-          {NAV_COLS.map((col) => (
-            <div key={col.heading}>
-              <p className="footer-col-heading">{col.heading}</p>
-              <ul className="footer-nav-list">
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <a href={link.href}>{link.label}</a>
-                  </li>
-                ))}
-                {col.heading === "Services" && services.length === 0 && (
-                  <li style={{ opacity: 0.4, fontSize: 12 }}>Loading…</li>
-                )}
+        <div className="footer-bottom">
+          <div className="footer-main">
+            {/* Brand column */}
+            <div className="footer-brand-col">
+              <a href="/" className="footer-brand-logo">
+                RB Hair &<></>
+                <br />
+                <em> Beauty Lounge</em>
+              </a>
+              <div className="footer-brand-rule" />
+              <p className="footer-brand-desc">
+                A luxury atelier where precision meets artistry. Every
+                appointment is an experience tailored entirely to you.
+              </p>
+              <ul className="footer-contact-list">
+                {[
+                  { value: vendor?.store_address, type: "text" },
+                  { value: vendor?.email, type: "email" },
+                  { value: vendor?.phone, type: "phone" },
+                ]
+                  .filter((item) => item.value)
+                  .map((item) => (
+                    <li key={item.value}>
+                      <span className="footer-contact-dot">◆</span>
+
+                      {item.type === "phone" ? (
+                        <a href={`tel:${item.value}`}>
+                          {formatAustralianPhone(item.value)}
+                        </a>
+                      ) : item.type === "email" ? (
+                        <a href={`mailto:${item.value}`}>{item.value}</a>
+                      ) : (
+                        item.value
+                      )}
+                    </li>
+                  ))}
               </ul>
             </div>
-          ))}
 
-          {/* Newsletter + hours */}
-          <div className="footer-nl-col">
-            <p className="footer-col-heading">Newsletter</p>
-            <div className="footer-nl-row">
-              <div className="footer-nl-form-wrap">
-                <p className="footer-nl-desc">
-                  Seasonal edits, early booking access, and exclusive offers for
-                  our community.
-                </p>
-                <input
-                  type="email"
-                  placeholder="Your email address"
-                  className="footer-email-input"
-                />
-                <button className="footer-subscribe-btn">Subscribe</button>
+            {/* Nav columns */}
+            {NAV_COLS.map((col) => (
+              <div key={col.heading}>
+                <p className="footer-col-heading">{col.heading}</p>
+                <ul className="footer-nav-list">
+                  {col.links.map((link) => (
+                    <li key={link.label}>
+                      <a href={link.href}>{link.label}</a>
+                    </li>
+                  ))}
+                  {col.heading === "Services" && services.length === 0 && (
+                    <li style={{ opacity: 0.4, fontSize: 12 }}>Loading…</li>
+                  )}
+                </ul>
               </div>
-              <div className="footer-hours">
-                <span className="footer-hours-label">Studio Hours</span>
-                {(() => {
-                  const raw = vendor?.recurring_closed_days ?? [];
-                  const closedDays: number[] = raw.map((d: any) => Number(d));
-                  const startTime = vendor?.business_start_time;
-                  const endTime = vendor?.business_end_time;
+            ))}
 
-                  const formatTime = (time?: string) => {
-                    if (!time) return "—";
-                    const [hourStr, minuteStr] = time.split(":");
-                    const hour = parseInt(hourStr, 10);
-                    return `${hour % 24}:${minuteStr}`; // 24hr style to match "9:00 – 19:00" format
-                  };
+            {/* Newsletter + hours */}
+            <div className="footer-nl-col">
+              <p className="footer-col-heading">Newsletter</p>
+              <div className="footer-nl-row">
+                <div className="footer-nl-form-wrap">
+                  <p className="footer-nl-desc">
+                    Seasonal edits, early booking access, and exclusive offers
+                    for our community.
+                  </p>
+                  <input
+                    type="email"
+                    placeholder="Your email address"
+                    className="footer-email-input"
+                  />
+                  <button className="footer-subscribe-btn">Subscribe</button>
+                </div>
+                <div className="footer-hours">
+                  <span className="footer-hours-label">Studio Hours</span>
+                  {(() => {
+                    const raw = vendor?.recurring_closed_days ?? [];
+                    const closedDays: number[] = raw.map((d: any) => Number(d));
+                    const startTime = vendor?.business_start_time;
+                    const endTime = vendor?.business_end_time;
 
-                  const hoursRange = `${formatTime(startTime)} – ${formatTime(endTime)}`;
+                    const formatTime = (time?: string) => {
+                      if (!time) return "—";
+                      const [hourStr, minuteStr] = time.split(":");
+                      const hour = parseInt(hourStr, 10);
+                      return `${hour % 24}:${minuteStr}`; // 24hr style to match "9:00 – 19:00" format
+                    };
 
-                  // Group consecutive open days that share the same hours, e.g. "Mon – Fri"
-                  const dayLabels = [
-                    "Sun",
-                    "Mon",
-                    "Tue",
-                    "Wed",
-                    "Thu",
-                    "Fri",
-                    "Sat",
-                  ];
-                  const rows: [string, string][] = [];
-                  let i = 0;
+                    const hoursRange = `${formatTime(startTime)} – ${formatTime(endTime)}`;
 
-                  while (i < 7) {
-                    if (closedDays.includes(i)) {
-                      rows.push([dayLabels[i], "Closed"]);
-                      i++;
-                      continue;
+                    // Group consecutive open days that share the same hours, e.g. "Mon – Fri"
+                    const dayLabels = [
+                      "Sun",
+                      "Mon",
+                      "Tue",
+                      "Wed",
+                      "Thu",
+                      "Fri",
+                      "Sat",
+                    ];
+                    const rows: [string, string][] = [];
+                    let i = 0;
+
+                    while (i < 7) {
+                      if (closedDays.includes(i)) {
+                        rows.push([dayLabels[i], "Closed"]);
+                        i++;
+                        continue;
+                      }
+                      let start = i;
+                      while (i < 7 && !closedDays.includes(i)) i++;
+                      const end = i - 1;
+                      const label =
+                        start === end
+                          ? dayLabels[start]
+                          : `${dayLabels[start]} – ${dayLabels[end]}`;
+                      rows.push([label, hoursRange]);
                     }
-                    let start = i;
-                    while (i < 7 && !closedDays.includes(i)) i++;
-                    const end = i - 1;
-                    const label =
-                      start === end
-                        ? dayLabels[start]
-                        : `${dayLabels[start]} – ${dayLabels[end]}`;
-                    rows.push([label, hoursRange]);
-                  }
 
-                  return rows.map(([day, hrs]) => (
-                    <div className="footer-hours-row" key={day}>
-                      <span>{day}</span>
-                      <span>{hrs}</span>
-                    </div>
-                  ));
-                })()}
+                    return rows.map(([day, hrs]) => (
+                      <div className="footer-hours-row" key={day}>
+                        <span>{day}</span>
+                        <span>{hrs}</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
               </div>
             </div>
           </div>
         </div>
-
         {/* Bottom bar */}
         <div className="footer-bottom">
           <div className="footer-bottom-inner">

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Dialog, DialogContent, DialogTrigger } from "@/Components/ui/dialog";
+import * as Dialog from "@radix-ui/react-dialog";
 import { DayPicker, Matcher } from "react-day-picker";
 import "react-day-picker/dist/style.css";
 import dayjs from "dayjs";
-import { DialogDescription, DialogOverlay, DialogTitle } from "@radix-ui/react-dialog";
 import AvailableSlots from "../AvailableSlots";
+import Button from "@/Components/App/ui/Button";
+import IconButton from "@/Components/App/ui/IconButton";
 
 type BookingWidgetProps = {
   bookingDate: string;
@@ -83,8 +84,9 @@ useEffect(() => {
   ];
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogOverlay
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+      <Dialog.Overlay
         style={{
           position: "fixed",
           inset: 0,
@@ -94,8 +96,7 @@ useEffect(() => {
           zIndex: 9998,
         }}
       />
-      <DialogContent
-        aria-describedby="booking-description"
+      <Dialog.Content
         style={{
           position: "fixed",
           top: "50%",
@@ -123,7 +124,7 @@ useEffect(() => {
             justifyContent: "space-between",
           }}
         >
-          <DialogTitle
+          <Dialog.Title
             style={{
               fontFamily: "var(--font-display)",
               fontSize: "var(--text-2xl)",
@@ -133,25 +134,16 @@ useEffect(() => {
             }}
           >
             Book an Appointment
-          </DialogTitle>
-          <button
+          </Dialog.Title>
+          <IconButton
             onClick={() => onOpenChange(false)}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              color: "var(--color-text-light)",
-              fontSize: "1.2rem",
-              lineHeight: 1,
-              padding: "4px",
-              transition: "color var(--transition-fast)",
-            }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--color-text)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = "var(--color-text-light)")}
             aria-label="Close"
+            tone="dark"
+            size={32}
+            style={{ fontSize: "1.1rem", border: "none", background: "none" }}
           >
             ✕
-          </button>
+          </IconButton>
         </div>
 
         {/* Modal Body */}
@@ -317,57 +309,25 @@ useEffect(() => {
 
           {/* Footer Actions */}
           <div style={{ display: "flex", gap: "var(--space-sm)" }}>
-            <button
+            <Button
+              variant="danger"
+              style={{ flex: 1 }}
               onClick={() => onOpenChange(false)}
-              style={{
-                flex: 1,
-                background: "transparent",
-                color: "var(--color-text-muted)",
-                border: "1px solid var(--color-border)",
-                fontFamily: "var(--font-body)",
-                fontSize: "var(--text-xs)",
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                padding: "0.75rem",
-                cursor: "pointer",
-                transition: "all var(--transition-fast)",
-              }}
-              onMouseEnter={(e) => {
-                const b = e.currentTarget as HTMLButtonElement;
-                b.style.borderColor = "var(--color-border-dark)";
-                b.style.color = "var(--color-text)";
-              }}
-              onMouseLeave={(e) => {
-                const b = e.currentTarget as HTMLButtonElement;
-                b.style.borderColor = "var(--color-border)";
-                b.style.color = "var(--color-text-muted)";
-              }}
             >
               Cancel
-            </button>
-           <button
-  onClick={() => onSubmit(bookingDate, timeSlot)}
-  disabled={!bookingDate || !timeSlot}
-  style={{
-    flex: 2,
-    background: !bookingDate || !timeSlot ? "var(--color-border)" : "var(--color-primary)",
-    color: !bookingDate || !timeSlot ? "var(--color-text-light)" : "var(--color-text-inverse)",
-    border: "none",
-    fontFamily: "var(--font-body)",
-    fontSize: "var(--text-xs)",
-    fontWeight: 500,
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    padding: "0.75rem",
-    cursor: !bookingDate || !timeSlot ? "not-allowed" : "pointer",
-    transition: "background var(--transition-base)",
-  }}
->
-  Confirm Booking
-</button>
+            </Button>
+            <Button
+              variant="primary"
+              style={{ flex: 2 }}
+              onClick={() => onSubmit(bookingDate, timeSlot)}
+              disabled={!bookingDate || !timeSlot}
+            >
+              Confirm Booking
+            </Button>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

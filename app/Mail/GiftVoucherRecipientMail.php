@@ -15,9 +15,13 @@ class GiftVoucherRecipientMail extends Mailable
     {
     }
 
-    public function build()
+      public function build()
     {
-        return $this->subject("You've received a gift voucher!")
-            ->markdown('mail.gift-voucher-recipient');
+        return $this
+            ->subject('You\'ve Received a Gift Voucher!')
+            ->markdown('emails.gift-voucher')
+            ->with([
+                'buyerName' => $this->buyerName,
+            ]);
     }
 }

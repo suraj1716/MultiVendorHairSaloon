@@ -1,4 +1,4 @@
-import PrimaryButton from '@/Components/Core/PrimaryButton';
+import Button from '@/Components/App/ui/Button';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -16,7 +16,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
         <GuestLayout>
             <Head title="Email Verification" />
 
-            <div className="mb-4 text-sm text-gray-600">
+            <div style={{ marginBottom: 16, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
                 Thanks for signing up! Before getting started, could you verify
                 your email address by clicking on the link we just emailed to
                 you? If you didn't receive the email, we will gladly send you
@@ -24,23 +24,23 @@ export default function VerifyEmail({ status }: { status?: string }) {
             </div>
 
             {status === 'verification-link-sent' && (
-                <div className="mb-4 text-sm font-medium text-green-600">
+                <div style={{ marginBottom: 16, fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--color-success)' }}>
                     A new verification link has been sent to the email address
                     you provided during registration.
                 </div>
             )}
 
             <form onSubmit={submit}>
-                <div className="mt-4 flex items-center justify-between">
-                    <PrimaryButton disabled={processing}>
+                <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Button variant="primary" disabled={processing}>
                         Resend Verification Email
-                    </PrimaryButton>
+                    </Button>
 
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', textDecoration: 'underline' }}
                     >
                         Log Out
                     </Link>

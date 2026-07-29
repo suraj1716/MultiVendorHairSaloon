@@ -1,12 +1,9 @@
-import InputError from '@/Components/Core/InputError';
-import InputLabel from '@/Components/Core/InputLabel';
-import PrimaryButton from '@/Components/Core/PrimaryButton';
-import TextInput from '@/Components/Core/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
-import { label, input, err, btnPrimary } from "@/Components/App/formStyles";
+import Button from '@/Components/App/ui/Button';
+import { label, input, err } from '@/Components/App/formStyles';
 
 export default function UpdateProfileInformation({
   mustVerifyEmail,
@@ -82,7 +79,7 @@ export default function UpdateProfileInformation({
       )}
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button type="submit" style={btnPrimary} disabled={processing}>Save</button>
+        <Button type="submit" variant="primary" disabled={processing}>Save</Button>
         <Transition
           show={recentlySuccessful}
           enter="transition ease-in-out"

@@ -20,6 +20,8 @@ type VendorForm = {
   recurring_closed_days: number[];
   closed_dates: string[];
   facebook_url: string;
+  youtube_url: string;
+
   instagram_url: string;
   tiktok_url: string;
 };
@@ -84,6 +86,8 @@ export default function VendorEdit({ vendor, types, statuses }: Props) {
       : [],
     closed_dates: Array.isArray(vendor.closed_dates) ? vendor.closed_dates : [],
     facebook_url: vendor.facebook_url ?? "",
+    youtube_url: vendor.youtube_url ?? "",
+
     instagram_url: vendor.instagram_url ?? "",
     tiktok_url: vendor.tiktok_url ?? "",
   });
@@ -245,12 +249,21 @@ export default function VendorEdit({ vendor, types, statuses }: Props) {
               style={inputStyle}
             />
           </div>
-             <div style={{ marginBottom: "var(--space-md)" }}>
+          <div style={{ marginBottom: "var(--space-md)" }}>
             <label style={labelStyle}>Facebook Link</label>
             <input
               type="text"
               value={data.facebook_url}
               onChange={(e) => setData("facebook_url", e.target.value)}
+              style={inputStyle}
+            />
+          </div>
+            <div style={{ marginBottom: "var(--space-md)" }}>
+            <label style={labelStyle}>Youtube Link</label>
+            <input
+              type="text"
+              value={data.youtube_url}
+              onChange={(e) => setData("youtube_url", e.target.value)}
               style={inputStyle}
             />
           </div>
@@ -319,8 +332,6 @@ export default function VendorEdit({ vendor, types, statuses }: Props) {
               </select>
             </div>
           </div>
-
-
         </div>
 
         <div style={sectionStyle}>

@@ -1,13 +1,13 @@
 import { FormEventHandler, FormEvent, useEffect, useState } from "react";
 import { useForm, usePage } from "@inertiajs/react";
-import Modal from "@/Components/Core/Modal";
+import Modal from "@/Components/App/ui/Modal";
+import Button from "@/Components/App/ui/Button";
+import Badge from "@/Components/App/ui/Badge";
 import {
   label,
   input,
   err,
   fieldWrap,
-  btnPrimary,
-  btnGhost,
 } from "@/Components/App/formStyles";
 
 const indexToWeekday: Record<string, string> = {
@@ -114,32 +114,12 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
   const closeModal = () => setShowBecomeVendorConfirmation(false);
 
-  const statusBadgeStyle: React.CSSProperties = {
-    fontFamily: "var(--font-body)",
-    fontSize: "10px",
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    padding: "2px 10px",
-    borderRadius: "var(--radius-full)",
-    border: "1px solid",
-    ...(user?.vendor?.status === "pending"
-      ? {
-          color: "var(--color-accent-dark)",
-          background: "rgba(201,169,110,0.1)",
-          borderColor: "rgba(201,169,110,0.3)",
-        }
+  const vendorBadgeVariant =
+    user?.vendor?.status === "pending"
+      ? "warning"
       : user?.vendor?.status === "rejected"
-      ? {
-          color: "var(--color-error)",
-          background: "rgba(192,57,43,0.08)",
-          borderColor: "rgba(192,57,43,0.25)",
-        }
-      : {
-          color: "var(--color-success)",
-          background: "rgba(58,125,68,0.08)",
-          borderColor: "rgba(58,125,68,0.25)",
-        }),
-  };
+      ? "error"
+      : "success";
 
   return (
     <section className={className}>
@@ -162,19 +142,18 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
       {user.vendor?.status && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <span style={statusBadgeStyle}>{user.vendor.status_label}</span>
+          <Badge variant={vendorBadgeVariant}>{user.vendor.status_label}</Badge>
         </div>
       )}
 
       {!user.vendor && (
-        <button
-          type="button"
-          style={btnPrimary}
+        <Button
+          variant="primary"
           disabled={processing}
           onClick={() => setShowBecomeVendorConfirmation(true)}
         >
           Become a Vendor
-        </button>
+        </Button>
       )}
 
       {user.vendor &&
@@ -352,9 +331,9 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             </div>
 
             <div>
-              <button type="submit" style={btnPrimary} disabled={processing}>
+              <Button type="submit" variant="primary" disabled={processing}>
                 Update
-              </button>
+              </Button>
             </div>
           </form>
 
@@ -377,18 +356,14 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                 You are successfully connected to Stripe.
               </p>
             )}
-            <button
+            <Button
               type="submit"
-              style={{
-                ...btnGhost,
-                width: "100%",
-                borderColor: "var(--color-primary)",
-                color: "var(--color-primary)",
-              }}
+              variant="outline"
+              className="w-full"
               disabled={user.stripe_account_active}
             >
               Connect to Stripe
-            </button>
+            </Button>
           </form>
         </>
       )}
@@ -406,12 +381,12 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             Are you sure you want to be a Vendor?
           </h3>
           <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
-            <button type="button" style={btnGhost} onClick={closeModal}>
+            <Button type="button" variant="ghost" onClick={closeModal}>
               Cancel
-            </button>
-            <button type="submit" style={btnPrimary} disabled={processing}>
+            </Button>
+            <Button type="submit" variant="primary" disabled={processing}>
               Confirm
-            </button>
+            </Button>
           </div>
         </form>
       </Modal>

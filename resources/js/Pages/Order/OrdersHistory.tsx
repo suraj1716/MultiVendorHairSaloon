@@ -2,14 +2,8 @@ import React from "react";
 import { Link, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order } from "@/types";
-
-const STATUS_COLORS: Record<string, string> = {
-  paid: "var(--color-success, #3a7d44)",
-  draft: "var(--color-warning, #c9a96e)",
-  delivered: "var(--color-success, #3a7d44)",
-  cancelled: "var(--color-error, #c0392b)",
-  refunded: "var(--color-error, #c0392b)",
-};
+import OrderStatusBadge, { TimelineDot } from "@/Components/App/ui/OrderStatusBadge";
+import Pagination from "@/Components/App/ui/Pagination";
 
 export default function OrdersHistory() {
   const { orders } =
@@ -60,7 +54,6 @@ export default function OrdersHistory() {
               />
 
               {orders.data.map((order, idx) => {
-                const statusColor = STATUS_COLORS[order.status] ?? "var(--color-text-muted)";
                 const grossTotal = Number(order.total_price) + Number(order.voucher_discount ?? 0);
 
                 return (
@@ -73,19 +66,7 @@ export default function OrdersHistory() {
                     }}
                   >
                     {/* Timeline dot */}
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 6,
-                        width: 15,
-                        height: 15,
-                        borderRadius: "50%",
-                        background: "var(--color-surface)",
-                        border: `2px solid ${statusColor}`,
-                        boxShadow: "0 0 0 4px var(--color-bg)",
-                      }}
-                    />
+                    <TimelineDot status={order.status} />
 
                     {/* Date label */}
                     <div
@@ -139,29 +120,7 @@ export default function OrdersHistory() {
                           >
                             Order #{order.id}
                           </div>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              fontFamily: "var(--font-body)",
-                              fontSize: "10px",
-                              letterSpacing: "0.1em",
-                              textTransform: "uppercase",
-                              color: statusColor,
-                            }}
-                          >
-                            <span
-                              style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: "50%",
-                                background: statusColor,
-                                display: "inline-block",
-                              }}
-                            />
-                            {order.status}
-                          </span>
+                          <OrderStatusBadge status={order.status} />
                         </div>
 
                         <div style={{ textAlign: "right" }}>
@@ -330,29 +289,7 @@ export default function OrdersHistory() {
           )}
 
           {/* Pagination */}
-          {orders?.links && orders.links.length > 3 && (
-            <div className="flex justify-center gap-2 mt-12 flex-wrap">
-              {orders.links.map((link, i) => (
-                <Link
-                  key={i}
-                  href={link.url || "#"}
-                  dangerouslySetInnerHTML={{ __html: link.label }}
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "12px",
-                    padding: "8px 14px",
-                    borderRadius: "var(--radius-sm, 3px)",
-                    backgroundColor: link.active ? "var(--color-primary)" : "var(--color-surface)",
-                    color: link.active ? "var(--color-text-inverse, #fff)" : "var(--color-text-muted)",
-                    border: "1px solid var(--color-border)",
-                    pointerEvents: link.url ? "auto" : "none",
-                    opacity: link.url ? 1 : 0.5,
-                    textDecoration: "none",
-                  }}
-                />
-              ))}
-            </div>
-          )}
+          <Pagination links={orders?.meta?.links ?? []} />
         </div>
       </div>
     </AuthenticatedLayout>

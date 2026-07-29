@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Head, Link, router } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import ProductItem from "@/Components/App/ProductItem";
+import { Eyebrow, Ornament } from "@/Components/App/ui/SectionHeading";
 import {
   Vendor,
   PageProps,
@@ -26,25 +27,7 @@ type ProfileProps = PageProps<{
   };
 }>;
 
-/* ── local, dependency-free versions of the boutique heading pieces ── */
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "0.68rem",
-        letterSpacing: "0.28em",
-        textTransform: "uppercase",
-        color: "var(--color-accent)",
-        display: "block",
-        marginBottom: "0.75rem",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
+/* ── page title (h1), distinct from SectionHeading's <em>-accented h2 ── */
 function Heading({ children }: { children: React.ReactNode }) {
   return (
     <h1
@@ -59,31 +42,6 @@ function Heading({ children }: { children: React.ReactNode }) {
     >
       {children}
     </h1>
-  );
-}
-
-function Divider({ centered = true }: { centered?: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 6,
-        margin: centered ? "1.1rem auto 0" : "1.1rem 0 0",
-        justifyContent: centered ? "center" : "flex-start",
-      }}
-    >
-      <div style={{ width: 28, height: 1, background: "var(--color-accent)" }} />
-      <div
-        style={{
-          width: 4,
-          height: 4,
-          background: "var(--color-accent)",
-          transform: "rotate(45deg)",
-        }}
-      />
-      <div style={{ width: 28, height: 1, background: "var(--color-accent)" }} />
-    </div>
   );
 }
 
@@ -480,9 +438,11 @@ export default function ListProducts({
       <div className="vp-page">
         {/* ── Hero ── */}
         <div className="vp-hero">
-          <Eyebrow>Shop the Collection</Eyebrow>
+          <div style={{ marginBottom: "0.75rem" }}>
+            <Eyebrow center>Shop the Collection</Eyebrow>
+          </div>
           <Heading>{vendor.data.store_name}</Heading>
-          <Divider />
+          <Ornament center />
         </div>
 
         {/* ── Mobile filter trigger ── */}

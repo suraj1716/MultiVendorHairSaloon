@@ -59,6 +59,8 @@ class VendorController extends Controller
             'facebook_url'  => $request->facebook_url ?: null,
             'instagram_url' => $request->instagram_url ?: null,
             'tiktok_url'    => $request->tiktok_url ?: null,
+            'youtube_url'  => $request->youtube_url ?: null,
+
         ]);
         $data = $request->validate([
             'name'                   => 'nullable|string|max:255',
@@ -78,6 +80,8 @@ class VendorController extends Controller
             'closed_dates'           => 'nullable|array',
             'facebook_url' => 'nullable|url|max:255',
             'instagram_url' => 'nullable|url|max:255',
+            'youtube_url'  => 'nullable|url|max:255',
+
             'tiktok_url' => 'nullable|url|max:255',
         ]);
 
@@ -117,6 +121,7 @@ class VendorController extends Controller
                 'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
                 'closed_dates'          => $data['closed_dates'] ?? [],
                 'facebook_url'  => $data['facebook_url'] ?? null,
+                'youtube_url'  => $data['youtube_url'] ?? null,
                 'instagram_url' => $data['instagram_url'] ?? null,
                 'tiktok_url'   => $data['tiktok_url'] ?? null,
             ]);
@@ -160,6 +165,8 @@ class VendorController extends Controller
                 'recurring_closed_days'  => is_array($vendor->recurring_closed_days) ? $vendor->recurring_closed_days : [],
                 'closed_dates'           => is_array($vendor->closed_dates) ? $vendor->closed_dates : [],
                 'facebook_url' => $vendor->facebook_url,
+                'youtube_url' => $vendor->youtube_url,
+
                 'instagram_url' => $vendor->instagram_url,
                 'tiktok_url' => $vendor->tiktok_url,
             ],
@@ -173,6 +180,8 @@ class VendorController extends Controller
         $request->merge([
             'facebook_url'  => $request->facebook_url ?: null,
             'instagram_url' => $request->instagram_url ?: null,
+            'youtube_url' => $request->youtube_url ?: null,
+
             'tiktok_url'    => $request->tiktok_url ?: null,
         ]);
         $data = $request->validate([
@@ -191,6 +200,9 @@ class VendorController extends Controller
             'recurring_closed_days' => 'nullable|array',
             'closed_dates'          => 'nullable|array',
             'facebook_url' => 'nullable|url|max:255',
+
+            'youtube_url' => 'nullable|url|max:255',
+
             'instagram_url' => 'nullable|url|max:255',
             'tiktok_url' => 'nullable|url|max:255',
         ]);
@@ -201,11 +213,10 @@ class VendorController extends Controller
                 'email' => $data['email'],
                 'phone' => $data['phone'],
             ]);
+ logger('vendor update payload', ['youtube_url' => $data['youtube_url'] ?? 'MISSING']);
 
             $vendor->update([
                 'store_name'            => $data['store_name'],
-
-
                 'store_address'         => $data['store_address'] ?? null,
                 'vendor_type'           => $data['vendor_type'],
                 'booking_fee'           => $data['booking_fee'] ?? 0,
@@ -217,6 +228,8 @@ class VendorController extends Controller
                 'recurring_closed_days' => $data['recurring_closed_days'] ?? [],
                 'closed_dates'          => $data['closed_dates'] ?? [],
                 'facebook_url' => $data['facebook_url'] ?? null,
+                'youtube_url' => $data['youtube_url'] ?? null,
+
                 'instagram_url' => $data['instagram_url'] ?? null,
                 'tiktok_url' => $data['tiktok_url'] ?? null,
             ]);

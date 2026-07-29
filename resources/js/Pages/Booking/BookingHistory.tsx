@@ -5,13 +5,8 @@ import { PageProps, PaginationProps, Order, OrderItem } from "@/types";
 import BookingWidget from "./BookingWidget";
 import StaffSelectStep from "@/Components/App/StaffSelectStep";
 import dayjs from "dayjs";
-
-const STATUS_COLORS: Record<string, string> = {
-  paid: "var(--color-success, #3a7d44)",
-  draft: "var(--color-warning, #c9a96e)",
-  cancelled: "var(--color-error, #c0392b)",
-  refunded: "var(--color-error, #c0392b)",
-};
+import Button from "@/Components/App/ui/Button";
+import OrderStatusBadge, { TimelineDot } from "@/Components/App/ui/OrderStatusBadge";
 
 function ConfirmationModal({
   open,
@@ -120,40 +115,12 @@ function ConfirmationModal({
         )}
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button
-            onClick={onCancel}
-            style={{
-              background: "transparent",
-              border: "1px solid var(--color-border)",
-              color: "var(--color-text-muted)",
-              padding: "9px 18px",
-              fontFamily: "var(--font-body)",
-              fontSize: "11px",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              borderRadius: "var(--radius-sm, 3px)",
-            }}
-          >
+          <Button variant="ghost" size="sm" onClick={onCancel}>
             Cancel
-          </button>
-          <button
-            onClick={onSave}
-            style={{
-              background: "var(--color-primary)",
-              border: "1px solid var(--color-primary)",
-              color: "#fff",
-              padding: "9px 18px",
-              fontFamily: "var(--font-body)",
-              fontSize: "11px",
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              cursor: "pointer",
-              borderRadius: "var(--radius-sm, 3px)",
-            }}
-          >
+          </Button>
+          <Button variant="primary" size="sm" onClick={onSave}>
             Save
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -333,8 +300,6 @@ export default function BookingHistory() {
               />
 
               {appointmentOrders.map((order, idx) => {
-                const statusColor =
-                  STATUS_COLORS[order.status] ?? "var(--color-text-muted)";
                 const grossTotal =
                   Number(order.total_price) +
                   Number(order.voucher_discount ?? 0);
@@ -353,19 +318,7 @@ export default function BookingHistory() {
                         idx === appointmentOrders.length - 1 ? 0 : 48,
                     }}
                   >
-                    <div
-                      style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 6,
-                        width: 15,
-                        height: 15,
-                        borderRadius: "50%",
-                        background: "var(--color-surface)",
-                        border: `2px solid ${statusColor}`,
-                        boxShadow: "0 0 0 4px var(--color-bg)",
-                      }}
-                    />
+                    <TimelineDot status={order.status} />
 
                     <div
                       style={{
@@ -419,29 +372,7 @@ export default function BookingHistory() {
                           >
                             Order #{order.id}
                           </div>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 5,
-                              fontFamily: "var(--font-body)",
-                              fontSize: "10px",
-                              letterSpacing: "0.1em",
-                              textTransform: "uppercase",
-                              color: statusColor,
-                            }}
-                          >
-                            <span
-                              style={{
-                                width: 5,
-                                height: 5,
-                                borderRadius: "50%",
-                                background: statusColor,
-                                display: "inline-block",
-                              }}
-                            />
-                            {order.status}
-                          </span>
+                          <OrderStatusBadge status={order.status} />
                         </div>
 
                         <div style={{ textAlign: "right" }}>
@@ -605,7 +536,9 @@ export default function BookingHistory() {
                             </span>
                           ) : cancellableItem ? (
                             <>
-                              <button
+                              <Button
+                                variant="primary"
+                                size="sm"
                                 onClick={() => {
                                   const itemToEdit = order.orderItems.find(
                                     (item) =>
@@ -618,22 +551,12 @@ export default function BookingHistory() {
                                       "No editable booking found in this order.",
                                     );
                                 }}
-                                style={{
-                                  background: "var(--color-primary)",
-                                  color: "#fff",
-                                  border: "none",
-                                  padding: "8px 16px",
-                                  fontFamily: "var(--font-body)",
-                                  fontSize: "11px",
-                                  letterSpacing: "0.08em",
-                                  textTransform: "uppercase",
-                                  borderRadius: "var(--radius-sm, 3px)",
-                                  cursor: "pointer",
-                                }}
                               >
                                 Edit Booking
-                              </button>
-                              <button
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
                                 onClick={() =>
                                   handleCancelBooking(
                                     cancellableItem,
@@ -641,22 +564,9 @@ export default function BookingHistory() {
                                     order,
                                   )
                                 }
-                                style={{
-                                  background: "transparent",
-                                  color: "var(--color-error, #c0392b)",
-                                  border:
-                                    "1px solid var(--color-error, #c0392b)",
-                                  padding: "8px 16px",
-                                  fontFamily: "var(--font-body)",
-                                  fontSize: "11px",
-                                  letterSpacing: "0.08em",
-                                  textTransform: "uppercase",
-                                  borderRadius: "var(--radius-sm, 3px)",
-                                  cursor: "pointer",
-                                }}
                               >
                                 Cancel Booking
-                              </button>
+                              </Button>
                             </>
                           ) : (
                             <span

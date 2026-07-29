@@ -48,7 +48,7 @@ export const btnPrimary: React.CSSProperties = {
   color: "var(--color-bg-dark)",
   background: "var(--color-accent)",
   border: "1px solid var(--color-accent)",
-  borderRadius: "var(--radius-no)",
+  borderRadius: "var(--radius-sm)",
   cursor: "pointer",
   transition: "background 150ms",
 };

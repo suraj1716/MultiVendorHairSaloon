@@ -12,7 +12,7 @@ use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
 use Filament\Support\Components\Badge;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Database\Eloquent\Model;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
+Model::preventSilentlyDiscardingAttributes(true);
  Inertia::share('auth', function () {
         return [
             'user' => Auth::user() ? new AuthUserResource(Auth::user()) : null,

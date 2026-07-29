@@ -16,7 +16,7 @@ class OrderAndBookingSeeder extends Seeder
 {
     public function run(): void
     {
-        $vendorUser = User::where('email', 'owner@hairsalon.com')->first();
+        $vendorUser = User::where('email', 'info@rbhairlounge.com.au')->first();
         $customers  = User::whereHas('roles', fn($q) => $q->where('name', 'User'))->get();
         $products   = Product::where('status', 'published')
                              ->where('created_by', $vendorUser->id)

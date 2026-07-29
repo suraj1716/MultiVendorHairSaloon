@@ -81,6 +81,8 @@ type CreateForm = {
   recurring_closed_days: number[];
   closed_dates: string[];
   facebook_url: string;
+  youtube_url: string;
+
   instagram_url: string;
   tiktok_url: string;
 };
@@ -110,6 +112,8 @@ function CreateModal({
   recurring_closed_days: [],
   closed_dates: [],
   facebook_url: "",
+  youtube_url: "",
+
   instagram_url: "",
   tiktok_url: "",
 });
@@ -459,6 +463,16 @@ function CreateModal({
     value={form.facebook_url}
     onChange={(e) => setForm({ ...form, facebook_url: e.target.value })}
     placeholder="https://facebook.com/yourpage"
+    style={inputStyle}
+  />
+</div>
+<div>
+  <label style={labelStyle}>Youtube</label>
+  <input
+    type="url"
+    value={form.youtube_url}
+    onChange={(e) => setForm({ ...form, youtube_url: e.target.value })}
+    placeholder="https://youtube.com/yourpage"
     style={inputStyle}
   />
 </div>

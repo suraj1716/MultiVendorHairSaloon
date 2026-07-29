@@ -15,6 +15,7 @@ return new class extends Migration
         $table->string('facebook_url')->nullable();
         $table->string('instagram_url')->nullable();
         $table->string('tiktok_url')->nullable();
+
     });
 }
 

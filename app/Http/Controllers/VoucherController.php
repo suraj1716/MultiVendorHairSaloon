@@ -68,72 +68,72 @@ class VoucherController extends Controller
     /**
      * Direct Stripe purchase (bypasses cart — used from gift card shop "Buy Now").
      */
-    public function purchase(Request $request)
-    {
-        $request->validate([
-            'gift_card_template_id' => 'required|exists:gift_card_templates,id',
-            'gifted_to_email'       => 'nullable|email',
-            'quantity'              => 'integer|min:1|max:10',
-        ]);
-
-        $template = GiftCardTemplate::where('id', $request->gift_card_template_id)
-            ->where('active', true)
-            ->firstOrFail();
-
-        $qty  = $request->input('quantity', 1);
-        $user = Auth::user();
-
-        Stripe::setApiKey(config('app.stripe_secret_key'));
-
-        DB::beginTransaction();
-        try {
-            $vouchers = collect(range(1, $qty))->map(fn() => Voucher::create([
-                'code'                  => strtoupper(Str::random(12)),
-                'type'                  => 'gift',
-                'amount'                => $template->amount,
-                'remaining_amount'      => $template->amount,
-                'discount_type'         => 'fixed',
-                'purchased_by'          => $user->id,
-                'gifted_to_email'       => $request->gifted_to_email,
-                'gift_card_template_id' => $template->id,
-                'active'                => false,
-                'expires_at'            => now()->addYear(),
-            ]));
-
-            $voucherIds = $vouchers->pluck('id')->implode(',');
-
-            $session = StripeSession::create([
-                'customer_email' => $user->email,
-                'line_items' => [[
-                    'price_data' => [
-                        'currency'     => config('app.currency', 'aud'),
-                        'product_data' => ['name' => $template->title],
-                        'unit_amount'  => intval($template->amount * 100),
-                    ],
-                    'quantity' => $qty,
-                ]],
-                'mode'        => 'payment',
-                'success_url' => route('stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url'  => route('gift-voucher.shop'),
-                'metadata'    => [
-                    'voucher_ids'            => $voucherIds,
-                    'gift_card_template_id'  => $template->id,
-                    'purchased_by'           => $user->id,
-                    'gifted_to_email'        => $request->gifted_to_email ?? '',
-                    'quantity'               => $qty,
-                ],
+        public function purchase(Request $request)
+        {
+            $request->validate([
+                'gift_card_template_id' => 'required|exists:gift_card_templates,id',
+                'gifted_to_email'       => 'nullable|email',
+                'quantity'              => 'integer|min:1|max:10',
             ]);
 
-            $vouchers->each(fn($v) => $v->update(['stripe_session_id' => $session->id]));
+            $template = GiftCardTemplate::where('id', $request->gift_card_template_id)
+                ->where('active', true)
+                ->firstOrFail();
 
-            DB::commit();
-            return Inertia::location($session->url);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Gift card purchase failed: ' . $e->getMessage());
-            return back()->withErrors('Purchase failed. Please try again.');
+            $qty  = $request->input('quantity', 1);
+            $user = Auth::user();
+
+            Stripe::setApiKey(config('app.stripe_secret_key'));
+
+            DB::beginTransaction();
+            try {
+                $vouchers = collect(range(1, $qty))->map(fn() => Voucher::create([
+                    'code'                  => strtoupper(Str::random(12)),
+                    'type'                  => 'gift',
+                    'amount'                => $template->amount,
+                    'remaining_amount'      => $template->amount,
+                    'discount_type'         => 'fixed',
+                    'purchased_by'          => $user->id,
+                    'gifted_to_email'       => $request->gifted_to_email,
+                    'gift_card_template_id' => $template->id,
+                    'active'                => false,
+                    'expires_at'            => now()->addYear(),
+                ]));
+
+                $voucherIds = $vouchers->pluck('id')->implode(',');
+
+                $session = StripeSession::create([
+                    'customer_email' => $user->email,
+                    'line_items' => [[
+                        'price_data' => [
+                            'currency'     => config('app.currency', 'aud'),
+                            'product_data' => ['name' => $template->title],
+                            'unit_amount'  => intval($template->amount * 100),
+                        ],
+                        'quantity' => $qty,
+                    ]],
+                    'mode'        => 'payment',
+                    'success_url' => route('stripe.success') . '?session_id={CHECKOUT_SESSION_ID}',
+                    'cancel_url'  => route('gift-voucher.shop'),
+                    'metadata'    => [
+                        'voucher_ids'            => $voucherIds,
+                        'gift_card_template_id'  => $template->id,
+                        'purchased_by'           => $user->id,
+                        'gifted_to_email'        => $request->gifted_to_email ?? '',
+                        'quantity'               => $qty,
+                    ],
+                ]);
+
+                $vouchers->each(fn($v) => $v->update(['stripe_session_id' => $session->id]));
+
+                DB::commit();
+                return Inertia::location($session->url);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                Log::error('Gift card purchase failed: ' . $e->getMessage());
+                return back()->withErrors('Purchase failed. Please try again.');
+            }
         }
-    }
 
 
 

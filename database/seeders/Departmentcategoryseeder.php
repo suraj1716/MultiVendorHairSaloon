@@ -35,19 +35,19 @@ class DepartmentCategorySeeder extends Seeder
             'Waxing',
         ];
 
-        foreach ($categories as $name) {
-            Category::firstOrCreate(
-                [
-                    'name'          => $name,
-                    'department_id' => $dept->id,
-                    'parent_id'     => null,
-                ],
-                [
-                    'active' => true,
-                    'image'  => $this->findLocalImage($name),
-                ]
-            );
-        }
+       foreach ($categories as $name) {
+    Category::updateOrCreate(
+        [
+            'name'          => $name,
+            'department_id' => $dept->id,
+            'parent_id'     => null,
+        ],
+        [
+            'active' => true,
+            'image'  => $this->findLocalImage($name, true),
+        ]
+    );
+}
     }
 
     /**
@@ -56,26 +56,26 @@ class DepartmentCategorySeeder extends Seeder
      * name slug. Copies it into storage/app/public/categories/ and
      * returns the relative path for the `image` column.
      */
-    private function findLocalImage(string $name): ?string
-    {
-        $slug = Str::slug($name);
-        $sourceDir = base_path('database/seeders/images/categories');
-        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+   private function findLocalImage(string $name, bool $forceRefresh = false): ?string
+{
+    $slug = Str::slug($name);
+    $sourceDir = base_path('database/seeders/images/categories');
+    $extensions = ['jpg', 'jpeg', 'png', 'webp'];
 
-        foreach ($extensions as $ext) {
-            $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
+    foreach ($extensions as $ext) {
+        $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
 
-            if (file_exists($sourcePath)) {
-                $destPath = "categories/{$slug}.{$ext}";
+        if (file_exists($sourcePath)) {
+            $destPath = "categories/{$slug}.{$ext}";
 
-                if (! Storage::disk('public')->exists($destPath)) {
-                    Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
-                }
-
-                return $destPath;
+            if ($forceRefresh || ! Storage::disk('public')->exists($destPath)) {
+                Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
             }
-        }
 
-        return null;
+            return $destPath;
+        }
     }
+
+    return null;
+}
 }

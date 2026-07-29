@@ -8,72 +8,7 @@ import UpdateProfileInformationForm from "./Partials/UpdateProfileInformationFor
 import VendorDetails from "./Partials/VendorDetails";
 import ShippingAddresses, { ShippingAddress } from "./ShippingAddresses";
 import Card from "@/Components/App/Card";
-
-/* ─────────────────────────────────────────────
-   Local heading helpers (same pattern as About.tsx)
-───────────────────────────────────────────── */
-function Ornament() {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        margin: "1rem 0 1.5rem",
-      }}
-    >
-      <div
-        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
-      />
-      <div
-        style={{
-          width: 5,
-          height: 5,
-          background: "var(--color-accent)",
-          transform: "rotate(45deg)",
-        }}
-      />
-      <div
-        style={{ width: 36, height: 1, background: "var(--color-accent)" }}
-      />
-    </div>
-  );
-}
-
-function Eyebrow({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "0.68rem",
-        letterSpacing: "0.28em",
-        textTransform: "uppercase",
-        color: "var(--color-accent)",
-        display: "block",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-function CardLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        fontFamily: "var(--font-body)",
-        fontSize: "0.65rem",
-        letterSpacing: "0.18em",
-        textTransform: "uppercase",
-        color: "var(--color-text-light)",
-        display: "block",
-        marginBottom: "0.5rem",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
+import SectionHeading from "@/Components/App/ui/SectionHeading";
 
 export default function Edit() {
   const page =
@@ -156,30 +91,21 @@ export default function Edit() {
               maxWidth: "var(--container-max)",
               margin: "0 auto",
               padding: "0 7vw",
-              marginLeft:20
             }}
           >
-            <Eyebrow>Account</Eyebrow>
-            <Ornament />
-            <h1
-              style={{
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(2rem, 4vw, 2.75rem)",
-                fontWeight: 300,
-                color: "white",
-                lineHeight: 1.15,
-              }}
-            >
-              Your{" "}
-              <em
-                style={{
-                  fontStyle: "italic",
-                  color: "var(--color-accent-light)",
-                }}
-              >
-                Profile
-              </em>
-            </h1>
+            <SectionHeading
+              eyebrow="Account"
+              title={
+                <>
+                  Your{" "}
+                  <em style={{ fontStyle: "italic", color: "var(--color-accent-light)" }}>
+                    Profile
+                  </em>
+                </>
+              }
+              tone="light"
+              marginBottom="0"
+            />
           </div>
         </section>
 

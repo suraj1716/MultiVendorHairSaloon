@@ -1,7 +1,5 @@
-import InputError from '@/Components/Core/InputError';
-import InputLabel from '@/Components/Core/InputLabel';
-import PrimaryButton from '@/Components/Core/PrimaryButton';
-import TextInput from '@/Components/Core/TextInput';
+import Button from '@/Components/App/ui/Button';
+import { label, input, err } from '@/Components/App/formStyles';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -23,32 +21,30 @@ export default function ConfirmPassword() {
         <GuestLayout>
             <Head title="Confirm Password" />
 
-            <div className="mb-4 text-sm text-gray-600">
+            <div style={{ marginBottom: 16, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
                 This is a secure area of the application. Please confirm your
                 password before continuing.
             </div>
 
             <form onSubmit={submit}>
-                <div className="mt-4">
-                    <InputLabel htmlFor="password" value="Password" />
-
-                    <TextInput
+                <div style={{ marginTop: 16 }}>
+                    <label style={label} htmlFor="password">Password</label>
+                    <input
                         id="password"
                         type="password"
                         name="password"
+                        style={input}
                         value={data.password}
-                        className="mt-1 block w-full"
-                        isFocused={true}
+                        autoFocus
                         onChange={(e) => setData('password', e.target.value)}
                     />
-
-                    <InputError message={errors.password} className="mt-2" />
+                    {errors.password && <p style={err}>{errors.password}</p>}
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+                    <Button variant="primary" disabled={processing}>
                         Confirm
-                    </PrimaryButton>
+                    </Button>
                 </div>
             </form>
         </GuestLayout>

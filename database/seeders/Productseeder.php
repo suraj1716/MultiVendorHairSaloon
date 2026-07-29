@@ -17,7 +17,7 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $vendorUser = User::where('email', 'owner@hairsalon.com')->first();
+       $vendorUser = User::where('email', 'info@rbhairlounge.com.au')->first();
         $dept       = Department::where('slug', 'hair-salon')->first();
 
         $cat = fn (string $name) => Category::where('name', $name)
@@ -156,13 +156,14 @@ class ProductSeeder extends Seeder
             );
 
             if ($product->wasRecentlyCreated || $product->getMedia('images')->isEmpty()) {
-                $imagePath = $this->findLocalImage($data['title']);
-                if ($imagePath) {
-                    $fullPath = Storage::disk('public')->path($imagePath);
-                    $product->addMedia($fullPath)
-                        ->preservingOriginal()
-                        ->toMediaCollection('images');
-                }
+              $imagePath = $this->findLocalImage($data['title'], forceRefresh: true);
+if ($imagePath) {
+    $product->clearMediaCollection('images'); // wipe old media before re-adding
+    $fullPath = Storage::disk('public')->path($imagePath);
+    $product->addMedia($fullPath)
+        ->preservingOriginal()
+        ->toMediaCollection('images');
+}
             }
 
             if ($product->variationTypes()->exists()) {
@@ -240,26 +241,26 @@ class ProductSeeder extends Seeder
      * title slug. Copies it into storage/app/public/products/ and
      * returns the relative path used by addMedia().
      */
-    private function findLocalImage(string $title): ?string
-    {
-        $slug = Str::slug($title);
-        $sourceDir = base_path('database/seeders/images/products');
-        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+  private function findLocalImage(string $title, bool $forceRefresh = false): ?string
+{
+    $slug = Str::slug($title);
+    $sourceDir = base_path('database/seeders/images/products');
+    $extensions = ['jpg', 'jpeg', 'png', 'webp'];
 
-        foreach ($extensions as $ext) {
-            $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
+    foreach ($extensions as $ext) {
+        $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
 
-            if (file_exists($sourcePath)) {
-                $destPath = "products/{$slug}.{$ext}";
+        if (file_exists($sourcePath)) {
+            $destPath = "products/{$slug}.{$ext}";
 
-                if (! Storage::disk('public')->exists($destPath)) {
-                    Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
-                }
-
-                return $destPath;
+            if ($forceRefresh || ! Storage::disk('public')->exists($destPath)) {
+                Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
             }
-        }
 
-        return null;
+            return $destPath;
+        }
     }
+
+    return null;
+}
 }

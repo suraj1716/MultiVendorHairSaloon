@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Models;
 
 use App\Enums\VendorStatusEnum;
@@ -26,6 +25,10 @@ class Vendor extends Model
     'total_seats',
     'recurring_closed_days',
     'closed_dates',
+    'facebook_url',
+    'instagram_url',
+    'tiktok_url',
+    'youtube_url',
 ];
 
     protected $casts = [

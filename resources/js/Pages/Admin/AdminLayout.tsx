@@ -71,13 +71,13 @@ const NAV_GROUPS = [
         label: "Vouchers",
         href: "admin.vouchers.index",
         icon: "🎁",
-        countKey: 'vouchers',
+        countKey: "vouchers",
       },
-       {
+      {
         label: "Gift-Cards",
         href: "admin.gift-card-templates.index",
         icon: "🎁",
-        countKey: 'gift-cards',
+        countKey: "gift-cards",
       },
     ],
   },
@@ -92,13 +92,13 @@ const NAV_GROUPS = [
         icon: "🏪",
         countKey: null,
       },
-        {
+      {
         label: "Staffs",
         href: "admin.vendor.staff.index",
         icon: "🏪",
         countKey: null,
       },
-          {
+      {
         label: "Roaster",
         href: "admin.roster.index",
         icon: "🏪",
@@ -106,6 +106,20 @@ const NAV_GROUPS = [
       },
     ],
   },
+
+{
+  group: null,
+  items: [
+    {
+      label: "Payouts",
+      href: "admin.payouts.index",
+      icon: "💰",
+      countKey: null,
+    },
+  ],
+},
+
+
 ];
 
 function Badge({ count }: { count: number }) {
@@ -137,10 +151,8 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-const { url, props } = usePage<any>();
-const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
-
-
+  const { url, props } = usePage<any>();
+  const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
 
   const [collapsed, setCollapsed] = useState(false);
   const [openGroups, setOpenGroups] = useState<string[]>([
@@ -176,7 +188,12 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
       href: "admin.contacts.index",
       icon: "✉️",
     },
-    { label: "New Users",       count: adminCounts.users     ?? 0, href: "admin.users.index",    icon: "👤" },
+    {
+      label: "New Users",
+      count: adminCounts.users ?? 0,
+      href: "admin.users.index",
+      icon: "👤",
+    },
     {
       label: "Pending Orders",
       count: adminCounts.orders ?? 0,
@@ -260,6 +277,9 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
         {/* Nav */}
         <div style={{ flex: 1, overflowY: "auto" }}>
           {NAV_GROUPS.map((group) => {
+             console.log("NAV GROUP:", group);
+
+
             const isOpen = group.group
               ? openGroups.includes(group.group)
               : true;
@@ -446,13 +466,12 @@ const adminCounts = (props.adminCounts ?? {}) as Record<string, number>;
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-  <img
-    src="/images/logo.png"
-    alt="RB Hair & Beauty Lounge"
-    style={{ height: 54, width: "auto", objectFit: "contain" }}
-  />
-
-</div>
+            <img
+              src="/images/logo.png"
+              alt="RB Hair & Beauty Lounge"
+              style={{ height: 54, width: "auto", objectFit: "contain" }}
+            />
+          </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* Notification bell */}

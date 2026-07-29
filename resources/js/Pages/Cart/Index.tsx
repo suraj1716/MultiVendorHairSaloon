@@ -10,6 +10,7 @@ import axios from "axios";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import StaffSelectStep from "@/Components/App/StaffSelectStep";
+import Button from "@/Components/App/ui/Button";
 
 function Index({
   csrf_token,
@@ -278,45 +279,6 @@ useEffect(() => {
     );
   };
 
-  // ── Shared button styles ───────────────────────────────────────────────────
-  const btnPrimary: React.CSSProperties = {
-    background: "var(--color-primary)",
-    color: "var(--color-text-inverse)",
-    border: "1px solid var(--color-primary)",
-    fontFamily: "var(--font-body)",
-    fontSize: "var(--text-sm)",
-    fontWeight: 500,
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    padding: "0.875rem 2rem",
-    cursor: "pointer",
-    transition: "background var(--transition-base)",
-  };
-  const btnOutline: React.CSSProperties = {
-    background: "transparent",
-    color: "var(--color-text-muted)",
-    border: "1px solid var(--color-border)",
-    fontFamily: "var(--font-body)",
-    fontSize: "var(--text-sm)",
-    letterSpacing: "0.08em",
-    textTransform: "uppercase",
-    padding: "0.875rem 2rem",
-    cursor: "pointer",
-  };
-  const btnAccent: React.CSSProperties = {
-    background: "var(--color-accent)",
-    color: "var(--color-bg-dark)",
-    border: "none",
-    fontFamily: "var(--font-body)",
-    fontSize: "var(--text-xs)",
-    fontWeight: 500,
-    letterSpacing: "0.1em",
-    textTransform: "uppercase",
-    padding: "0.75rem 1.5rem",
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-  };
-
   // ──────────────────────────────────────────────────────────────────────────
   return (
     <AuthenticatedLayout>
@@ -539,9 +501,9 @@ useEffect(() => {
                     paddingTop: "var(--space-md)",
                   }}
                 >
-                  <button style={btnPrimary} onClick={() => setStep(2)}>
+                  <Button variant="primary" onClick={() => setStep(2)}>
                     Next: Booking →
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -590,15 +552,16 @@ useEffect(() => {
                                 </strong>{" "}
                                 will be added to your subtotal.
                               </p>
-                              <button
-                                style={btnAccent}
+                              <Button
+                                variant="accent"
+                                size="sm"
                                 onClick={() => {
                                   // setBookingConfirmed(true);
                                   setDialogOpen(true);
                                 }}
                               >
                                 Book Appointment
-                              </button>
+                              </Button>
                             </div>
                           )}
 
@@ -783,14 +746,16 @@ useEffect(() => {
 
                 {/* Nav buttons */}
                 <div style={{ display: "flex", gap: "var(--space-md)" }}>
-                  <button
-                    style={{ ...btnOutline, flex: 1 }}
+                  <Button
+                    variant="outline"
+                    style={{ flex: 1 }}
                     onClick={() => setStep(1)}
                   >
                     ← Back
-                  </button>
-                  <button
-                    style={{ ...btnPrimary, flex: 1 }}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    style={{ flex: 1 }}
                     onClick={() => {
                       if (
                         !allGiftCards &&
@@ -806,7 +771,7 @@ useEffect(() => {
                     }}
                   >
                     Next: Review →
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -845,9 +810,9 @@ useEffect(() => {
                       onChange={(e) => setPromoCode(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
                     />
-                    <button style={btnAccent} onClick={handleApplyPromo}>
+                    <Button variant="accent" size="sm" onClick={handleApplyPromo}>
                       Apply
-                    </button>
+                    </Button>
                   </div>
                   {promoApplied && promoDetails && (
                     <p
@@ -1073,27 +1038,24 @@ useEffect(() => {
 
                 {/* Nav buttons */}
                 <div style={{ display: "flex", gap: "var(--space-md)" }}>
-                  <button
-                    style={{ ...btnOutline, flex: 1 }}
+                  <Button
+                    variant="outline"
+                    style={{ flex: 1 }}
                     onClick={() => setStep(2)}
                   >
                     ← Back
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="primary"
                     onClick={handleCheckout}
                     disabled={loading}
                     style={{
-                      ...btnPrimary,
                       flex: 2,
-                      background: loading
-                        ? "var(--color-primary-dark)"
-                        : "var(--color-primary)",
-                      cursor: loading ? "not-allowed" : "pointer",
                       opacity: loading ? 0.8 : 1,
                     }}
                   >
                     {loading ? "Processing…" : "Confirm & Pay"}
-                  </button>
+                  </Button>
                 </div>
               </div>
             )}
@@ -1143,12 +1105,7 @@ useEffect(() => {
             </div>
             <Link
               href="/shop"
-              style={{
-                ...btnPrimary,
-                padding: "0.875rem 2.5rem",
-                textDecoration: "none",
-                display: "inline-block",
-              }}
+              className="btn btn-primary btn-lg"
             >
               Shop Now
             </Link>

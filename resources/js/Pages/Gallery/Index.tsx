@@ -2,9 +2,10 @@ import React, { useEffect, useState } from "react";
 import { PageProps } from "@/types";
 import { Head } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { useInView } from "react-intersection-observer";
+import { motion, AnimatePresence } from "framer-motion";
 import PageHero from "@/Components/Page/PageHero";
+import IconButton from "@/Components/App/ui/IconButton";
+import BentoTile from "@/Components/App/ui/BentoTile";
 
 interface GalleryImage {
   id: number;
@@ -62,17 +63,16 @@ function Lightbox({
         }}
       >
         {/* prev */}
-        <button onClick={e => { e.stopPropagation(); onPrev(); }} style={{
-          position: "absolute", left: "2rem", top: "50%", transform: "translateY(-50%)",
-          width: 48, height: 48, background: "rgba(201,169,110,0.12)",
-          border: "1px solid rgba(201,169,110,0.3)", color: "white",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 10,
-        }}>
+        <IconButton
+          onClick={e => { e.stopPropagation(); onPrev(); }}
+          aria-label="Previous image"
+          size={48}
+          style={{ position: "absolute", left: "2rem", top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
           </svg>
-        </button>
+        </IconButton>
 
         {/* image */}
         <motion.div
@@ -110,26 +110,26 @@ function Lightbox({
         </motion.div>
 
         {/* next */}
-        <button onClick={e => { e.stopPropagation(); onNext(); }} style={{
-          position: "absolute", right: "2rem", top: "50%", transform: "translateY(-50%)",
-          width: 48, height: 48, background: "rgba(201,169,110,0.12)",
-          border: "1px solid rgba(201,169,110,0.3)", color: "white",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 10,
-        }}>
+        <IconButton
+          onClick={e => { e.stopPropagation(); onNext(); }}
+          aria-label="Next image"
+          size={48}
+          style={{ position: "absolute", right: "2rem", top: "50%", transform: "translateY(-50%)", zIndex: 10 }}
+        >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 18, height: 18 }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
           </svg>
-        </button>
+        </IconButton>
 
         {/* close */}
-        <button onClick={onClose} style={{
-          position: "absolute", top: "1.5rem", right: "1.5rem",
-          width: 40, height: 40, background: "rgba(201,169,110,0.1)",
-          border: "1px solid rgba(201,169,110,0.25)", color: "white",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "1.1rem",
-        }}>×</button>
+        <IconButton
+          onClick={onClose}
+          aria-label="Close"
+          size={40}
+          style={{ position: "absolute", top: "1.5rem", right: "1.5rem", fontSize: "1.1rem" }}
+        >
+          ×
+        </IconButton>
       </motion.div>
     </AnimatePresence>
   );
@@ -154,122 +154,6 @@ const SPANS = [
   "col-span-2 row-span-1",
 ];
 
-function BentoTile({
-  image,
-  title,
-  index,
-  onOpen,
-}: {
-  image: GalleryImage;
-  title: string;
-  index: number;
-  onOpen: () => void;
-}) {
-  const controls = useAnimation();
-  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.08 });
-  const [hovered, setHovered] = useState(false);
-  const span = SPANS[index % SPANS.length];
-  const isHero = index % SPANS.length === 0;
-
-  useEffect(() => {
-    if (inView) controls.start("visible");
-  }, [inView, controls]);
-
-  return (
-    <motion.div
-      ref={ref}
-      className={`${span} overflow-hidden relative cursor-pointer group`}
-      style={{ background: "var(--color-surface)", minHeight: 180 }}
-      initial="hidden"
-      animate={controls}
-      variants={{
-        hidden: { opacity: 0, y: 24 },
-        visible: { opacity: 1, y: 0, transition: { duration: 0.6, delay: (index % 5) * 0.07, ease: "easeOut" } },
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onOpen}
-    >
-      {/* image */}
-      <motion.img
-        src={image.url}
-        alt={title}
-        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", position: "absolute", inset: 0 }}
-        animate={{ scale: hovered ? 1.07 : 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        loading="lazy"
-        draggable={false}
-      />
-
-      {/* base gradient — always visible at bottom */}
-      <div style={{
-        position: "absolute", inset: 0,
-        background: "linear-gradient(to top, rgba(12,10,8,0.72) 0%, rgba(12,10,8,0.1) 45%, transparent 100%)",
-        zIndex: 1,
-      }} />
-
-      {/* hover tint */}
-      <motion.div
-        style={{ position: "absolute", inset: 0, background: "rgba(201,169,110,0.08)", zIndex: 2 }}
-        animate={{ opacity: hovered ? 1 : 0 }}
-        transition={{ duration: 0.25 }}
-      />
-
-      {/* accent border on hover */}
-      <motion.div
-        style={{ position: "absolute", inset: 0, zIndex: 3, border: "1px solid rgba(201,169,110,0)" }}
-        animate={{ borderColor: hovered ? "rgba(201,169,110,0.5)" : "rgba(201,169,110,0)" }}
-        transition={{ duration: 0.25 }}
-      />
-
-      {/* corner brackets */}
-      <div style={{ position: "absolute", top: 10, left: 10, width: 18, height: 18, borderTop: "1px solid var(--color-accent-light)", borderLeft: "1px solid var(--color-accent-light)", zIndex: 4, opacity: 0.5 }} />
-      <div style={{ position: "absolute", bottom: 10, right: 10, width: 18, height: 18, borderBottom: "1px solid var(--color-accent-light)", borderRight: "1px solid var(--color-accent-light)", zIndex: 4, opacity: 0.5 }} />
-
-      {/* title — always in front */}
-      <div style={{
-        position: "absolute", bottom: 0, left: 0, right: 0,
-        padding: isHero ? "1.5rem 1.5rem" : "0.875rem 1rem",
-        zIndex: 5,
-        display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "0.5rem",
-      }}>
-        <div>
-          {/* eyebrow line */}
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-            <div style={{ width: 20, height: 1, background: "var(--color-accent)", opacity: 0.8 }} />
-            <span style={{
-              fontFamily: "var(--font-body)", fontSize: "0.58rem",
-              letterSpacing: "0.22em", textTransform: "uppercase",
-              color: "var(--color-accent-light)", opacity: 0.8,
-            }}>Our Work</span>
-          </div>
-          <h3 style={{
-            fontFamily: "var(--font-display)",
-            fontSize: isHero ? "clamp(1.3rem, 2.5vw, 1.75rem)" : "1rem",
-            fontWeight: 300, fontStyle: "italic",
-            color: "white", margin: 0, lineHeight: 1.2,
-            letterSpacing: "0.01em",
-          }}>{title}</h3>
-        </div>
-
-        {/* view icon */}
-        <motion.div
-          animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : 6 }}
-          transition={{ duration: 0.25 }}
-          style={{
-            width: 32, height: 32, flexShrink: 0,
-            border: "1px solid rgba(201,169,110,0.5)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-accent-light)" strokeWidth="1.5" style={{ width: 14, height: 14 }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </motion.div>
-      </div>
-    </motion.div>
-  );
-}
 
 /* ─────────────────────────────────────────────
    Gallery section
@@ -320,10 +204,15 @@ function GallerySection({
         {gallery.images.map((image, i) => (
           <BentoTile
             key={image.id}
-            image={image}
+            image={image.url}
             title={gallery.title}
-            index={i}
+            eyebrow="Our Work"
+            size={i % SPANS.length === 0 ? "hero" : "normal"}
+            cornerBrackets
+            viewIcon
             onOpen={() => openAt(i)}
+            index={i}
+            className={SPANS[i % SPANS.length]}
           />
         ))}
       </div>

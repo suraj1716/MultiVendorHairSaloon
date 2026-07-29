@@ -1,13 +1,9 @@
-import InputError from '@/Components/Core/InputError';
-import InputLabel from '@/Components/Core/InputLabel';
-import PrimaryButton from '@/Components/Core/PrimaryButton';
-import TextInput from '@/Components/Core/TextInput';
-
-
 import { FormEventHandler, useRef } from "react";
 import { useForm } from "@inertiajs/react";
 import { Transition } from "@headlessui/react";
-import { label, input, err, btnPrimary } from "@/Components/App/formStyles";
+
+import Button from "@/Components/App/ui/Button";
+import { label, input, err } from "@/Components/App/formStyles";
 
 export default function UpdatePasswordForm({
   className = "",
@@ -99,9 +95,9 @@ export default function UpdatePasswordForm({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <button type="submit" style={btnPrimary} disabled={processing}>
+        <Button type="submit" variant="primary" disabled={processing}>
           Save
-        </button>
+        </Button>
 
         <Transition
           show={recentlySuccessful}

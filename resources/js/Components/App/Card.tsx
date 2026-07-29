@@ -3,10 +3,13 @@ import React from "react";
 
 export default function Card({
   title,
+  titleSize = "10px",
   badge,
   children,
 }: {
   title: string;
+  /** Font size of the header label. Default: "10px" (matches existing usage everywhere). */
+  titleSize?: string;
   badge?: string;
   children: React.ReactNode;
 }) {
@@ -41,7 +44,7 @@ export default function Card({
           <span
             style={{
               fontFamily: "var(--font-body)",
-              fontSize: "10px",
+              fontSize: titleSize,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               color: "var(--color-text-muted)",
