@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('vendors', function (Blueprint $table) {
-            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->string('status');
             $table->string('store_name');
             $table->string('store_address')->nullable();

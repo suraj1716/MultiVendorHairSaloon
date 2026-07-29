@@ -35,7 +35,7 @@ class CartService
             'user_id'              => Auth::id(),
             'item_type' => 'gift_card',
             'product_id'           => null,                  // no product
-            'gift_card_template_id'=> $template->id,
+            'gift_card_template_id' => $template->id,
             'quantity'             => 1,
             'price'                => $template->amount,
             'variation_type_option_ids' => json_encode([]),
@@ -112,13 +112,13 @@ class CartService
             $this->removeItemFromCookies($productId, $optionIds);
         }
     }
-public function removeGiftCardFromCart(int $cartItemId): void
-{
-    CartItem::where('user_id', Auth::id())
-        ->whereNotNull('gift_card_template_id')
-        ->where('id', $cartItemId)
-        ->delete();
-}
+    public function removeGiftCardFromCart(int $cartItemId): void
+    {
+        CartItem::where('user_id', Auth::id())
+            ->whereNotNull('gift_card_template_id')
+            ->where('id', $cartItemId)
+            ->delete();
+    }
     // ── getCartItems — patched to include gift cards ──────────────
 
     public function getCartItems(): array
@@ -226,7 +226,7 @@ public function removeGiftCardFromCart(int $cartItemId): void
                 'user' => [
                     'id'           => $product->created_by,
                     'name'         => $product->user->vendor->store_name ?? null,
-                     'email'        => $product->user->email,
+                    'email'        => $product->user->email,
                     'booking_fee'  => $product->user->vendor->booking_fee,
                     'vendor_type'  => $product->user->vendor->vendor_type,
                 ],
@@ -273,7 +273,7 @@ public function removeGiftCardFromCart(int $cartItemId): void
                 'user' => [
                     'id'          => 0,
                     'name'        => 'Gift Cards',
-                     'email'        => null,
+                    'email'        => null,
                     'booking_fee' => 0,
                     'vendor_type' => null,
                 ],
@@ -298,37 +298,37 @@ public function removeGiftCardFromCart(int $cartItemId): void
 
     // ── getCartItemsGrouped — unchanged logic, gift cards auto-group ──
 
-   public function getCartItemsGrouped(): array
-{
-    $cartItems = $this->getCartItems();
+    public function getCartItemsGrouped(): array
+    {
+        $cartItems = $this->getCartItems();
 
-    return collect($cartItems)
-        ->groupBy(fn($item) => $item['user']['id'])
-        ->map(function ($items, $userId) {
-            $firstItem = $items->first();
+        return collect($cartItems)
+            ->groupBy(fn($item) => $item['user']['id'])
+            ->map(function ($items, $userId) {
+                $firstItem = $items->first();
 
-            // ── FIX: vendor comes from the 'user' key on each cart item ──
-            // The old code did: $firstItem['product']['vendor'] ?? null
-            // which is ALWAYS null — there is no 'product' key in cart items.
-            // The user array IS the vendor info (store_name, booking_fee, etc.)
-            $vendor = [
-                'id'          => $firstItem['user']['id'],
-                'name'        => $firstItem['user']['name'],
-                 'email'       => $firstItem['user']['email'],
-                'booking_fee' => $firstItem['user']['booking_fee'] ?? 0,
-                'vendor_type' => $firstItem['user']['vendor_type'] ?? null,
-            ];
+                // ── FIX: vendor comes from the 'user' key on each cart item ──
+                // The old code did: $firstItem['product']['vendor'] ?? null
+                // which is ALWAYS null — there is no 'product' key in cart items.
+                // The user array IS the vendor info (store_name, booking_fee, etc.)
+                $vendor = [
+                    'id'          => $firstItem['user']['id'],
+                    'name'        => $firstItem['user']['name'],
+                    'email'       => $firstItem['user']['email'],
+                    'booking_fee' => $firstItem['user']['booking_fee'] ?? 0,
+                    'vendor_type' => $firstItem['user']['vendor_type'] ?? null,
+                ];
 
-            return [
-                'user'          => $firstItem['user'],
-                'vendor'        => $vendor,          // ← now always populated
-                'items'         => $items->toArray(),
-                'totalQuantity' => $items->sum('quantity'),
-                'totalPrice'    => $items->sum(fn($item) => $item['price'] * $item['quantity']),
-            ];
-        })
-        ->toArray();
-}
+                return [
+                    'user'          => $firstItem['user'],
+                    'vendor'        => $vendor,          // ← now always populated
+                    'items'         => $items->toArray(),
+                    'totalQuantity' => $items->sum('quantity'),
+                    'totalPrice'    => $items->sum(fn($item) => $item['price'] * $item['quantity']),
+                ];
+            })
+            ->toArray();
+    }
 
     // ── Database helpers (all unchanged) ─────────────────────────
 
