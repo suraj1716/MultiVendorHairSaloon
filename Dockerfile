@@ -11,7 +11,7 @@ FROM php:8.3-fpm AS base
 
 RUN apt-get update && apt-get install -y \
     git curl libpng-dev libonig-dev libxml2-dev libzip-dev libpq-dev \
-    zip unzip nginx supervisor \
+    zip unzip nginx supervisor gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
 RUN docker-php-ext-install pdo pdo_pgsql mbstring exif pcntl bcmath gd zip
@@ -34,13 +34,16 @@ COPY --from=frontend /app/public/build ./public/build
 RUN composer run-script post-autoload-dump --no-interaction || true
 
 # nginx + supervisor config
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/nginx.conf.template /etc/nginx/conf.d/default.conf.template
 RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/storage /var/www/html/bootstrap/cache
 
 EXPOSE 8080
 
+ENTRYPOINT ["/entrypoint.sh"]
 CMD php artisan config:cache && php artisan route:cache && supervisord -c /etc/supervisor/conf.d/supervisord.conf
