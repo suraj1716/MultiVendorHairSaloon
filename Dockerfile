@@ -46,4 +46,4 @@ RUN chown -R www-data:www-data /var/www/html \
 EXPOSE 8080
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD php artisan config:cache && php artisan route:cache && supervisord -c /etc/supervisor/conf.d/supervisord.conf
+CMD ["sh", "-c", "php artisan config:cache && php artisan route:cache && exec supervisord -c /etc/supervisor/conf.d/supervisord.conf"]
