@@ -1,4 +1,3 @@
-# docker/nginx.conf.template
 server {
     listen ${PORT};
     server_name _;
