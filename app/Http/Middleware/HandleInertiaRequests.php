@@ -7,7 +7,7 @@ use App\Http\Resources\DepartmentResource;
 use App\Models\CategoryGroup;
 use App\Models\Department;
 use App\Models\ProductGroup;
-use App\services\CartService;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;

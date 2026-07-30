@@ -12,7 +12,7 @@ use App\Models\Department;
 use App\Models\HeroBanner;
 use App\Models\Product;
 use App\Models\ProductGroup;
-use App\services\ProductSearchService;
+use App\Services\ProductSearchService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;

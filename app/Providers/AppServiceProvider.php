@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Http\Resources\AuthUserResource;
 use App\Models\Department;
-use App\services\CartService;
+use App\Services\CartService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Vite;

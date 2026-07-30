@@ -6,7 +6,7 @@ use App\Enums\RolesEnum;
 use App\Enums\VendorStatusEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\services\CartService;
+use App\Services\CartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
