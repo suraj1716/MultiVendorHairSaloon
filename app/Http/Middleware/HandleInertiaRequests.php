@@ -10,6 +10,7 @@ use App\Models\ProductGroup;
 use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Middleware;
@@ -17,62 +18,57 @@ use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    //     public function version(Request $request): ?string
-    // {
-    //     return md5_file(public_path('build/manifest.json'));
-    //     Log::info('Inertia asset version: ' . $version);
-    //     return $version;
-    // }
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
-
-
     public function share(Request $request): array
     {
-
-
-        $departments = Department::whereHas('categories', function ($query) {
-            $query->where('active', true)
-                ->whereHas('products');
-        })
-            ->with(['categories' => function ($query) {
+        $departments = Cache::remember('shared:departments', 300, function () {
+            return Department::whereHas('categories', function ($query) {
                 $query->where('active', true)
-                    ->withCount('products')  // important: load 'products_count' here!
-                    ->with('products');      // eager load products for your category too
-            }])
-            ->get()
-            ->map(function ($dept) {
-                // Sum products_count from each category, check if it exists before sum
-                $dept->productsCount = $dept->categories->sum('products_count') ?? 0;
-                return $dept;
+                    ->whereHas('products');
+            })
+                ->with(['categories' => function ($query) {
+                    $query->where('active', true)
+                        ->withCount('products')
+                        ->with('products');
+                }])
+                ->get()
+                ->map(function ($dept) {
+                    $dept->productsCount = $dept->categories->sum('products_count') ?? 0;
+                    return $dept;
+                });
+        });
+
+        $dpts = Cache::remember('shared:dpts', 300, function () {
+            return Department::whereHas('categories.products')
+                ->withCount(['products as products_count'])
+                ->get(['id', 'name', 'slug']);
+        });
+
+        $categoryGroups = Cache::remember('shared:categoryGroups', 300, function () {
+            return CategoryGroup::with(['categories.department'])
+                ->where('active', true)
+                ->get()
+                ->map(function ($group) {
+                    $group->image_url;
+                    return $group;
+                });
+        });
+
+        $productGroups = Cache::remember('shared:productGroups', 300, function () {
+            return ProductGroup::all()->map(function ($group) {
+                return [
+                    'id' => $group->id,
+                    'name' => $group->name,
+                    'slug' => $group->slug,
+                ];
             });
-
-
-
-
-
-        $dpts = Department::whereHas('categories.products')
-            ->withCount(['products as products_count'])
-            ->get(['id', 'name', 'slug']);
-
+        });
 
         $cartService = app(CartService::class);
         $totalQuantity = $cartService->getTotalQuantity();
@@ -102,7 +98,7 @@ class HandleInertiaRequests extends Middleware
                     'name' => $dept->name,
                     'slug' => $dept->slug,
                     'image' => $dept->image,
-                    'productsCount' => $dept->categories->sum('products_count'), //
+                    'productsCount' => $dept->categories->sum('products_count'),
                     'categories' => $dept->categories->map(function ($cat) {
                         return [
                             'id' => $cat->id,
@@ -118,21 +114,8 @@ class HandleInertiaRequests extends Middleware
                 ];
             }),
 
-
-            'categoryGroups' => CategoryGroup::with(['categories.department'])
-                ->where('active', true)
-                ->get()
-                ->map(function ($group) {
-                    $group->image_url;
-                    return $group;
-                }),
-            'productGroups' => ProductGroup::all()->map(function ($group) {
-                return [
-                    'id' => $group->id,
-                    'name' => $group->name,
-                    'slug' => $group->slug,
-                ];
-            }),
+            'categoryGroups' => $categoryGroups,
+            'productGroups' => $productGroups,
 
             'dpts' => $dpts->map(function ($department) {
                 return [
@@ -145,15 +128,15 @@ class HandleInertiaRequests extends Middleware
                 ];
             }),
 
-
-            'adminCounts' => function () {
-                $counts = [
+            'adminCounts' => function () use ($request) {
+                if (!$request->user() || !$request->user()->can('access-admin')) {
+                    return null;
+                }
+                return [
                     'contacts' => \App\Models\Contact::where('is_read', false)->count(),
                     'orders'   => \App\Models\Order::where('is_read', false)->count(),
                     'bookings' => \App\Models\Booking::where('is_read', false)->count(),
                 ];
-                \Illuminate\Support\Facades\Log::info('adminCounts', $counts);
-                return $counts;
             },
 
         ]);
