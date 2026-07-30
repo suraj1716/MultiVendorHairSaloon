@@ -60,7 +60,7 @@ class Handler extends ExceptionHandler
         return response()->json(['message' => $message], $status);
     }
 
-    return Inertia::render('ErrorPage', [
+    return Inertia::render('Error', [
         'statusCode' => $status,
         'message' => $message,
     ])->toResponse($request)->setStatusCode($status);

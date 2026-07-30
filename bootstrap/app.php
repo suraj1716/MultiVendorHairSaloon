@@ -68,7 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
             if ($request->wantsJson() || $request->isJson()) {
                 return response()->json(['message' => $message], $status);
             }
-            return Inertia::render('ErrorPage', [
+            return Inertia::render('Error', [
                 'statusCode' => $status,
                 'message' => $message,
             ])->toResponse($request)->setStatusCode($status);
