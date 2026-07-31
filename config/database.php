@@ -94,10 +94,7 @@ return [
     'prefix' => '',
     'prefix_indexes' => true,
     'search_path' => 'public',
-    'sslmode' => 'prefer',
-    'options' => [
-        PDO::ATTR_EMULATE_PREPARES => true,
-    ],
+    'sslmode' => 'prefer'
 ],
 
         'sqlsrv' => [
