@@ -38,6 +38,7 @@ COPY docker/nginx.conf.template /etc/nginx/conf.d/default.conf.template
 RUN rm -f /etc/nginx/sites-enabled/default
 COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
+COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
 RUN sed -i 's/\r$//' /entrypoint.sh
 RUN cat -A /entrypoint.sh
 RUN chmod +x /entrypoint.sh
