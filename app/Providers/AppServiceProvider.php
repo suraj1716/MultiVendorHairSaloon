@@ -13,6 +13,7 @@ use Inertia\Inertia;
 use Filament\Support\Components\Badge;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\URL;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -31,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
 Model::preventSilentlyDiscardingAttributes(true);
+
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
  Inertia::share('auth', function () {
         return [
             'user' => Auth::user() ? new AuthUserResource(Auth::user()) : null,
