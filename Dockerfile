@@ -40,6 +40,7 @@ COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh /entrypoint.sh
 COPY docker/php-fpm-pool.conf /usr/local/etc/php-fpm.d/zz-pool.conf
 RUN rm -f /usr/local/etc/php-fpm.d/*.conf.default /usr/local/etc/php-fpm.d/docker.conf
+COPY docker/www.conf /usr/local/etc/php-fpm.d/www.conf
 RUN sed -i 's/\r$//' /entrypoint.sh
 RUN cat -A /entrypoint.sh
 RUN chmod +x /entrypoint.sh
