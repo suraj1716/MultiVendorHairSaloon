@@ -17,7 +17,7 @@ class CategoryGroup extends Model
     }
     public function getImageUrlAttribute()
 {
-    return $this->image ? asset('storage/' . $this->image) : null;
+    return $this->image ? \Storage::disk('r2')->url($this->image) : null;
 }
 
 // public function getRouteKeyName()

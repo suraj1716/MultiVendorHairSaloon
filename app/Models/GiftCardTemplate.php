@@ -29,7 +29,7 @@ class GiftCardTemplate extends Model
     public function getImageUrl(): string
     {
         return $this->image_path
-            ? asset('storage/' . $this->image_path)
+            ? \Storage::disk('r2')->url($this->image_path)
             : asset('images/gift-card-placeholder.png');
     }
 }

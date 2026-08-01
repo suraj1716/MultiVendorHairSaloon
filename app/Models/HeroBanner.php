@@ -29,6 +29,6 @@ class HeroBanner extends Model
     $cleanPath = preg_replace('#^public/#', '', $this->image_path);
 
     // Return full URL to storage file
-    return url("storage/{$cleanPath}");
+    return \Storage::disk('r2')->url($cleanPath);
 }
 }

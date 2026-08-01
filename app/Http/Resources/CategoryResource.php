@@ -20,7 +20,7 @@ class CategoryResource extends JsonResource
             'name'  => $this->name,
             'slug'  => $this->slug, // if you have one
             'active' => $this->active, // optional
-            'image' => $this->image,
+            'image' => $this->image_url,
             // add more fields if needed
         ];
     }

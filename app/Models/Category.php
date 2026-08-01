@@ -30,6 +30,11 @@ class Category extends Model
         return $this->hasMany(Product::class, 'category_id');
     }
 
+    public function getImageUrlAttribute()
+    {
+        return $this->image ? \Storage::disk('r2')->url($this->image) : null;
+    }
+
     public function categoryGroups()
     {
         return $this->belongsToMany(CategoryGroup::class, 'category_group_category');

@@ -25,7 +25,7 @@ public function groupedProducts()
         if (!$this->image) {
             return null; // or a placeholder URL
         }
-        return asset('storage/' . $this->image);
+        return \Storage::disk('r2')->url($this->image);
     }
 
     public function getRouteKeyName()
