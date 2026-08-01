@@ -6470,7 +6470,7 @@ namespace App\Models {
      * @property string|null $stripe_account_id
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
-     * @property string|null $token_expires_at
+     * @property \Illuminate\Support\Carbon|null $token_expires_at
      * @property string|null $google_refresh_token
      * @property string|null $google_access_token
      * @property bool $is_read

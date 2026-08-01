@@ -844,7 +844,7 @@ console.log('banners',banners)
                 gap: "1rem",
               }}
             >
-              <div>
+              <div className="mb-10">
                 <Eyebrow>What We Offer</Eyebrow>
                 <Title>
                   Our{" "}
@@ -854,7 +854,7 @@ console.log('banners',banners)
                     Services
                   </em>
                 </Title>
-                <Ornament center={false} />
+                <Ornament center={false}  />
               </div>
               <a
                 href={route("shop.search")}

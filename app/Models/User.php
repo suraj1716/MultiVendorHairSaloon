@@ -27,8 +27,18 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'phone'
+        'phone',
+        'google_id',
+        'avatar',
+        'given_name',
+        'family_name',
+        'locale',
+        'google_access_token',
+        'google_refresh_token',
+        'token_expires_at',
     ];
+
+
 
     /**
      * The attributes that should be hidden for serialization.
@@ -48,9 +58,10 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'token_expires_at' => 'datetime',
+    ];
     }
 
     // public function vendor():HasOne

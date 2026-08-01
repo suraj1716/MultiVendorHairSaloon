@@ -131,45 +131,47 @@ const { openLogin } = useAuthModal();
 
       <main>{children}</main>
 
-      <a
-        href="https://m.me/YOUR_PAGE_USERNAME" // 🔁 replace with your Messenger username
-        target="_blank"
-        rel="noopener noreferrer"
-        className={` xs:mb-20 lg:right
-        fixed bottom-5  md:translate-y-12  xs:left-6 z-[9999] flex items-center gap-2
-         bg-yellow-400 text-green-950 px-4 py-2 rounded-full shadow-lg
-       hover:bg-yellow-700 transition-all
-          transform duration-500 ease-in-out
-          ${
-            showScrollTop
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-0 pointer-events-none"
-          }
-      `}
-      >
-        <MessageCircle className="w-5 h-5" />
-        <span className="font-medium text-sm">Let’s Chat</span>
-      </a>
+      {/* 💬 Messenger Chat Button */}
 
-      {/* 🔼 Go To Top Button */}
+  <a href="https://m.me/YOUR_PAGE_USERNAME" // 🔁 replace with your Messenger username
+  target="_blank"
+  rel="noopener noreferrer"
+  className={`
+    fixed z-[9999] flex items-center gap-2
+    bottom-24 right-6 sm:bottom-24 lg:bottom-28
+    bg-[var(--color-accent-light)] text-green-950 px-4 py-2 rounded-full shadow-lg
+    hover:bg-[var(--color-accent-dark)] transition-all
+    transform duration-500 ease-in-out
+    ${
+      showScrollTop
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-0 pointer-events-none"
+    }
+  `}
+>
+  <MessageCircle className="w-5 h-5" />
+  <span className="font-medium text-sm">Let's Chat</span>
+</a>
 
-      <button
-        onClick={scrollToTop}
-        aria-label="Go to top"
-        className={` xs:mb-16
-          fixed bottom-8 right-6 z-[9999]
-          bg-yellow-400 text-green-950 p-3 rounded-full shadow-lg
-          hover:bg-yellow-400 transition
-          transform duration-500 ease-in-out
-          ${
-            showScrollTop
-              ? "opacity-100 scale-100"
-              : "opacity-0 scale-0 pointer-events-none"
-          }
-        `}
-      >
-        <ChevronUp className="w-5 h-5" />
-      </button>
+{/* 🔼 Go To Top Button */}
+<button
+  onClick={scrollToTop}
+  aria-label="Go to top"
+  className={`
+    fixed z-[9999]
+    bottom-6 right-6 sm:bottom-8 lg:bottom-10
+    bg-[var(--color-accent-light)] text-green-950 p-3 rounded-full shadow-lg
+    hover:bg-[var(--color-accent-dark)] transition
+    transform duration-500 ease-in-out
+    ${
+      showScrollTop
+        ? "opacity-100 scale-100"
+        : "opacity-0 scale-0 pointer-events-none"
+    }
+  `}
+>
+  <ChevronUp className="w-5 h-5" />
+</button>
 
       <Footer />
     </div>

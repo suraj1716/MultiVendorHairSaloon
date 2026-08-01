@@ -1083,7 +1083,7 @@ export default function Navbar() {
               alignItems: "center",
               justifyContent: "space-between",
               height: 76,
-              gap: 16,
+              gap: 32,
             }}
             className="lg:!px-10"
           >
@@ -1095,6 +1095,7 @@ export default function Navbar() {
                 display: "flex",
                 alignItems: "center",
                 flexShrink: 0,
+                 marginLeft: -10,
               }}
             >
               <img
@@ -1116,6 +1117,7 @@ export default function Navbar() {
                 gap: 32,
                 flexShrink: 0,
                 margin: "0 auto",
+
               }}
             >
               <NavLink
@@ -1163,6 +1165,7 @@ export default function Navbar() {
                 alignItems: "center",
                 gap: 6,
                 flexShrink: 0,
+
               }}
             >
               <button
@@ -1362,9 +1365,9 @@ export default function Navbar() {
               {/* Hamburger — mobile only */}
               <button
                 onClick={() => setMobileOpen(true)}
-                style={{ ...iconBtnStyle, display: undefined }}
+                style={{ ...iconBtnStyle, display: undefined,  marginRight:-6 }}
                 aria-label="Open menu"
-                className="lg:hidden flex items-center justify-center"
+                className="lg:hidden flex items-center justify-center  "
               >
                 <Bars3Icon className="size-5" />
               </button>

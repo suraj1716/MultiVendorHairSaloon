@@ -289,37 +289,43 @@ public function home(Request $request)
     public function search(Request $request)
     {
         // ── All products for accordion (no pagination) ────────────────
-        $allProducts = Product::forWebsite()
-            ->with([
-                'department',
-                'category',
-                'user.vendor',
-                'variationTypes.options',  // ← add
-                'variations',              // ← add
-                'media',                   // ← add
+        // This doesn't depend on the logged-in user or query filters, so
+        // it's cached — previously it re-ran a 5-relation-deep query
+        // against the entire catalog on every single request to this page.
+        $allProducts = Cache::remember('search:allProducts', 60, function () {
+            return Product::forWebsite()
+                ->with([
+                    'department',
+                    'category',
+                    'user.vendor',
+                    'variationTypes.options',
+                    'variations',
+                    'media',
+                ])
+                ->withAvg('reviews', 'rating')
+                ->withCount('reviews')
+                ->latest()
+                ->get();
+        });
 
-            ])
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->latest()
-            ->get();  // ← no paginate
-
-        $productGroups = ProductGroup::where('active', true)
-            ->with([
-                'groupedProducts' => function ($query) {
-                    $query->withAvg('reviews', 'rating')
-                        ->withCount('reviews')
-                        ->with([
-                            'user.vendor',
-                            'department',
-                            'variationTypes.options.media',
-                            'variations',
-                            'media',
-                            'reviews.user'
-                        ]);
-                }
-            ])
-            ->get();
+        $productGroups = Cache::remember('search:productGroups', 60, function () {
+            return ProductGroup::where('active', true)
+                ->with([
+                    'groupedProducts' => function ($query) {
+                        $query->withAvg('reviews', 'rating')
+                            ->withCount('reviews')
+                            ->with([
+                                'user.vendor',
+                                'department',
+                                'variationTypes.options.media',
+                                'variations',
+                                'media',
+                                'reviews.user'
+                            ]);
+                    }
+                ])
+                ->get();
+        });
 
         $productGroupsResource = ProductGroupResource::collection($productGroups);
         $productGroupsArray = $productGroupsResource->toArray($request);
