@@ -44,7 +44,7 @@ public function home(Request $request)
     });
 
     $productGroups = Cache::remember('home:productGroups:full', 60, function () {
-        return ProductGroup::where('active', 1)
+        return ProductGroup::where('active', true)
             ->with([
                 'groupedProducts' => function ($query) {
                     $query->where('status', 'published')
@@ -204,7 +204,7 @@ public function home(Request $request)
         $pagedProducts = $productsQuery->paginate(12);
 
         // 2. Fetch active product groups with their grouped products for this department + filters
-        $productGroups = ProductGroup::where('active', 1)
+        $productGroups = ProductGroup::where('active', true)
             ->with([
                 'groupedProducts' => function ($query) use ($department, $categoryId, $maxPrice, $keyword) {
                     $query->whereHas('category', function ($q) use ($department) {
@@ -304,7 +304,7 @@ public function home(Request $request)
             ->latest()
             ->get();  // ← no paginate
 
-        $productGroups = ProductGroup::where('active', 1)
+        $productGroups = ProductGroup::where('active', true)
             ->with([
                 'groupedProducts' => function ($query) {
                     $query->withAvg('reviews', 'rating')
