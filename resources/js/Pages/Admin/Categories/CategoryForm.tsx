@@ -22,13 +22,13 @@ interface CategoryFormData {
   _remove_image: boolean;
 }
 interface Category {
+  image_url: string | (() => string | null) | null;
   id: number;
   name: string;
   description: string | null;
   parent_id: number | null;
   department_id: number | null;
   active: boolean | number; // PHP returns 0/1
-  image: string | null;
 }
 interface Props {
   category?: Category;
@@ -114,7 +114,7 @@ export default function CategoryForm({ category, departments, parentCategories, 
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(
-    category?.image ? `/storage/${category.image}` : null
+    category?.image_url ? category.image_url : null
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -131,7 +131,7 @@ export default function CategoryForm({ category, departments, parentCategories, 
       reader.onload = (ev) => setImagePreview(ev.target?.result as string);
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(category?.image ? `/storage/${category.image}` : null);
+      setImagePreview(category?.image_url ? 	category.image_url : null);
     }
   };
 

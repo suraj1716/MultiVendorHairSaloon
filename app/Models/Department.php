@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Storage;
 
 
 class Department extends Model
 {
-
+protected $appends = ['image_url'];
     protected $fillable = [
         'name',
         'slug',
@@ -18,6 +19,12 @@ class Department extends Model
         'image',  // add this
         // other fields...
     ];
+
+public function getImageUrlAttribute()
+{
+    return $this->image ? Storage::disk('r2')->url($this->image) : null;
+}
+
     public function  categories(): HasMany
     {
         return $this->hasMany(Category::class);

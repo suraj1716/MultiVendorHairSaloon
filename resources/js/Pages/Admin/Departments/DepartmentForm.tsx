@@ -10,13 +10,13 @@ import {
 import { useAdminForm, inputClass } from "../../../Components/Admin/useAdminForm";
 
 interface Department {
+  image_url: string | (() => string | null) | null;
   id: number;
   name: string;
   slug: string;
   meta_title: string | null;
   meta_description: string | null;
   active: boolean | number;
-  image: string | null;
 }
 
 interface Props {
@@ -120,7 +120,7 @@ export default function DepartmentForm({ department, flash }: Props) {
 const page = usePage();
 
   const [imagePreview, setImagePreview] = useState<string | null>(
-    department?.image ? `/storage/${department.image}` : null
+    department?.image_url ?	department.image_url : null
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -133,7 +133,7 @@ const page = usePage();
       reader.onload = (ev) => setImagePreview(ev.target?.result as string);
       reader.readAsDataURL(file);
     } else {
-      setImagePreview(department?.image ? `/storage/${department.image}` : null);
+      setImagePreview(department?.image_url ? 	department.image_url : null);
     }
   };
 

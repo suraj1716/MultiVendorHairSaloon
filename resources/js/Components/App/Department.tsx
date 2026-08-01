@@ -57,8 +57,8 @@ function Department() {
   .map((department) => {
 
     const isActive = route().current("product.byDepartment", department.slug);
-    const imageUrl = department.image
-      ? `/storage/${department.image}`
+    const imageUrl = department.image_url
+      ? 	department.image_url
       : "/images/department-placeholder.png";
 
     return (

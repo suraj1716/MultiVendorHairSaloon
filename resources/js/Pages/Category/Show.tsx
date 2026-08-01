@@ -63,7 +63,7 @@ export default function Show({
         <aside className="w-full lg:w-1/4 bg-white xs:h-auto h-[500px] lg:sticky top-4 self-start">
           {randomActiveGroup && (
             <img
-              src={`/storage/${randomActiveGroup.image}`}
+              src={randomActiveGroup.image_url}
               alt={randomActiveGroup.name}
               className="w-full h-full object-cover"
             />
@@ -99,7 +99,7 @@ export default function Show({
                     className="flex flex-col items-center"
                   >
                     <img
-                      src={`/storage/${randomGroup.image}`}
+                      src={randomGroup.image_url}
                       alt={randomGroup.name}
                       className="h-[450px] w-full object-cover rounded"
                     />

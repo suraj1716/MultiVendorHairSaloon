@@ -42,7 +42,7 @@ return (
 <div className="block lg:hidden w-full my-6">
   {Array.isArray(productGroup?.images) && productGroup.images.length > 2 && (
     <img
-      src={`/storage/${productGroup.images[2]}`}
+      src={productGroup.images_urls[2]}
       alt={productGroup.name}
       className="w-full h-auto object-cover rounded-md shadow-md"
     />
@@ -55,7 +55,7 @@ return (
       <aside className="hidden lg:flex sticky top-5 w-full lg:w-1/5 bg-white items-center justify-center rounded-md shadow-md overflow-hidden">
         {Array.isArray(productGroup?.images) && productGroup.images.length > 2 && (
           <img
-            src={`/storage/${productGroup.images[1]}`}
+            src={productGroup.images_urls[1]}
             alt={productGroup.name}
             className="w-full h-full object-cover"
           />

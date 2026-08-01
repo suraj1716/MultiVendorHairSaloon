@@ -118,9 +118,9 @@ export default function CategoriesIndex({ categories, departments, filters, flas
                   flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  {cat.image ? (
+                  {cat.image_url ? (
                     <img
-                      src={`/storage/${cat.image}`}
+                      src={`/storage/${cat.image_url}`}
                       alt={cat.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />

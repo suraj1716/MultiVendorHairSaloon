@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class HeroBanner extends Model
 {
     use HasFactory;
-
+protected $appends = ['image_url'];
     protected $fillable = [
         'title',
         'subtitle',
@@ -29,6 +30,6 @@ class HeroBanner extends Model
     $cleanPath = preg_replace('#^public/#', '', $this->image_path);
 
     // Return full URL to storage file
-    return \Storage::disk('r2')->url($cleanPath);
+    return Storage::disk('r2')->url($cleanPath);
 }
 }

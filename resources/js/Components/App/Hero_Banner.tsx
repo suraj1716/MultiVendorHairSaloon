@@ -7,10 +7,10 @@ import { Link } from "@inertiajs/react";
    Types
 ───────────────────────────────────────────── */
 interface Banner {
+  image_url: string | null;
   id: number;
   title: string;
   subtitle: string;
-    image_path: string;
   button_text: string;
   button_link: string;
   is_active: boolean;
@@ -79,7 +79,7 @@ function Slide({
     >
       {/* background image */}
       <img
-        src={`/storage/${banner.image_path}`}
+        src={banner.image_url ?? '/images/placeholder-category.jpg'}
         alt={banner.title}
         style={{
           position: "absolute",

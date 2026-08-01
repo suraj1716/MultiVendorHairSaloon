@@ -17,6 +17,7 @@ import {
 } from "../../../Components/Admin/AdminComponents";
 
 interface Department {
+  image_url: string | undefined;
   id: number;
   name: string;
   slug: string;
@@ -99,7 +100,7 @@ export default function DepartmentsIndex({ departments, filters, flash }: Props)
                 }}>
                   {dept.image ? (
                     <img
-                      src={`/storage/${dept.image}`}
+                      src={dept.image_url}
                       alt={dept.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />

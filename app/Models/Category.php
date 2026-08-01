@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Support\Facades\Storage;
 
 class Category extends Model
 {
+    protected $appends = ['image_url'];
     protected $fillable = [
         'name',
          'description',
@@ -32,7 +33,7 @@ class Category extends Model
 
     public function getImageUrlAttribute()
     {
-        return $this->image ? \Storage::disk('r2')->url($this->image) : null;
+        return $this->image ? Storage::disk('r2')->url($this->image) : null;
     }
 
     public function categoryGroups()

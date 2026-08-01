@@ -183,9 +183,9 @@ export default function Home({
       const results: Record<number, string> = {};
       for (const group of productGroups) {
         if (!group?.images?.length) continue;
-        for (const image of group.images) {
+        for (const image of 	group.images_urls ?? group.images  ) {
           const img = new Image();
-          img.src = `/storage/${image}`;
+          img.src = image;
           await new Promise((resolve) => {
             img.onload = () => {
               if (img.naturalWidth > img.naturalHeight && !results[group.id]) {
@@ -443,8 +443,8 @@ export default function Home({
                 style={{ marginBottom: "2rem" }}
               >
                 <div className="split-intro-mosaic-mobile-main">
-                  {categories[2]?.image && (
-                    <img src={`/storage/${categories[2].image}`} alt="" />
+                  {categories[2]?.image_url && (
+                    <img src={categories[2].image_url} alt="" />
                   )}
                   <div
                     style={{
@@ -480,9 +480,9 @@ export default function Home({
                     </div>
                   </div>
                 </div>
-                {categories[4]?.image && (
+                {categories[4]?.image_url && (
                   <div className="split-intro-mosaic-mobile-inset">
-                    <img src={`/storage/${categories[4].image}`} alt="" />
+                    <img src={categories[4].image_url} alt="" />
                   </div>
                 )}
               </div>
@@ -603,9 +603,9 @@ export default function Home({
                     overflow: "hidden",
                   }}
                 >
-                  {categories[2]?.image && (
+                  {categories[2]?.image_url && (
                     <img
-                      src={`/storage/${categories[2].image}`}
+                      src={categories[2].image_url}
                       alt=""
                       style={{
                         width: "100%",
@@ -637,9 +637,9 @@ export default function Home({
                     boxShadow: "0 24px 60px rgba(0,0,0,0.18)",
                   }}
                 >
-                  {categories[4]?.image && (
+                  {categories[4]?.image_url && (
                     <img
-                      src={`/storage/${categories[4].image}`}
+                      src={categories[4].image_url}
                       alt=""
                       style={{
                         width: "100%",
@@ -891,7 +891,7 @@ export default function Home({
              {categories.slice(0, 9).map((cat, idx) => (
   <BentoTile
     key={cat.id}
-    image={`/storage/${cat.image}`}
+      image={cat.image_url ?? '/images/placeholder-category.jpg'}
     title={cat.name}
     subtitle={`${cat.products_count} treatments`}
     size={idx === 0 || idx === 5 ? "hero" : "normal"}
@@ -908,7 +908,7 @@ export default function Home({
   {categories.slice(0, 6).map((cat, idx) => (
     <BentoTile
       key={cat.id}
-      image={`/storage/${cat.image}`}
+        image={cat.image_url ?? '/images/placeholder-category.jpg'}
       title={cat.name}
       subtitle={`${cat.products_count} treatments`}
       onOpen={() => setActiveCategory(cat)}
@@ -954,8 +954,8 @@ export default function Home({
               >
                 <img
                   src={
-                    activeCategory.image
-                      ? `/storage/${activeCategory.image}`
+                    activeCategory.image_url
+                      ? activeCategory.image_url
                       : "/images/placeholder.png"
                   }
                   alt={activeCategory.name}

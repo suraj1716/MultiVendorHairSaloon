@@ -60,9 +60,9 @@ export type HeroBannerProps = {
 };
 
 export type CategoryGroup = {
+  image_url: string | null;
   id: number;
   name: string;
-  image: string | null;
   active: boolean;
   categories: (Category & { department: Department })[];
 };
@@ -129,6 +129,7 @@ export type Product = {
 };
 
 export type ProductGroup = {
+  images_urls: string[];
   id: number;
   name: string;
   images: string[];
@@ -296,18 +297,19 @@ export type Vendor = {
 };
 
 export type Category = {
+
   id: number;
   name: string;
   products: Product[];
   products_count: number;
-  image?: string;
+  image_url: string | null;
   department: Department; // <---- important
 };
 
 export type Department = {
+  image_url: string;
   id: number;
   name: string;
-  image: string;
   slug: string;
   meta_title: string;
   meta_description: string;
