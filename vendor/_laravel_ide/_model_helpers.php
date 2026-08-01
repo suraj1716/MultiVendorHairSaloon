@@ -681,6 +681,7 @@ namespace App\Models {
      * @property string|null $description
      * @property string $name
      * @property int $id
+     * @property-read mixed $image_url
      * @property-read \App\Models\Category $parent
      * @property-read \App\Models\Department $department
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
@@ -1636,6 +1637,7 @@ namespace App\Models {
      * @property string $slug
      * @property string $name
      * @property int $id
+     * @property-read mixed $image_url
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> $categories
      * @property-read int|null $categories_count
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
@@ -4547,6 +4549,7 @@ namespace App\Models {
      * @property string $slug
      * @property string $name
      * @property int $id
+     * @property-read mixed $images_urls
      * @property-read mixed $image_url
      * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
      * @property-read int|null $products_count

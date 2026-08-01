@@ -15,7 +15,7 @@ class GalleryController extends Controller
         $galleries = Gallery::withCount('media')
             ->orderByDesc('created_at')
             ->get()
-            ->map(fn ($g) => [
+            ->map(fn($g) => [
                 'id'          => $g->id,
                 'title'       => $g->title,
                 'active'      => (bool) $g->active,
@@ -36,19 +36,23 @@ class GalleryController extends Controller
 
     public function store(Request $request)
     {
-       $validated = $request->validate([
-        'title' => ['required', 'string', 'max:255'],
-        'active' => ['required', 'boolean'],
-        'images' => ['required', 'array', 'min:1'],
-        'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-    ]);
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'active' => ['required', 'boolean'],
+            'images' => ['required', 'array', 'min:1'],
+            'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
 
         $gallery = Gallery::create($validated);
 
         // Handle uploaded images (base64 or temp paths via Spatie)
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
+                $hash = hash_file('sha256', $file->getRealPath());
+                $extension = $file->getClientOriginalExtension();
+
                 $gallery->addMedia($file)
+                    ->usingFileName("{$hash}.{$extension}")
                     ->withResponsiveImages()
                     ->toMediaCollection('gallery');
             }
@@ -58,37 +62,37 @@ class GalleryController extends Controller
             ->with('success', 'Gallery created successfully.');
     }
 
-public function show(Gallery $gallery): Response
-{
-    $images = $gallery->getMedia('gallery')->map(fn ($m) => [
-        'id'    => $m->id,
-        'url'   => $m->getUrl(),
-        'thumb' => $m->hasGeneratedConversion('thumb') ? $m->getUrl('thumb') : $m->getUrl(),
-        'name'  => $m->file_name,
-        'size'  => number_format($m->size / 1024, 1) . ' KB',
-        'order' => $m->order_column,
-    ]);
+    public function show(Gallery $gallery): Response
+    {
+        $images = $gallery->getMedia('gallery')->map(fn($m) => [
+            'id'    => $m->id,
+            'url'   => $m->getUrl(),
+            'thumb' => $m->hasGeneratedConversion('thumb') ? $m->getUrl('thumb') : $m->getUrl(),
+            'name'  => $m->file_name,
+            'size'  => number_format($m->size / 1024, 1) . ' KB',
+            'order' => $m->order_column,
+        ]);
 
-    // ← missing return here
-    return  Inertia::render('Admin/Gallery/Show', [
-        'gallery' => [
-            'id'     => $gallery->id,
-            'title'  => $gallery->title,
-            'active' => (bool) $gallery->active,
-            'images' => $images,
-        ],
-    ]);
-}
+        // ← missing return here
+        return  Inertia::render('Admin/Gallery/Show', [
+            'gallery' => [
+                'id'     => $gallery->id,
+                'title'  => $gallery->title,
+                'active' => (bool) $gallery->active,
+                'images' => $images,
+            ],
+        ]);
+    }
 
     public function edit(Gallery $gallery): Response
     {
-       $images = $gallery->getMedia('gallery')->map(fn ($m) => [
-        'id'    => $m->id,
-        'url'   => $m->getUrl(),
-        'thumb' => $m->hasGeneratedConversion('thumb') ? $m->getUrl('thumb') : $m->getUrl(),
-        'name'  => $m->file_name,
-        'order' => $m->order_column,
-    ]);
+        $images = $gallery->getMedia('gallery')->map(fn($m) => [
+            'id'    => $m->id,
+            'url'   => $m->getUrl(),
+            'thumb' => $m->hasGeneratedConversion('thumb') ? $m->getUrl('thumb') : $m->getUrl(),
+            'name'  => $m->file_name,
+            'order' => $m->order_column,
+        ]);
 
         return Inertia::render('Admin/Gallery/Edit', [
             'gallery' => [
@@ -111,7 +115,11 @@ public function show(Gallery $gallery): Response
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
+                $hash = hash_file('sha256', $file->getRealPath());
+                $extension = $file->getClientOriginalExtension();
+
                 $gallery->addMedia($file)
+                    ->usingFileName("{$hash}.{$extension}")
                     ->withResponsiveImages()
                     ->toMediaCollection('gallery');
             }

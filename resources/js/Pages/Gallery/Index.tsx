@@ -230,11 +230,12 @@ function GallerySection({
     </div>
   );
 }
-
 /* ─────────────────────────────────────────────
    Page
 ───────────────────────────────────────────── */
 export default function Gallery({ galleryItems }: Props) {
+console.log("gallery",galleryItems)
+
   return (
     <>
 

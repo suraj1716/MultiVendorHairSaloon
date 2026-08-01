@@ -91,7 +91,7 @@ function HighlightBadge({ value }: { value: string }) {
 export default function Index({ products, departments, filters, flash }: Props) {
   const { props } = usePage();
   const pageFlash = flash ?? (props as any).flash ?? {};
-
+console.log('products',products)
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const handleDelete = () => {

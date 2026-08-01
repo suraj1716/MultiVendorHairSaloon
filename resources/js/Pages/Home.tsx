@@ -52,6 +52,7 @@ interface HeroBannerProps {
   title: string;
   subtitle: string;
   image_path: string;
+  image_url: string | null;
   button_text?: string;
   button_link?: string;
   is_active: boolean;
@@ -247,6 +248,9 @@ export default function Home({
     );
     return () => clearInterval(t);
   }, []);
+
+
+console.log('banners',banners)
 
   return (
     <div

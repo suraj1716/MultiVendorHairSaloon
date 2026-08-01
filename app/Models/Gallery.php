@@ -30,6 +30,6 @@ public function registerMediaConversions(?Media $media = null): void
 public function registerMediaCollections(): void
 {
     $this->addMediaCollection('gallery')
-        ->useDisk('public');
+        ->useDisk('r2');
 }
 }

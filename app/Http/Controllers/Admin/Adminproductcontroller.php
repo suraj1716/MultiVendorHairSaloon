@@ -201,9 +201,13 @@ class AdminProductController extends Controller
         ]);
 
         foreach ($request->file('images') as $file) {
-            $product->addMedia($file)
-                ->toMediaCollection('images');
-        }
+    $hash = hash_file('sha256', $file->getRealPath());
+    $extension = $file->getClientOriginalExtension();
+
+    $product->addMedia($file)
+        ->usingFileName("{$hash}.{$extension}")
+        ->toMediaCollection('images');
+}
 
         return back()->with('success', 'Images uploaded.');
     }
