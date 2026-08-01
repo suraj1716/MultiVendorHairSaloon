@@ -23,6 +23,7 @@ interface Department {
 }
 
 interface Category {
+  image_url: any;
   id: number;
   name: string;
   description: string | null;
@@ -120,7 +121,7 @@ export default function CategoriesIndex({ categories, departments, filters, flas
                 }}>
                   {cat.image_url ? (
                     <img
-                      src={`/storage/${cat.image_url}`}
+                      src={cat.image_url}
                       alt={cat.name}
                       style={{ width: "100%", height: "100%", objectFit: "cover" }}
                     />
