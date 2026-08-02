@@ -98,17 +98,17 @@ public function home(Request $request)
 
     public function show(Product $product)
     {
-        // Load relations and reviews with user info
-        $product = Product::with([
+        // Was re-querying from scratch here even though $product is already
+        // resolved via route-model binding. ->load() reuses that instance.
+        $product->load([
             'variationTypes.options',
             'variations',
             'category',
-            'user',
             'user:id,name,created_at',
-            'reviews.user:id,name'  // load reviews with the user who wrote them
-        ])->withCount('reviews')
-            ->withAvg('reviews', 'rating')
-            ->find($product->id);
+            'reviews.user:id,name'
+        ]);
+        $product->loadCount('reviews');
+        $product->loadAvg('reviews', 'rating');
 
         $relatedInCategoryCount = Product::where('category_id', $product->category_id)
             ->where('id', '!=', $product->id)
@@ -187,6 +187,8 @@ public function home(Request $request)
                 $maxPrice
             )
             ->with(['category', 'department', 'user.vendor', 'variationTypes.options.media', 'variations', 'media', 'reviews.user'])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->when($keyword, fn($q) => $q->where('title', 'like', "%{$keyword}%"))
             ->when($sortBy, function ($q) use ($sortBy) {
                 switch ($sortBy) {
@@ -298,9 +300,10 @@ public function home(Request $request)
                     'department',
                     'category',
                     'user.vendor',
-                    'variationTypes.options',
+                    'variationTypes.options.media',
                     'variations',
                     'media',
+                    'reviews.user',
                 ])
                 ->withAvg('reviews', 'rating')
                 ->withCount('reviews')
@@ -358,7 +361,15 @@ public function home(Request $request)
         if ($keyword) {
             $searchedProduct = Product::query()
                 ->forWebsite()
-                ->with(['user.vendor', 'department', 'category'])
+                ->with([
+                    'user.vendor',
+                    'department',
+                    'category',
+                    'variationTypes.options.media',
+                    'variations',
+                    'media',
+                    'reviews.user',
+                ])
                 ->withAvg('reviews', 'rating')
                 ->withCount('reviews')
                 ->where('title', 'LIKE', "%{$keyword}%")
@@ -406,19 +417,23 @@ public function home(Request $request)
 
     public function showProductGroup(ProductGroup $productGroup)
     {
-        // Eager load only published products and their relations
-        $productGroup->load([
-            'products' => function ($query) {
-                $query->where('status', 'published');
-            },
-            'products.user',
-            'products.department',
-            'products.options',
-        ]);
-
-        // Get only published products (paginated)
+        // Paginated products with every relation ProductListResource needs —
+        // previously this query had zero eager loading at all, so every
+        // field (media, reviews, category, department, vendor, variations)
+        // triggered a fresh query per product on the page.
         $products = $productGroup->products()
             ->where('status', 'published')
+            ->with([
+                'category',
+                'department',
+                'user.vendor',
+                'variationTypes.options.media',
+                'variations',
+                'media',
+                'reviews.user',
+            ])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
             ->latest()
             ->paginate(12);
 

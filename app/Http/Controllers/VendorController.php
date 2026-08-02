@@ -45,7 +45,17 @@ class VendorController extends Controller
         $productsQuery = Product::query()
             ->filterApproved($departmentId, $categoryId, $maxPrice)
             ->where('created_by', $vendor->user_id)
-            ->with(['department', 'category']);
+            ->with([
+                'department',
+                'category',
+                'user.vendor',
+                'variationTypes.options.media',
+                'variations',
+                'media',
+                'reviews.user',
+            ])
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews');
 
         // Apply sorting
         if ($sortBy) {

@@ -14,14 +14,24 @@ class CategoryController extends Controller
 
   public function show(Category $category)
 {
-    $category->load(['department', 'products.user', 'products.department', 'products.options']);
+    $category->load('department');
 
-  $products = Product::with(['user', 'department', 'options'])
-    ->where('category_id', $category->id)
-    ->distinct('id')       // Ensure distinct product IDs at DB level
-    ->get()
-    ->unique('id')        // Extra safety on collection level
-    ->values();
+    $products = Product::query()
+        ->where('category_id', $category->id)
+        ->filterApproved()
+        ->with([
+            'department',
+            'user.vendor',
+            'variationTypes.options.media',
+            'variations',
+            'media',
+            'reviews.user',
+        ])
+        ->withAvg('reviews', 'rating')
+        ->withCount('reviews')
+        ->latest()
+        ->paginate(12)
+        ->withQueryString();
 
     $groups = CategoryGroup::with([
         'categories' => function ($query) {
