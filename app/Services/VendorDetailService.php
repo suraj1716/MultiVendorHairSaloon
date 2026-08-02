@@ -1,18 +1,20 @@
 <?php
+
 namespace App\Services;
 
-use App\Http\Resources\VendorUserResource;
 use App\Models\User;
-use App\Models\Vendor;
-
+use Illuminate\Support\Facades\Cache;
 
 class VendorDetailService
 {
-
- public function getVendorDetails()
+    public function getVendorDetails()
     {
-         return User::with('vendor')
-            ->whereHas('vendor')
-            ->first();
+        return Cache::remember('vendor-details', now()->addHours(6), function () {
+            return User::whereHas('vendor', function ($query) {
+                $query->where('status', 'approved');
+            })
+                ->with('vendor')
+                ->first();
+        });
     }
 }

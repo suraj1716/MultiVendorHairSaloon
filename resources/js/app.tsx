@@ -37,6 +37,16 @@ createInertiaApp({
       `./Pages/${name}.tsx`,
       import.meta.glob("./Pages/**/*.tsx")
     ),
+
+  // Previously missing entirely, which is why the default Inertia bar
+  // (blue, 250ms delay, spinner on) was showing on every navigation.
+progress: {
+  color: "var(--color-primary)",
+  showSpinner: false,
+  delay: 350,
+  includeCSS: true,
+},
+
   setup({ el, App, props }) {
     if (import.meta.env.SSR) {
       hydrateRoot(el,

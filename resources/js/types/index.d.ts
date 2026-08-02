@@ -1,6 +1,9 @@
 import { JSX } from "react/jsx-runtime";
 import { Config } from "ziggy-js";
 
+
+
+
 export interface Vendor {
   user_id: number;
   id: number;
@@ -20,7 +23,6 @@ export interface Vendor {
   closed_dates: string[]; // example: ['2025-06-01', '2025-06-05']
     facebook_url: string;
     youtube_url: string;
-
   instagram_url: string;
   tiktok_url: string;
 }

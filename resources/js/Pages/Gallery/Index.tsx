@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import PageHero from "@/Components/Page/PageHero";
 import IconButton from "@/Components/App/ui/IconButton";
 import BentoTile from "@/Components/App/ui/BentoTile";
+import { InertiaPage } from "@/types/InertiaPage";
 
 interface GalleryImage {
   id: number;
@@ -233,36 +234,52 @@ function GallerySection({
 /* ─────────────────────────────────────────────
    Page
 ───────────────────────────────────────────── */
-export default function Gallery({ galleryItems }: Props) {
-console.log("gallery",galleryItems)
 
+
+interface GalleryImage {
+  id: number;
+  url: string;
+}
+
+interface GalleryItem {
+  id: number;
+  title: string;
+  images: GalleryImage[];
+}
+
+interface Props {
+  galleryItems: GalleryItem[];
+}
+
+const Gallery: InertiaPage<Props> = ({ galleryItems }) => {
   return (
     <>
-
-      <AuthenticatedLayout>
-
-           <PageHero
-                eyebrow="Our Work"
-                title={<>The Gallery <em></em></>}
-                subtitle="A curated collection of our finest work — colour transformations, precision cuts, and restorative treatments."
-                breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gallery" }]}
-              />
       <Head title="Gallery" />
-        <section style={{
+
+      <PageHero
+        eyebrow="Our Work"
+        title={<>The Gallery <em></em></>}
+        subtitle="A curated collection of our finest work — colour transformations, precision cuts, and restorative treatments."
+        breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gallery" }]}
+      />
+
+      <section
+        style={{
           width: "100%",
           paddingTop: "6rem",
           paddingBottom: "6rem",
           background: "var(--color-bg)",
           fontFamily: "var(--font-body)",
-        }}>
-
-
-          {galleryItems.map((gallery, i) => (
-            <GallerySection key={gallery.id} gallery={gallery} index={i} />
-          ))}
-
-        </section>
-      </AuthenticatedLayout>
+        }}
+      >
+        {galleryItems.map((gallery, i) => (
+          <GallerySection key={gallery.id} gallery={gallery} index={i} />
+        ))}
+      </section>
     </>
   );
-}
+};
+
+Gallery.layout = (page: React.ReactNode) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;
+
+export default Gallery;

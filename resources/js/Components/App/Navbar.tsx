@@ -11,6 +11,7 @@ import { useAuthModal } from "@/Contexts/AuthModalContext";
 import axios from "axios";
 import UserCircleIcon from "@heroicons/react/24/solid/UserCircleIcon";
 import { formatAustralianPhone } from "@/utils/PhoneFormat";
+import { useVendorDetails } from "@/hooks/useVendorData";
 
 interface Category {
   id: string;
@@ -332,13 +333,8 @@ export default function Navbar() {
   auth?.user?.roles?.includes("Vendor");
   const { url } = usePage();
   const onHomePage = url === "/" || url.startsWith("/#");
-  const [vendor, setVendor] = useState<Vendor | null>(null);
+const vendor = useVendorDetails();
 
-  useEffect(() => {
-    axios.get("/api/vendor-details").then((res) => setVendor(res.data.data));
-  }, []);
-
-  console.log(vendor?.phone);
 
   const SOCIALS = [
     {

@@ -1,15 +1,15 @@
-import React from "react";
-import { useForm, usePage } from "@inertiajs/react";
-import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
-import { PageProps } from "@/types";
-import PageHero from "@/Components/Page/PageHero";
 import Card from "@/Components/App/Card";
 import Button from "@/Components/App/ui/Button";
-import Select from "@/Components/App/ui/Select";
+import FileDropzone from "@/Components/App/ui/Filedropzone";
 import FormField from "@/Components/App/ui/Formfield";
 import RadioGroup from "@/Components/App/ui/Radiogroup";
-import FileDropzone from "@/Components/App/ui/Filedropzone";
-
+import Select from "@/Components/App/ui/Select";
+import PageHero from "@/Components/Page/PageHero";
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { PageProps } from "@/types";
+import { useForm, usePage } from "@inertiajs/react";
+import React, { useMemo } from "react";
+import { InertiaPage } from "@/types/InertiaPage";
 interface DepartmentOption {
   id: number;
   name: string;
@@ -43,28 +43,39 @@ function formatTime(time?: string) {
   return `${displayHour}:${minuteStr} ${period}`;
 }
 
-const Contact: React.FC = () => {
+const Contact: InertiaPage = () => {
   const {
     departments: rawDepartments = [],
     contactReasons,
     vendor = null,
   } = usePage<PageProps>().props;
 
-  const departments: DepartmentOption[] = rawDepartments.map((dept: any) => ({
-    id: dept.id,
-    name: dept.name,
-    slug: dept.slug,
-    categories: (dept.categories || []).map((cat: any) => ({
-      id: cat.id,
-      name: cat.name,
-      products: (cat.products || []).map((prod: any) => ({
-        id: prod.id,
-        title: prod.title,
+  // Was rebuilt on every render (i.e. every keystroke in the form below).
+  // rawDepartments only changes on a fresh page load, so memoize the
+  // transform against it — avoids re-mapping departments/categories/products
+  // on every single form field update.
+  const departments: DepartmentOption[] = useMemo(
+    () =>
+      rawDepartments.map((dept: any) => ({
+        id: dept.id,
+        name: dept.name,
+        slug: dept.slug,
+        categories: (dept.categories || []).map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          products: (cat.products || []).map((prod: any) => ({
+            id: prod.id,
+            title: prod.title,
+          })),
+        })),
       })),
-    })),
-  }));
+    [rawDepartments]
+  );
 
-  const reasonOptions = (contactReasons as { value: string; label: string }[]) || [];
+  const reasonOptions = useMemo(
+    () => (contactReasons as { value: string; label: string }[]) || [],
+    [contactReasons]
+  );
 
   const { data, setData, post, processing, errors, reset } = useForm({
     name: "",
@@ -98,14 +109,16 @@ const Contact: React.FC = () => {
     });
   };
 
-  const closedDays: number[] = (vendor?.data?.recurring_closed_days ?? []).map(
-    Number,
+  // Also recomputed on every keystroke before — cheap on its own, but
+  // memoized anyway since it only actually depends on vendor.
+  const closedDays: number[] = useMemo(
+    () => (vendor?.data?.recurring_closed_days ?? []).map(Number),
+    [vendor]
   );
 
   return (
-    <AuthenticatedLayout>
 
-  <style>{`
+  <><style>{`
         @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&display=swap');
 
 .file-upload-error {
@@ -502,6 +515,7 @@ const Contact: React.FC = () => {
           background: var(--color-surface-warm);
         }
       `}</style>
+
       <div className="contact-page">
         <PageHero
           eyebrow="We'd love to hear from you"
@@ -510,8 +524,7 @@ const Contact: React.FC = () => {
           breadcrumbs={[
             { label: "Home", href: route("home") },
             { label: "Contact" },
-          ]}
-        />
+          ]} />
 
         {/* Body */}
         <div className="contact-body">
@@ -533,8 +546,7 @@ const Contact: React.FC = () => {
                     onChange={(v) => setData("reason", v)}
                     placeholder="Select reason"
                     options={reasonOptions}
-                    required
-                  />
+                    required />
                 </FormField>
 
                 {/* Name + Email */}
@@ -546,8 +558,7 @@ const Contact: React.FC = () => {
                       value={data.name}
                       onChange={(e) => setData("name", e.target.value)}
                       placeholder="Jane Smith"
-                      required
-                    />
+                      required />
                   </FormField>
                   <FormField id="email" label="Email Address" error={errors.email} noMargin>
                     <input
@@ -556,8 +567,7 @@ const Contact: React.FC = () => {
                       value={data.email}
                       onChange={(e) => setData("email", e.target.value)}
                       placeholder="you@example.com"
-                      required
-                    />
+                      required />
                   </FormField>
                 </div>
 
@@ -569,8 +579,7 @@ const Contact: React.FC = () => {
                       type="tel"
                       value={data.phone}
                       onChange={(e) => setData("phone", e.target.value)}
-                      placeholder="+61 4XX XXX XXX"
-                    />
+                      placeholder="+61 4XX XXX XXX" />
                   </FormField>
                   <div className="form-group" style={{ marginBottom: 0 }}>
                     <label>Preferred Contact Method</label>
@@ -581,8 +590,7 @@ const Contact: React.FC = () => {
                       options={[
                         { value: "email", label: "email" },
                         { value: "phone", label: "phone" },
-                      ]}
-                    />
+                      ]} />
                   </div>
                 </div>
 
@@ -601,11 +609,10 @@ const Contact: React.FC = () => {
                           setData("department", v);
                           setData("category", "");
                           setData("product", "");
-                        }}
+                        } }
                         placeholder="Select Department"
                         options={departments.map((d) => ({ value: d.id, label: d.name }))}
-                        required
-                      />
+                        required />
                     </FormField>
 
                     {selectedDepartment && (
@@ -616,14 +623,13 @@ const Contact: React.FC = () => {
                           onChange={(v) => {
                             setData("category", v);
                             setData("product", "");
-                          }}
+                          } }
                           placeholder="Select Category"
                           options={selectedDepartment.categories.map((c) => ({
                             value: c.id,
                             label: c.name,
                           }))}
-                          required
-                        />
+                          required />
                       </FormField>
                     )}
 
@@ -639,8 +645,7 @@ const Contact: React.FC = () => {
                             label: p.title,
                           }))}
                           required
-                          style={{ color: "#1a1a1a", background: "#ffffff" }}
-                        />
+                          style={{ color: "#1a1a1a", background: "#ffffff" }} />
                       </FormField>
                     )}
 
@@ -653,8 +658,7 @@ const Contact: React.FC = () => {
                           value={data.quantity}
                           onChange={(e) => setData("quantity", e.target.value)}
                           placeholder="e.g. 50"
-                          required
-                        />
+                          required />
                       </FormField>
                       <FormField id="file-input" label="Upload File (optional)" error={errors.file} noMargin>
                         <FileDropzone
@@ -662,8 +666,7 @@ const Contact: React.FC = () => {
                           file={data.file}
                           onChange={(file) => setData("file", file)}
                           accept="image/*,application/pdf"
-                          hint="PDF, JPG, PNG"
-                        />
+                          hint="PDF, JPG, PNG" />
                       </FormField>
                     </div>
                   </>
@@ -681,8 +684,7 @@ const Contact: React.FC = () => {
                     value={data.message}
                     onChange={(e) => setData("message", e.target.value)}
                     placeholder="Tell us how we can help..."
-                    required
-                  />
+                    required />
                 </FormField>
 
                 <Button
@@ -777,25 +779,25 @@ const Contact: React.FC = () => {
 
               {/* Map */}
               <div className="map-card">
-               <iframe
-  title="Location"
-  width="100%"
-  height="400"
-  style={{ border: 0 }}
-  loading="lazy"
-  allowFullScreen
-  referrerPolicy="no-referrer-when-downgrade"
-  src={`https://www.google.com/maps?q=${encodeURIComponent(
-    vendor?.data?.store_address ?? ""
-  )}&output=embed`}
-/>
+                <iframe
+                  title="Location"
+                  width="100%"
+                  height="400"
+                  style={{ border: 0 }}
+                  loading="lazy"
+                  allowFullScreen
+                  referrerPolicy="no-referrer-when-downgrade"
+                  src={`https://www.google.com/maps?q=${encodeURIComponent(
+                    vendor?.data?.store_address ?? ""
+                  )}&output=embed`} />
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </AuthenticatedLayout>
+      </div></>
   );
 };
+
+Contact.layout = (page) => <AuthenticatedLayout>{page}</AuthenticatedLayout>;
 
 export default Contact;

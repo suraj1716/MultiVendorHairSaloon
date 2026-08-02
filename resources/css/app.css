@@ -154,6 +154,16 @@
 }
 */
 
+
+#nprogress .bar {
+  background: linear-gradient(90deg, var(--color-primary), var(--color-gold)) !important;
+  height: 2px !important;
+}
+#nprogress .peg {
+  box-shadow: 0 0 10px var(--color-gold), 0 0 5px var(--color-gold) !important;
+}
+
+
 /* ============================================================
    BASE RESET & GLOBALS
    ============================================================ */

@@ -179,29 +179,29 @@ export default function Home({
   const [statsVisible, setStatsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-  useEffect(() => {
-    const loadImages = async () => {
-      const results: Record<number, string> = {};
-      for (const group of productGroups) {
-        if (!group?.images?.length) continue;
-        for (const image of 	group.images_urls ?? group.images  ) {
-          const img = new Image();
-          img.src = image;
-          await new Promise((resolve) => {
-            img.onload = () => {
-              if (img.naturalWidth > img.naturalHeight && !results[group.id]) {
-                results[group.id] = image;
-              }
-              resolve(true);
-            };
-          });
-          if (results[group.id]) break;
-        }
-      }
-      setLandscapeImages(results);
-    };
-    loadImages();
-  }, [productGroups]);
+  // useEffect(() => {
+  //   const loadImages = async () => {
+  //     const results: Record<number, string> = {};
+  //     for (const group of productGroups) {
+  //       if (!group?.images?.length) continue;
+  //       for (const image of 	group.images_urls ?? group.images  ) {
+  //         const img = new Image();
+  //         img.src = image;
+  //         await new Promise((resolve) => {
+  //           img.onload = () => {
+  //             if (img.naturalWidth > img.naturalHeight && !results[group.id]) {
+  //               results[group.id] = image;
+  //             }
+  //             resolve(true);
+  //           };
+  //         });
+  //         if (results[group.id]) break;
+  //       }
+  //     }
+  //     setLandscapeImages(results);
+  //   };
+  //   loadImages();
+  // }, [productGroups]);
 
   useEffect(() => {
     AOS.init({ duration: 750, once: true, easing: "ease-out" });
@@ -217,15 +217,15 @@ export default function Home({
         ?.scrollIntoView({ behavior: "smooth" });
   }, [url]);
 
-  useEffect(() => {
-    const id = new URLSearchParams(window.location.search).get(
-      "scrollToProductId",
-    );
-    if (id)
-      document
-        .getElementById(`product-group-${id}`)
-        ?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  // useEffect(() => {
+  //   const id = new URLSearchParams(window.location.search).get(
+  //     "scrollToProductId",
+  //   );
+  //   if (id)
+  //     document
+  //       .getElementById(`product-group-${id}`)
+  //       ?.scrollIntoView({ behavior: "smooth" });
+  // }, []);
 
   useEffect(() => {
     const el = document.getElementById("stats-section");
@@ -249,8 +249,7 @@ export default function Home({
     return () => clearInterval(t);
   }, []);
 
-
-console.log('banners',banners)
+  console.log("banners", banners);
 
   return (
     <div
@@ -497,7 +496,10 @@ console.log('banners',banners)
                 <Title>
                   The art of hair,{" "}
                   <em
-                    style={{ fontStyle: "italic", color: "var(--color-primary)" }}
+                    style={{
+                      fontStyle: "italic",
+                      color: "var(--color-primary)",
+                    }}
                   >
                     elevated
                   </em>
@@ -849,12 +851,15 @@ console.log('banners',banners)
                 <Title>
                   Our{" "}
                   <em
-                    style={{ fontStyle: "italic", color: "var(--color-primary)" }}
+                    style={{
+                      fontStyle: "italic",
+                      color: "var(--color-primary)",
+                    }}
                   >
                     Services
                   </em>
                 </Title>
-                <Ornament center={false}  />
+                <Ornament center={false} />
               </div>
               <a
                 href={route("shop.search")}
@@ -870,7 +875,7 @@ console.log('banners',banners)
                   gap: 6,
                   borderBottom: "1px solid var(--color-accent)",
                   paddingBottom: 2,
-                  marginBottom:50
+                  marginBottom: 50,
                 }}
               >
                 View All Services
@@ -892,35 +897,37 @@ console.log('banners',banners)
 
             {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
             <div className="services-bento-desktop">
-             {categories.slice(0, 9).map((cat, idx) => (
-  <BentoTile
-    key={cat.id}
-      image={cat.image_url ?? '/images/placeholder-category.jpg'}
-    title={cat.name}
-    subtitle={`${cat.products_count} treatments`}
-    size={idx === 0 || idx === 5 ? "hero" : "normal"}
-    footer="Explore"
-    onOpen={() => setActiveCategory(cat)}
-    index={idx}
-    style={{ gridColumn: idx === 0 || idx === 5 ? "span 2" : "span 1" }}
-  />
-))}
+              {categories.slice(0, 9).map((cat, idx) => (
+                <BentoTile
+                  key={cat.id}
+                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
+                  title={cat.name}
+                  subtitle={`${cat.products_count} treatments`}
+                  size={idx === 0 || idx === 5 ? "hero" : "normal"}
+                  footer="Explore"
+                  onOpen={() => setActiveCategory(cat)}
+                  index={idx}
+                  style={{
+                    gridColumn: idx === 0 || idx === 5 ? "span 2" : "span 1",
+                  }}
+                />
+              ))}
             </div>
 
-          {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
-<div className="services-bento-mobile">
-  {categories.slice(0, 6).map((cat, idx) => (
-    <BentoTile
-      key={cat.id}
-        image={cat.image_url ?? '/images/placeholder-category.jpg'}
-      title={cat.name}
-      subtitle={`${cat.products_count} treatments`}
-      onOpen={() => setActiveCategory(cat)}
-      index={idx}
-      style={{ height: 175, minHeight: 175 }}
-    />
-  ))}
-</div>
+            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+            <div className="services-bento-mobile">
+              {categories.slice(0, 6).map((cat, idx) => (
+                <BentoTile
+                  key={cat.id}
+                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
+                  title={cat.name}
+                  subtitle={`${cat.products_count} treatments`}
+                  onOpen={() => setActiveCategory(cat)}
+                  index={idx}
+                  style={{ height: 175, minHeight: 175 }}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
@@ -1054,8 +1061,8 @@ console.log('banners',banners)
           </div>
         )}
 
-      {/* ══ PILLARS ══ */}
-<style>{`
+        {/* ══ PILLARS ══ */}
+        <style>{`
   .pillars-section {
     background: var(--color-surface);
     border-top: 1px solid var(--color-border);
@@ -1101,90 +1108,96 @@ console.log('banners',banners)
   }
 `}</style>
 
-<section className="pillars-section" data-aos="fade-up">
-  <div className="container-site">
-    <div className="pillars-heading-wrap">
-      <Eyebrow center>The RB Hair & Beauty Lounge Difference</Eyebrow>
-      <Title center>
-        Crafted for{" "}
-        <em style={{ fontStyle: "italic", color: "var(--color-primary)" }}>
-          Excellence
-        </em>
-      </Title>
-      <Ornament center />
-    </div>
+        <section className="pillars-section" data-aos="fade-up">
+          <div className="container-site">
+            <div className="pillars-heading-wrap">
+              <Eyebrow center>The RB Hair & Beauty Lounge Difference</Eyebrow>
+              <Title center>
+                Crafted for{" "}
+                <em
+                  style={{ fontStyle: "italic", color: "var(--color-primary)" }}
+                >
+                  Excellence
+                </em>
+              </Title>
+              <Ornament center />
+            </div>
 
-    <div className="pillars-grid">
-      {pillars.map((p, i) => (
-        <div
-          key={i}
-          className="pillar-card group hover:bg-[var(--color-bg)]"
-          data-aos="fade-up"
-          data-aos-delay={i * 100}
-        >
-          {/* corner accent */}
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: 3,
-              height: 0,
-              background: "var(--color-text-muted)",
-              transition: "height 0.4s ease",
-            }}
-            className="group-hover:h-full"
-          />
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              marginBottom: "1.75rem",
-              border: "1px solid var(--color-text-muted-light)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--color-text-muted)"
-              strokeWidth="1.5"
-              style={{ width: 22, height: 22 }}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d={p.icon} />
-            </svg>
+            <div className="pillars-grid">
+              {pillars.map((p, i) => (
+                <div
+                  key={i}
+                  className="pillar-card group hover:bg-[var(--color-bg)]"
+                  data-aos="fade-up"
+                  data-aos-delay={i * 100}
+                >
+                  {/* corner accent */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: 3,
+                      height: 0,
+                      background: "var(--color-text-muted)",
+                      transition: "height 0.4s ease",
+                    }}
+                    className="group-hover:h-full"
+                  />
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      marginBottom: "1.75rem",
+                      border: "1px solid var(--color-text-muted-light)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="var(--color-text-muted)"
+                      strokeWidth="1.5"
+                      style={{ width: 22, height: 22 }}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d={p.icon}
+                      />
+                    </svg>
+                  </div>
+                  <h3
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "1.3rem",
+                      fontWeight: 300,
+                      color: "var(--color-text)",
+                      marginBottom: "0.875rem",
+                      letterSpacing: "0.01em",
+                    }}
+                  >
+                    {p.title}
+                  </h3>
+                  <p
+                    style={{
+                      color: "var(--color-text-muted)",
+                      lineHeight: 1.8,
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {p.body}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "1.3rem",
-              fontWeight: 300,
-              color: "var(--color-text)",
-              marginBottom: "0.875rem",
-              letterSpacing: "0.01em",
-            }}
-          >
-            {p.title}
-          </h3>
-          <p
-            style={{
-              color: "var(--color-text-muted)",
-              lineHeight: 1.8,
-              fontSize: "0.9rem",
-            }}
-          >
-            {p.body}
-          </p>
-        </div>
-      ))}
-    </div>
-  </div>
-</section>
+        </section>
 
-      {/* ══ TESTIMONIALS ══ */}
-<style>{`
+        {/* ══ TESTIMONIALS ══ */}
+        <style>{`
   .testimonials-section {
     background: var(--color-bg);
     padding: 7rem 0;
@@ -1226,144 +1239,161 @@ console.log('banners',banners)
   }
 `}</style>
 
-<section className="testimonials-section" data-aos="fade-up">
-  <div className="container-site">
-    <div className="testimonials-grid">
-      {/* left: label + nav */}
-      <div style={{ paddingTop: "0.5rem" }}>
-        <Eyebrow>Client Love</Eyebrow>
-        <Title>
-          What our guests{" "}
-          <em style={{ fontStyle: "italic", color: "var(--color-primary)" }}>
-            say
-          </em>
-        </Title>
-        <Ornament center={false} />
-        <p
-          className="testimonials-intro-text"
-          style={{
-            color: "var(--color-text-muted)",
-            fontSize: "0.9rem",
-            lineHeight: 1.8,
-            marginTop: "1.5rem",
-          }}
-        >
-          Over 1,300 five-star reviews from guests who trust us with their
-          most important asset.
-        </p>
-
-        {/* nav dots */}
-        <div style={{ display: "flex", gap: 8, marginTop: "2.5rem" }}>
-          {testimonials.map((_, i) => (
-            <button
-              key={i}
-              onClick={() => setActiveTestimonial(i)}
-              style={{
-                width: i === activeTestimonial ? 28 : 8,
-                height: 8,
-                background:
-                  i === activeTestimonial
-                    ? "var(--color-accent)"
-                    : "var(--color-border)",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                transition: "width 300ms ease, background 300ms ease",
-                flexShrink: 0,
-              }}
-              aria-label={`Testimonial ${i + 1}`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* right: cards */}
-      <div className="testimonials-cards-wrap">
-        {testimonials.map((t, i) => (
-          <div
-            key={i}
-            className="testimonials-card"
-            style={{
-              position: i === 0 ? "relative" : "absolute",
-              top: 0,
-              left: 0,
-              right: 0,
-              opacity: i === activeTestimonial ? 1 : 0,
-              transform: `translateY(${i === activeTestimonial ? 0 : 16}px)`,
-              transition: "opacity 500ms ease, transform 500ms ease",
-              pointerEvents: i === activeTestimonial ? "all" : "none",
-              background: "var(--color-surface-warm)",
-              border: "1px solid var(--color-border)",
-            }}
-          >
-            {/* stars */}
-            <div style={{ display: "flex", gap: 2, marginBottom: "1.5rem" }}>
-              {Array.from({ length: t.stars }).map((_, si) => (
-                <svg
-                  key={si}
-                  viewBox="0 0 24 24"
-                  fill="var(--color-accent)"
-                  style={{ width: 13, height: 13, flexShrink: 0 }}
-                >
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              ))}
-            </div>
-
-            <p
-              className="testimonials-quote"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontWeight: 300,
-                color: "var(--color-text)",
-                lineHeight: 1.65,
-                fontStyle: "italic",
-              }}
-            >
-              "{t.quote}"
-            </p>
-
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <div
-                style={{
-                  width: 1,
-                  height: 32,
-                  background: "var(--color-accent)",
-                  opacity: 0.5,
-                  flexShrink: 0,
-                }}
-              />
-              <div>
+        <section className="testimonials-section" data-aos="fade-up">
+          <div className="container-site">
+            <div className="testimonials-grid">
+              {/* left: label + nav */}
+              <div style={{ paddingTop: "0.5rem" }}>
+                <Eyebrow>Client Love</Eyebrow>
+                <Title>
+                  What our guests{" "}
+                  <em
+                    style={{
+                      fontStyle: "italic",
+                      color: "var(--color-primary)",
+                    }}
+                  >
+                    say
+                  </em>
+                </Title>
+                <Ornament center={false} />
                 <p
+                  className="testimonials-intro-text"
                   style={{
-                    fontFamily: "var(--font-body)",
-                    fontSize: "0.8rem",
-                    fontWeight: 500,
-                    color: "var(--color-text)",
-                    letterSpacing: "0.04em",
-                  }}
-                >
-                  {t.name}
-                </p>
-                <p
-                  style={{
-                    fontSize: "0.65rem",
-                    letterSpacing: "0.12em",
-                    textTransform: "uppercase",
                     color: "var(--color-text-muted)",
-                    marginTop: 2,
+                    fontSize: "0.9rem",
+                    lineHeight: 1.8,
+                    marginTop: "1.5rem",
                   }}
                 >
-                  {t.service}
+                  Over 1,300 five-star reviews from guests who trust us with
+                  their most important asset.
                 </p>
+
+                {/* nav dots */}
+                <div style={{ display: "flex", gap: 8, marginTop: "2.5rem" }}>
+                  {testimonials.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActiveTestimonial(i)}
+                      style={{
+                        width: i === activeTestimonial ? 28 : 8,
+                        height: 8,
+                        background:
+                          i === activeTestimonial
+                            ? "var(--color-accent)"
+                            : "var(--color-border)",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                        transition: "width 300ms ease, background 300ms ease",
+                        flexShrink: 0,
+                      }}
+                      aria-label={`Testimonial ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* right: cards */}
+              <div className="testimonials-cards-wrap">
+                {testimonials.map((t, i) => (
+                  <div
+                    key={i}
+                    className="testimonials-card"
+                    style={{
+                      position: i === 0 ? "relative" : "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      opacity: i === activeTestimonial ? 1 : 0,
+                      transform: `translateY(${i === activeTestimonial ? 0 : 16}px)`,
+                      transition: "opacity 500ms ease, transform 500ms ease",
+                      pointerEvents: i === activeTestimonial ? "all" : "none",
+                      background: "var(--color-surface-warm)",
+                      border: "1px solid var(--color-border)",
+                    }}
+                  >
+                    {/* stars */}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 2,
+                        marginBottom: "1.5rem",
+                      }}
+                    >
+                      {Array.from({ length: t.stars }).map((_, si) => (
+                        <svg
+                          key={si}
+                          viewBox="0 0 24 24"
+                          fill="var(--color-accent)"
+                          style={{ width: 13, height: 13, flexShrink: 0 }}
+                        >
+                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+                        </svg>
+                      ))}
+                    </div>
+
+                    <p
+                      className="testimonials-quote"
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 300,
+                        color: "var(--color-text)",
+                        lineHeight: 1.65,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      "{t.quote}"
+                    </p>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "1rem",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 1,
+                          height: 32,
+                          background: "var(--color-accent)",
+                          opacity: 0.5,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div>
+                        <p
+                          style={{
+                            fontFamily: "var(--font-body)",
+                            fontSize: "0.8rem",
+                            fontWeight: 500,
+                            color: "var(--color-text)",
+                            letterSpacing: "0.04em",
+                          }}
+                        >
+                          {t.name}
+                        </p>
+                        <p
+                          style={{
+                            fontSize: "0.65rem",
+                            letterSpacing: "0.12em",
+                            textTransform: "uppercase",
+                            color: "var(--color-text-muted)",
+                            marginTop: 2,
+                          }}
+                        >
+                          {t.service}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  </div>
-</section>
+        </section>
 
         {/* ══ CTA BAND ══ */}
         <section

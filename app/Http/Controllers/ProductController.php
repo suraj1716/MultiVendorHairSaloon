@@ -30,8 +30,6 @@ public function home(Request $request)
         ->latest()
         ->get();
 
-    $keyword = $request->query('keyword');
-
     $categories = Cache::remember('home:categories', 300, function () {
         return Category::whereHas('products', function ($q) {
             $q->where('status', 'published');
@@ -43,48 +41,15 @@ public function home(Request $request)
         ->get();
     });
 
-    $productGroups = Cache::remember('home:productGroups:full', 60, function () {
-        return ProductGroup::where('active', true)
-            ->with([
-                'groupedProducts' => function ($query) {
-                    $query->where('status', 'published')
-                        ->withAvg('reviews', 'rating')
-                        ->withCount('reviews')
-                        ->with([
-                            'user.vendor',
-                            'department',
-                            'variationTypes.options.media',
-                            'variations',
-                            'media',
-                            'reviews.user'
-                        ]);
-                }
-            ])
-            ->get();
-    });
-
-    $productGroupsResource = ProductGroupResource::collection($productGroups);
-    $productGroupsArray = $productGroupsResource->toArray($request);
-
-    $departments = Cache::remember('home:departments', 300, function () {
-        return Department::whereHas('categories.products', fn($q) => $q->filterApproved())
-            ->with(['categories' => fn($q) => $q->whereHas('products', fn($q) => $q->where('status', 'published'))])
-            ->get();
-    });
-
-    $products = ProductSearchService::queryWithKeyword($keyword)
-        ->where('status', 'published')
-        ->paginate(12);
-
+    // departments, productGroups, products, and allproducts were computed
+    // and shipped here previously, but Home.tsx never renders them — the
+    // header/nav reads 'dpts' from HandleInertiaRequests' shared props
+    // instead, which was already computing the same department data
+    // separately. This was pure duplicate work + wasted payload on every
+    // homepage load.
     return Inertia::render('Home', [
         'banners' => $banners,
-        'products' => ProductResource::collection($products),
-        'keyword' => $keyword,
-        'departments' => $departments,
         'categories' => $categories,
-        'department' => null,
-        'productGroups' => $productGroupsArray,
-        // allProducts removed — unused on Home page, was loading entire catalog unnecessarily
     ]);
 }
 
@@ -294,7 +259,7 @@ public function home(Request $request)
         // This doesn't depend on the logged-in user or query filters, so
         // it's cached — previously it re-ran a 5-relation-deep query
         // against the entire catalog on every single request to this page.
-        $allProducts = Cache::remember('search:allProducts', 60, function () {
+        $allProducts = Cache::rememberForever('search:allProducts', function () {
             return Product::forWebsite()
                 ->with([
                     'department',

@@ -31,7 +31,7 @@ export default function AuthenticatedLayout({
   };
 
   const [visible, setVisible] = useState(false);
-const { openLogin } = useAuthModal();
+  const { openLogin } = useAuthModal();
 
   useEffect(() => {
     const timeout = setTimeout(() => setVisible(true), 1000); // delay show
@@ -91,8 +91,7 @@ const { openLogin } = useAuthModal();
           className={`fixed bottom-0 left-0 w-full ${
             showBar ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
-        >
-        </div>
+        ></div>
 
         {/* <LoginModal
           isOpen={loginOpen}
@@ -133,10 +132,11 @@ const { openLogin } = useAuthModal();
 
       {/* 💬 Messenger Chat Button */}
 
-  <a href="https://m.me/YOUR_PAGE_USERNAME" // 🔁 replace with your Messenger username
-  target="_blank"
-  rel="noopener noreferrer"
-  className={`
+      <a
+        href="https://m.me/YOUR_PAGE_USERNAME" // 🔁 replace with your Messenger username
+        target="_blank"
+        rel="noopener noreferrer"
+        className={`
     fixed z-[9999] flex items-center gap-2
     bottom-24 right-6 sm:bottom-24 lg:bottom-28
     bg-[var(--color-accent-light)] text-green-950 px-4 py-2 rounded-full shadow-lg
@@ -148,16 +148,16 @@ const { openLogin } = useAuthModal();
         : "opacity-0 scale-0 pointer-events-none"
     }
   `}
->
-  <MessageCircle className="w-5 h-5" />
-  <span className="font-medium text-sm">Let's Chat</span>
-</a>
+      >
+        <MessageCircle className="w-5 h-5" />
+        <span className="font-medium text-sm">Let's Chat</span>
+      </a>
 
-{/* 🔼 Go To Top Button */}
-<button
-  onClick={scrollToTop}
-  aria-label="Go to top"
-  className={`
+      {/* 🔼 Go To Top Button */}
+      <button
+        onClick={scrollToTop}
+        aria-label="Go to top"
+        className={`
     fixed z-[9999]
     bottom-6 right-6 sm:bottom-8 lg:bottom-10
     bg-[var(--color-accent-light)] text-green-950 p-3 rounded-full shadow-lg
@@ -169,9 +169,9 @@ const { openLogin } = useAuthModal();
         : "opacity-0 scale-0 pointer-events-none"
     }
   `}
->
-  <ChevronUp className="w-5 h-5" />
-</button>
+      >
+        <ChevronUp className="w-5 h-5" />
+      </button>
 
       <Footer />
     </div>
