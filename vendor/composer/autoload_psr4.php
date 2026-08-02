@@ -53,6 +53,8 @@ return array(
     'Spatie\\Image\\' => array($vendorDir . '/spatie/image/src'),
     'Spatie\\ImageOptimizer\\' => array($vendorDir . '/spatie/image-optimizer/src'),
     'SimonHamp\\LaravelStripeConnect\\' => array($vendorDir . '/simonhamp/laravel-stripe-connect/src'),
+    'Resend\\Laravel\\' => array($vendorDir . '/resend/resend-laravel/src'),
+    'Resend\\' => array($vendorDir . '/resend/resend-php/src'),
     'Ramsey\\Uuid\\' => array($vendorDir . '/ramsey/uuid/src'),
     'Ramsey\\Collection\\' => array($vendorDir . '/ramsey/collection/src'),
     'Psy\\' => array($vendorDir . '/psy/psysh/src'),
