@@ -8,15 +8,18 @@ export default function Footer() {
   const { vendor, dpts = [] } = usePage<PageProps>().props;
   const vendorData = vendor?.data ?? null;
 
-  const NAV_COLS = [
-    {
-      heading: "Services",
-      links: dpts.map((c) => ({
-        label: c.name,
-        href: "/#services",
-        scrollTo: "services",
-      })),
-    },
+  const { categories } = usePage().props;
+
+const NAV_COLS = [
+  {
+    heading: "Services",
+    links: categories.map((c) => ({
+      label: c.name,
+      href: "/#services",
+      scrollTo: "services",
+    })),
+  },
+
     {
       heading: "Explore",
       links: [
