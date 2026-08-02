@@ -17,7 +17,7 @@ class DashboardController extends Controller
     public function index()
     {
         // ── Stat cards ────────────────────────────────────────────
-        $totalRevenue   = Order::where('is_paid', 1)->sum('total_price');
+        $totalRevenue   = Order::where('is_paid', true)->sum('total_price');
         $totalOrders    = Order::count();
         $pendingOrders  = Order::where('status', 'draft')->count();
         $totalBookings  = Booking::count();
@@ -27,7 +27,7 @@ class DashboardController extends Controller
         $totalVendors   = Vendor::where('status', 'approved')->count();
 
         // ── Sales chart — last 30 days ────────────────────────────
-        $salesRaw = Order::where('is_paid', 1)
+        $salesRaw = Order::where('is_paid', true)
             ->whereDate('created_at', '>=', now()->subDays(29))
             ->selectRaw('DATE(created_at) as date, SUM(total_price) as total')
             ->groupBy('date')
