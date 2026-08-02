@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
+use Illuminate\Support\Str;
 
 class VendorController extends Controller
 {
@@ -134,7 +135,9 @@ class VendorController extends Controller
     public function store(Request $request)
     {
         $user = $request->user();
-
+$request->merge([
+    'store_name' => Str::slug($request->input('store_name')),
+]);
         // Validate input
         $validated = $request->validate(
             [

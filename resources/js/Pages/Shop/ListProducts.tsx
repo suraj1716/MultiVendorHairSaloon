@@ -82,7 +82,10 @@ export default function ListProducts({
       if (!map[deptId]) {
         map[deptId] = {
           dept: product.department,
-          storeName: product.user?.store_name ?? product.user?.name ?? "Glamour Hair Salon",
+          storeName:
+            product.user?.store_name ??
+            product.user?.name ??
+            "Glamour Hair Salon",
           categories: {},
         };
       }
@@ -100,14 +103,14 @@ export default function ListProducts({
     return map;
   }, [displayedProducts]);
 
- const toggleCat = (key: string) => {
-  setOpenCats((prev) => ({
-    ...prev,
-    [key]: !prev[key],
-  }));
-};
+  const toggleCat = (key: string) => {
+    setOpenCats((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
 
-const isCatOpen = (key: string) => openCats[key] === true; //close by default
+  const isCatOpen = (key: string) => openCats[key] === true; //close by default
 
   const toggleProduct = (product: Product) => {
     setCart((prev) => {
@@ -175,7 +178,6 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
     trending: "var(--color-primary)",
     new: "var(--color-accent-dark)",
   };
-
 
   return (
     <AuthenticatedLayout>
@@ -663,6 +665,56 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
         }
         .sp-tray-footer-total span { color: var(--color-primary); font-weight: 400; }
 
+
+
+/* Checkbox */
+.sp-checkbox {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  border: 1.5px solid var(--color-border-dark);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+.sp-checkbox.checked {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+.sp-check-icon {
+  color: white;
+  width: 11px;
+  height: 11px;
+  stroke-width: 3;
+}
+
+/* Radio (product selection) */
+.sp-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-dark);
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color var(--transition-fast);
+}
+.sp-radio.checked {
+  border-color: var(--color-primary);
+}
+.sp-radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+
         /* RESPONSIVE */
        @media (max-width: 640px) {
   .sp-body { padding: 24px 14px 120px; }
@@ -694,30 +746,39 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
     justify-content: center;
     white-space: nowrap;
   }
+
 }
       `}</style>
 
       <div className="sp-page">
-
         {/* Hero */}
 
-    <PageHero
-                eyebrow="Our Services"
-                title={<>Book <em>Services</em></>}
-                subtitle="  Select services below, then add your entire selection to cart at once."
-                breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Shop" }]}
-              />
+        <PageHero
+          eyebrow="Our Services"
+          title={
+            <>
+              Book <em>Services</em>
+            </>
+          }
+          subtitle="  Select services below, then add your entire selection to cart at once."
+          breadcrumbs={[
+            { label: "Home", href: route("home") },
+            { label: "Shop" },
+          ]}
+        />
         <div className="sp-body">
-
           {/* Search banner */}
           {filters.keyword && searchedProducts?.data?.length ? (
             <div className="sp-search-banner">
               <span>
-                Showing <strong>{searchedProducts.data.length}</strong> results for "<strong>{filters.keyword}</strong>"
+                Showing <strong>{searchedProducts.data.length}</strong> results
+                for "<strong>{filters.keyword}</strong>"
               </span>
               <button
                 className="btn btn-ghost btn-sm"
-                onClick={() => router.get(route("shop.search"), {}, { preserveState: true })}
+                onClick={() =>
+                  router.get(route("shop.search"), {}, { preserveState: true })
+                }
               >
                 Clear search
               </button>
@@ -731,120 +792,131 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
               <p className="sp-empty-title">No services available</p>
             </div>
           ) : (
-            Object.entries(grouped).map(([deptId, { dept, storeName, categories }]) => {
-              const totalProducts = Object.values(categories).reduce(
-                (s, c) => s + c.products.length, 0
-              );
+            Object.entries(grouped).map(
+              ([deptId, { dept, storeName, categories }]) => {
+                const totalProducts = Object.values(categories).reduce(
+                  (s, c) => s + c.products.length,
+                  0,
+                );
 
-              return (
-                <div className="sp-dept" key={deptId}>
-
-                  {/* Dept header: store name + dept name */}
-                  <div className="sp-dept-header">
-                    <div className="sp-dept-icon">
-                      {/* scissors icon */}
-                      <svg viewBox="0 0 24 24">
-                        <circle cx="6" cy="6" r="3" />
-                        <circle cx="6" cy="18" r="3" />
-                        <line x1="20" y1="4" x2="8.12" y2="15.88" />
-                        <line x1="14.47" y1="14.48" x2="20" y2="20" />
-                        <line x1="8.12" y1="8.12" x2="12" y2="12" />
-                      </svg>
-                    </div>
-                    <div className="sp-dept-meta">
-                      <div className="sp-dept-store">{storeName}</div>
-                      <div className="sp-dept-name">{dept?.name ?? "Services"}</div>
-                    </div>
-                  </div>
-
-                  {/* Categories — each is a collapsible accordion */}
-                  {Object.entries(categories).map(([catId, { catName, products: catProducts }]) => {
-                    const catKey = `cat-${deptId}-${catId}`;
-                    const isOpen = isCatOpen(catKey);
-
-                    return (
-                      <div className="sp-cat" key={catId}>
-
-                        {/* Category header */}
-                        <div
-                          className="sp-cat-header"
-                          onClick={() => toggleCat(catKey)}
-                          role="button"
-                          aria-expanded={isOpen}
-                        >
-                          <div className="sp-cat-header-left">
-                            <span className="sp-cat-dot" />
-                            <span className="sp-cat-name">{catName}</span>
-                            <span className="sp-cat-count">{catProducts.length}</span>
-                          </div>
-                          <ChevronDown
-                            size={16}
-                            className={`sp-chevron${isOpen ? " open" : ""}`}
-                          />
-                        </div>
-
-                        {/* Products */}
-                        {isOpen && (
-                          <div className="sp-products">
-                            {catProducts.map((product) => {
-                              const isSelected = !!cart[product.id];
-                              return (
-                                <div
-                                  key={product.id}
-                                  className={`sp-product-row${isSelected ? " selected" : ""}`}
-                                  onClick={() => toggleProduct(product)}
-                                >
-                                  {/* Checkbox */}
-                                  <div className={`sp-checkbox${isSelected ? " checked" : ""}`}>
-                                    {isSelected && (
-                                      <svg className="sp-check-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor">
-                                        <polyline points="2,6 5,9 10,3" />
-                                      </svg>
-                                    )}
-                                  </div>
-
-                                  {/* Thumb */}
-                                  <div className="sp-thumb">
-                                    <img
-                                      src={imageUrl(product)}
-                                      alt={product.title}
-                                      onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
-                                    />
-                                  </div>
-
-                                  {/* Info */}
-                                  <div className="sp-info">
-                                    <div className="sp-info-name">{product.title}</div>
-                                    <div className="sp-info-desc">
-                                      {product.description.replace(/<[^>]+>/g, "")}
-                                    </div>
-                                    {product.highlight && (
-                                      <span
-                                        className="sp-badge"
-                                        style={{
-                                          background: HIGHLIGHT_COLORS[product.highlight] ?? "var(--color-primary)",
-                                        }}
-                                      >
-                                        {product.highlight}
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {/* Price */}
-                                  <div className="sp-price">
-                                    <CurrencyFormatter amount={product.price ?? 0} currency="AUD" />
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
+                return (
+                  <div className="sp-dept" key={deptId}>
+                    {/* Dept header: store name + dept name */}
+                    <div className="sp-dept-header">
+                      <div className="sp-dept-icon">
+                        {/* scissors icon */}
+                        <svg viewBox="0 0 24 24">
+                          <circle cx="6" cy="6" r="3" />
+                          <circle cx="6" cy="18" r="3" />
+                          <line x1="20" y1="4" x2="8.12" y2="15.88" />
+                          <line x1="14.47" y1="14.48" x2="20" y2="20" />
+                          <line x1="8.12" y1="8.12" x2="12" y2="12" />
+                        </svg>
                       </div>
-                    );
-                  })}
-                </div>
-              );
-            })
+                      <div className="sp-dept-meta">
+                        <div className="sp-dept-store">{storeName}</div>
+                        <div className="sp-dept-name">
+                          {dept?.name ?? "Services"}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Categories — each is a collapsible accordion */}
+                    {Object.entries(categories).map(
+                      ([catId, { catName, products: catProducts }]) => {
+                        const catKey = `cat-${deptId}-${catId}`;
+                        const isOpen = isCatOpen(catKey);
+
+                        return (
+                          <div className="sp-cat" key={catId}>
+                            {/* Category header */}
+                            <div
+                              className="sp-cat-header"
+                              onClick={() => toggleCat(catKey)}
+                              role="button"
+                              aria-expanded={isOpen}
+                            >
+                              <div className="sp-cat-header-left">
+                                <span className="sp-cat-dot" />
+                                <span className="sp-cat-name">{catName}</span>
+                                <span className="sp-cat-count">
+                                  {catProducts.length}
+                                </span>
+                              </div>
+                              <ChevronDown
+                                size={16}
+                                className={`sp-chevron${isOpen ? " open" : ""}`}
+                              />
+                            </div>
+
+                            {/* Products */}
+                            {isOpen && (
+                              <div className="sp-products">
+                              {catProducts.map((product) => {
+  const isSelected = !!cart[product.id];
+  return (
+    <div
+      key={product.id}
+      className={`sp-product-row${isSelected ? " selected" : ""}`}
+      onClick={() => {
+        // Deselect any other product in this category first
+        catProducts.forEach((p) => {
+          if (p.id !== product.id && cart[p.id]) {
+            toggleProduct(p);
+          }
+        });
+        toggleProduct(product);
+      }}
+    >
+      {/* Radio dot */}
+      <div className={`sp-radio${isSelected ? " checked" : ""}`}>
+        {isSelected && <div className="sp-radio-dot" />}
+      </div>
+
+      {/* Thumb */}
+      <div className="sp-thumb">
+        <img
+          src={imageUrl(product)}
+          alt={product.title}
+          onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
+        />
+      </div>
+
+      {/* Info */}
+      <div className="sp-info">
+        <div className="sp-info-name">{product.title}</div>
+        <div className="sp-info-desc">
+          {product.description.replace(/<[^>]+>/g, "")}
+        </div>
+        {product.highlight && (
+          <span
+            className="sp-badge"
+            style={{
+              background: HIGHLIGHT_COLORS[product.highlight] ?? "var(--color-primary)",
+            }}
+          >
+            {product.highlight}
+          </span>
+        )}
+      </div>
+
+      {/* Price */}
+      <div className="sp-price">
+        <CurrencyFormatter amount={product.price ?? 0} currency="AUD" />
+      </div>
+    </div>
+  );
+})}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      },
+                    )}
+                  </div>
+                );
+              },
+            )
           )}
         </div>
 
@@ -855,7 +927,10 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
               <div className="sp-tray-panel">
                 <div className="sp-tray-panel-header">
                   <span className="sp-tray-panel-title">Your Selection</span>
-                  <button className="sp-tray-close-btn" onClick={() => setTrayOpen(false)}>
+                  <button
+                    className="sp-tray-close-btn"
+                    onClick={() => setTrayOpen(false)}
+                  >
                     <ChevronDown size={18} />
                   </button>
                 </div>
@@ -866,10 +941,14 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                       <img
                         src={imageUrl(item.product)}
                         alt={item.product.title}
-                        onError={(e) => (e.currentTarget.src = "/placeholder.jpg")}
+                        onError={(e) =>
+                          (e.currentTarget.src = "/placeholder.jpg")
+                        }
                       />
                     </div>
-                    <span className="sp-tray-item-name">{item.product.title}</span>
+                    <span className="sp-tray-item-name">
+                      {item.product.title}
+                    </span>
                     {/* <div className="sp-qty">
                       <button className="sp-qty-btn" onClick={(e) => { e.stopPropagation(); changeQty(item.product.id, -1); }}>
                         <Minus size={11} />
@@ -880,9 +959,18 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                       </button>
                     </div> */}
                     <span className="sp-tray-item-price">
-                      <CurrencyFormatter amount={(item.product.price ?? 0) * item.quantity} currency="AUD" />
+                      <CurrencyFormatter
+                        amount={(item.product.price ?? 0) * item.quantity}
+                        currency="AUD"
+                      />
                     </span>
-                    <button className="sp-tray-item-del" onClick={(e) => { e.stopPropagation(); removeFromCart(item.product.id); }}>
+                    <button
+                      className="sp-tray-item-del"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFromCart(item.product.id);
+                      }}
+                    >
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -890,13 +978,26 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
 
                 <div className="sp-tray-footer">
                   <div className="sp-tray-footer-total">
-                    Total&nbsp;&nbsp;<span><CurrencyFormatter amount={cartTotal} currency="AUD" /></span>
+                    Total&nbsp;&nbsp;
+                    <span>
+                      <CurrencyFormatter amount={cartTotal} currency="AUD" />
+                    </span>
                   </div>
                   <div style={{ display: "flex", gap: "24px" }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { setCart({}); setTrayOpen(false); }}>
+                    <button
+                      className="btn btn-ghost btn-sm"
+                      onClick={() => {
+                        setCart({});
+                        setTrayOpen(false);
+                      }}
+                    >
                       Clear all
                     </button>
-                    <button className="btn btn-accent" onClick={handleAddAllToCart} style={{ gap: "8px" }}>
+                    <button
+                      className="btn btn-accent"
+                      onClick={handleAddAllToCart}
+                      style={{ gap: "8px" }}
+                    >
                       <ShoppingBag size={15} />
                       Add {cartCount} item{cartCount !== 1 ? "s" : ""} to Cart
                     </button>
@@ -911,14 +1012,23 @@ const isCatOpen = (key: string) => openCats[key] === true; //close by default
                     <span className="sp-tray-badge">{cartCount}</span>
                   </div>
                   <span className="sp-tray-label">
-                    <strong>{cartCount} service{cartCount !== 1 ? "s" : ""}</strong> selected — tap to review
+                    <strong>
+                      {cartCount} service{cartCount !== 1 ? "s" : ""}
+                    </strong>{" "}
+                    selected — tap to review
                   </span>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                >
                   <span className="sp-tray-total">
                     <CurrencyFormatter amount={cartTotal} currency="AUD" />
                   </span>
-                  <ChevronDown size={16} color="rgba(255,255,255,0.4)" style={{ transform: "rotate(180deg)" }} />
+                  <ChevronDown
+                    size={16}
+                    color="rgba(255,255,255,0.4)"
+                    style={{ transform: "rotate(180deg)" }}
+                  />
                 </div>
               </div>
             )}

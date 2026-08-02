@@ -49,6 +49,10 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
   useEffect(() => {
     if (vendor && vendor.status === "approved") {
+          console.log("RAW VENDOR PROP:", vendor);
+    console.log("booking_fee:", vendor.booking_fee, typeof vendor.booking_fee);
+    console.log("vendor_type:", vendor.vendor_type, typeof vendor.vendor_type);
+
       const cleanedRecurringDays = (vendor.recurring_closed_days ?? [])
         .flat()
         .map(String)
@@ -146,7 +150,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
         </div>
       )}
 
-      {!user.vendor && (
+      {/* {!user.vendor && (
         <Button
           variant="primary"
           disabled={processing}
@@ -154,7 +158,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
         >
           Become a Vendor
         </Button>
-      )}
+      )} */}
 
       {user.vendor &&
         (user.vendor.status === "pending" || user.vendor.status === "rejected") && (

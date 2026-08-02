@@ -21,12 +21,12 @@ class GoogleController extends Controller
                 'openid',
                 'profile',
                 'email',
-                'https://www.googleapis.com/auth/calendar.events',
+                // 'https://www.googleapis.com/auth/calendar.events',
             ])
-            ->with([
-                'access_type' => 'offline',
-                'prompt' => 'consent'
-            ])
+            // ->with([
+            //     'access_type' => 'offline',
+            //     'prompt' => 'consent'
+            // ])
             ->redirect();
     }
 
@@ -45,24 +45,24 @@ class GoogleController extends Controller
                     'given_name'  => $googleUser->user['given_name'] ?? null,
                     'family_name' => $googleUser->user['family_name'] ?? null,
                     'locale'      => $googleUser->user['locale'] ?? null,
-                    'google_access_token'  => $googleUser->token,
-                    'google_refresh_token' => $googleUser->refreshToken ?? null,
-                    'token_expires_at'     => now()->addSeconds($googleUser->expiresIn),
+                    // 'google_access_token'  => $googleUser->token,
+                    // 'google_refresh_token' => $googleUser->refreshToken ?? null,
+                    // 'token_expires_at'     => now()->addSeconds($googleUser->expiresIn),
                 ]
             );
             Auth::login($user);
             // Optionally, save the access token and refresh token if needed
-            $user = Auth::user();
-            $user->google_token = json_encode([
-                'access_token' => $googleUser->token,
-                'refresh_token' => $googleUser->refreshToken ?? null,
-                'expires_in' => $googleUser->expiresIn,
-                'created' => time(), // VERY important for refresh logic
-                'token_type' => 'Bearer',
-                'scope' => 'https://www.googleapis.com/auth/calendar',
-            ]);
+            // $user = Auth::user();
+            // $user->google_token = json_encode([
+            //     'access_token' => $googleUser->token,
+            //     'refresh_token' => $googleUser->refreshToken ?? null,
+            //     'expires_in' => $googleUser->expiresIn,
+            //     'created' => time(), // VERY important for refresh logic
+            //     'token_type' => 'Bearer',
+            //     'scope' => 'https://www.googleapis.com/auth/calendar',
+            // ]);
 
-            $user->save();
+            // $user->save();
 
             return redirect()->intended('/');
         } catch (\Exception $e) {

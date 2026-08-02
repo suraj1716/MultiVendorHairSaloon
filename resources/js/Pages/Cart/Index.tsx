@@ -40,6 +40,11 @@ function Index({
     () => localStorage.getItem("selectedStaffName") || null,
   );
 
+
+
+
+
+
   const handleSelectStaff = (
     staffId: number | null,
     staffName: string | null = null,
@@ -82,7 +87,7 @@ function Index({
     parseInt(localStorage.getItem("checkoutStep") || "1", 10),
   );
   const steps = ["Cart", "Booking", "Review"];
-useEffect(() => {
+  useEffect(() => {
     localStorage.removeItem("bookingDate");
     localStorage.removeItem("timeSlot");
     localStorage.removeItem("checkoutStep");
@@ -104,8 +109,6 @@ useEffect(() => {
     if (flash.checkout) toast.error(flash.checkout);
   }, [flash]);
 
-
-
   // ── Scroll step into view ──────────────────────────────────────────────────
   useEffect(() => {
     const ref = stepRefs.current[step - 1];
@@ -117,16 +120,16 @@ useEffect(() => {
       });
   }, [step]);
 
-// const prevCartKeysRef = useRef<string>(JSON.stringify(Object.keys(cartItems).sort()));
+  // const prevCartKeysRef = useRef<string>(JSON.stringify(Object.keys(cartItems).sort()));
 
-// useEffect(() => {
-//   const currentKeys = JSON.stringify(Object.keys(cartItems).sort());
-//   if (prevCartKeysRef.current !== currentKeys && hasAppointmentItems && step === 3) {
-//     setStep(2);
-//     toast.info("Cart updated — please review your booking.");
-//   }
-//   prevCartKeysRef.current = currentKeys;
-// }, [cartItems]);
+  // useEffect(() => {
+  //   const currentKeys = JSON.stringify(Object.keys(cartItems).sort());
+  //   if (prevCartKeysRef.current !== currentKeys && hasAppointmentItems && step === 3) {
+  //     setStep(2);
+  //     toast.info("Cart updated — please review your booking.");
+  //   }
+  //   prevCartKeysRef.current = currentKeys;
+  // }, [cartItems]);
 
   // ── Derived values ─────────────────────────────────────────────────────────
   const hasAppointmentItems = Object.values(cartItems).some((group: any) => {
@@ -191,11 +194,6 @@ useEffect(() => {
       toast.error("Failed to apply promo");
     }
   };
-
-
-
-
-
 
   // ── Core fix: wrap Inertia router.post in a real Promise ───────────────────
   const postAsync = (url: string, data: Record<string, any>): Promise<void> =>
@@ -533,25 +531,28 @@ useEffect(() => {
                           {/* ── PHASE 1: Not yet confirmed → show Book button only ── */}
                           {!bookingConfirmed && (
                             <div className="co-card-warm">
-                              <p
-                                style={{
-                                  fontFamily: "var(--font-body)",
-                                  fontSize: "var(--text-sm)",
-                                  color: "var(--color-text-muted)",
-                                  marginBottom: "var(--space-md)",
-                                }}
-                              >
-                                A booking fee of{" "}
-                                <strong
-                                  style={{ color: "var(--color-primary)" }}
+                              {parseFloat(group.user.booking_fee || "0") >
+                                0 && (
+                                <p
+                                  style={{
+                                    fontFamily: "var(--font-body)",
+                                    fontSize: "var(--text-sm)",
+                                    color: "var(--color-text-muted)",
+                                    marginBottom: "var(--space-md)",
+                                  }}
                                 >
-                                  $
-                                  {parseFloat(
-                                    group.user.booking_fee || "0",
-                                  ).toFixed(2)}
-                                </strong>{" "}
-                                will be added to your subtotal.
-                              </p>
+                                  A booking fee of{" "}
+                                  <strong
+                                    style={{ color: "var(--color-primary)" }}
+                                  >
+                                    $
+                                    {parseFloat(
+                                      group.user.booking_fee || "0",
+                                    ).toFixed(2)}
+                                  </strong>{" "}
+                                  will be added to your subtotal.
+                                </p>
+                              )}
                               <Button
                                 variant="accent"
                                 size="sm"
@@ -598,7 +599,7 @@ useEffect(() => {
                           fontSize: "var(--text-xs)",
                           letterSpacing: "0.15em",
                           textTransform: "uppercase",
-                          color: "var(--color-accent)",
+                          color: "var(--color-primary)",
                           marginBottom: "4px",
                         }}
                       >
@@ -810,7 +811,11 @@ useEffect(() => {
                       onChange={(e) => setPromoCode(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleApplyPromo()}
                     />
-                    <Button variant="accent" size="sm" onClick={handleApplyPromo}>
+                    <Button
+                      variant="accent"
+                      size="sm"
+                      onClick={handleApplyPromo}
+                    >
                       Apply
                     </Button>
                   </div>
@@ -860,7 +865,7 @@ useEffect(() => {
                           fontWeight: 500,
                           letterSpacing: "0.1em",
                           textTransform: "uppercase",
-                          color: "var(--color-accent-dark)",
+                          color: "var(--color-primary)",
                           marginBottom: "var(--space-sm)",
                         }}
                       >
@@ -1103,10 +1108,7 @@ useEffect(() => {
                 Looks like you haven't added anything yet.
               </p>
             </div>
-            <Link
-              href="/shop"
-              className="btn btn-primary btn-lg"
-            >
+            <Link href="/shop" className="btn btn-primary btn-lg">
               Shop Now
             </Link>
           </div>

@@ -52,25 +52,24 @@ export default function StaffSelectStep({
             .finally(() => setLoading(false));
     }, [vendorId, categoryId, date, timeSlot]);
 
-    if (loading) {
-        return (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                {[1, 2, 3].map((i) => (
-                    <div
-                        key={i}
-                        style={{
-                            width: '100px',
-                            height: '90px',
-                            borderRadius: '8px',
-                            background: '#f0f0f0',
-                            animation: 'pulse 1.2s ease-in-out infinite',
-                        }}
-                    />
-                ))}
-                <style>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }`}</style>
-            </div>
-        );
-    }
+if (loading) {
+    return (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
+            <span
+                style={{
+                    width: 24,
+                    height: 24,
+                    border: '2px solid var(--color-border)',
+                    borderTopColor: 'var(--color-primary)',
+                    borderRadius: '50%',
+                    display: 'inline-block',
+                    animation: 'co-spin 0.7s linear infinite',
+                }}
+            />
+            <style>{`@keyframes co-spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+    );
+}
 
     return (
         <div style={{ marginTop: '1.5rem' }}>
