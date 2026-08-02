@@ -32,7 +32,11 @@ class HandleInertiaRequests extends Middleware
             ->withCount(['products as products_count'])
             ->get(['id', 'name', 'slug']);
     });
-
+    
+$categories = Cache::remember('shared:categories', 300, function () {
+    return \App\Models\Category::whereHas('products')
+        ->where('active', true)
+        ->get(['id', 'name', 'slug']);
     $cartService = app(CartService::class);
     $totalQuantity = $cartService->getTotalQuantity();
     $totalPrice = $cartService->getTotalPrice();
@@ -65,6 +69,17 @@ class HandleInertiaRequests extends Middleware
                 'active' => $department->active,
             ];
         }),
+
+              'categories' => $categories->map(function ($category) {
+    return [
+        'id' => $category->id,
+        'name' => $category->name,
+        'slug' => $category->slug,
+    ];
+}),         
+
+            
+});           
 
         // Shared globally so Navbar/Footer/every page can read it via
         // usePage().props.vendor with zero client-side requests.
