@@ -54,4 +54,19 @@ class CategoryController extends Controller
     ]);
 }
 
+
+
+
+    public function products(Category $category)
+{
+    $products = Cache::remember("category:{$category->id}:products", 300, function () use ($category) {
+        return $category->products()
+            ->where('status', 'published')
+            ->select('products.id', 'name', 'slug', 'price', 'image_url')
+            ->get();
+    });
+
+    return response()->json(['products' => $products]);
+}
+
 }
