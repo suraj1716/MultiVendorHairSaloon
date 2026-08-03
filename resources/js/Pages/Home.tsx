@@ -1036,6 +1036,42 @@ export default function Home({
                   products and services.
                 </p>
 
+
+<div style={{ marginBottom: "1.75rem" }}>
+  {loadingProducts ? (
+    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
+      Loading products…
+    </p>
+  ) : categoryProducts.length > 0 ? (
+    <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {categoryProducts.map((product) => (
+        <li
+          key={product.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "0.5rem",
+            borderBottom: "1px solid var(--color-border)",
+          }}
+        >
+          <span style={{ color: "var(--color-text)", fontSize: "0.9rem" }}>
+            {product.name}
+          </span>
+          <span style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
+            ${product.price}
+          </span>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
+      No products found in this category.
+    </p>
+  )}
+</div>
+
+                
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <button
                     onClick={() =>
