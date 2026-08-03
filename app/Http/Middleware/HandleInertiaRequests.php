@@ -32,6 +32,7 @@ public function share(Request $request): array
             ->withCount(['products as products_count'])
             ->get(['id', 'name', 'slug']);
     });
+<<<<<<< HEAD
 
     $categories = Cache::remember('shared:categories', 300, function () {
         return \App\Models\Category::whereHas('products')
@@ -39,6 +40,13 @@ public function share(Request $request): array
             ->get(['id', 'name', 'slug']);
     });
 
+=======
+    
+$categories = Cache::remember('shared:categories', 300, function () {
+    return \App\Models\Category::whereHas('products')
+        ->where('active', true)
+        ->get(['id', 'name', 'slug']);
+>>>>>>> c29e6a9ecfba8c0c01f858975eb1232a976b83ea
     $cartService = app(CartService::class);
     $totalQuantity = $cartService->getTotalQuantity();
     $totalPrice = $cartService->getTotalPrice();
@@ -68,6 +76,7 @@ public function share(Request $request): array
                 'active' => $department->active,
             ];
         }),
+<<<<<<< HEAD
         'categories' => $categories->map(function ($category) {
             return [
                 'id' => $category->id,
@@ -75,6 +84,24 @@ public function share(Request $request): array
                 'slug' => $category->slug,
             ];
         }),
+=======
+
+              'categories' => $categories->map(function ($category) {
+    return [
+        'id' => $category->id,
+        'name' => $category->name,
+        'slug' => $category->slug,
+    ];
+}),         
+
+            
+});           
+
+        // Shared globally so Navbar/Footer/every page can read it via
+        // usePage().props.vendor with zero client-side requests.
+        // VendorDetailService already caches the underlying query for 6hrs,
+        // so this closure is cheap even though it runs on every request.
+>>>>>>> c29e6a9ecfba8c0c01f858975eb1232a976b83ea
         'vendor' => fn() => new \App\Http\Resources\VendorUserResource(
             app(\App\Services\VendorDetailService::class)->getVendorDetails()
         ),

@@ -5,6 +5,10 @@ import { formatAustralianPhone } from "@/utils/PhoneFormat";
 import { PageProps } from "@/types";
 
 export default function Footer() {
+<<<<<<< HEAD
+=======
+  export default function Footer() {
+>>>>>>> c29e6a9ecfba8c0c01f858975eb1232a976b83ea
   const { vendor, dpts = [], categories = [] } = usePage<PageProps>().props;
   const vendorData = vendor?.data ?? null;
 

@@ -215,7 +215,7 @@ export type PaginationProps<T> = {
   };
 };
 
-export type PageProps<
+export type PageProps
   T extends Record<string, unknown> = Record<string, unknown>,
 > = T & {
   appName: string;
@@ -235,6 +235,7 @@ export type PageProps<
   departments: Department[];
   categories:Category[];
   dpts: Department[];
+  categories: { id: number; name: string; slug: string }[];
   vendor: { data: Vendor } | null;
   faqs: Faq[];
   flash: {
