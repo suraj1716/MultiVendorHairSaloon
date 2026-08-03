@@ -5,11 +5,11 @@
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
   "node_modules/swiper/modules/navigation.css": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "node_modules/swiper/swiper.css": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Components/Admin/AdminComponents.tsx": [
@@ -19,7 +19,7 @@
     "/build/assets/useAdminForm-DY-HZoc4.js"
   ],
   "resources/js/Components/App/AdvanceProductRating.tsx": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Components/App/ApplicationLogo.tsx": [
@@ -29,24 +29,24 @@
     "/build/assets/Card-CPBERo2t.js"
   ],
   "resources/js/Components/App/CartItem.tsx": [
-    "/build/assets/Index-Cn2q-4zh.js",
+    "/build/assets/Index-DmeabP5I.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Components/App/Footer.tsx": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/Components/App/Hero_Banner.tsx": [
-    "/build/assets/Home-BbVXXgIp.js",
+    "/build/assets/Home-Dp-HXbG4.js",
     "/build/assets/aos-DvB2Xm2x.css"
   ],
   "resources/js/Components/App/MiniCartDropdown.tsx": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/Components/App/Navbar.tsx": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/Components/App/ProductCarousel.tsx": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Components/App/ProductItem.tsx": [
@@ -56,11 +56,11 @@
     "/build/assets/ProductItem-f-Sl4fPN.js"
   ],
   "resources/js/Components/App/ProductReview.tsx": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Components/App/StaffSelectStep.tsx": [
-    "/build/assets/StaffSelectStep-BcSh4jrV.js"
+    "/build/assets/StaffSelectStep-BzDLSbEB.js"
   ],
   "resources/js/Components/App/formStyles.ts": [
     "/build/assets/formStyles-DfvrQ25w.js"
@@ -69,7 +69,7 @@
     "/build/assets/OrderStatusBadge-Dz7diD8w.js"
   ],
   "resources/js/Components/App/ui/Badge.tsx": [
-    "/build/assets/VendorDetails-CcwwC0lY.js"
+    "/build/assets/VendorDetails-wYfaurWC.js"
   ],
   "resources/js/Components/App/ui/BentoTile.tsx": [
     "/build/assets/BentoTile-D4BP4U4K.js"
@@ -78,10 +78,10 @@
     "/build/assets/Button-7KLvf7NZ.js"
   ],
   "resources/js/Components/App/ui/Filedropzone.tsx": [
-    "/build/assets/Contact-CWJ5F5je.js"
+    "/build/assets/Contact-C52fqJn7.js"
   ],
   "resources/js/Components/App/ui/Formfield.tsx": [
-    "/build/assets/Contact-CWJ5F5je.js"
+    "/build/assets/Contact-C52fqJn7.js"
   ],
   "resources/js/Components/App/ui/IconButton.tsx": [
     "/build/assets/IconButton-Shy6bjHQ.js"
@@ -93,22 +93,22 @@
     "/build/assets/OrderStatusBadge-Dz7diD8w.js"
   ],
   "resources/js/Components/App/ui/Pagination.tsx": [
-    "/build/assets/OrdersHistory-DdPLY3hS.js"
+    "/build/assets/OrdersHistory-JU4ApjgJ.js"
   ],
   "resources/js/Components/App/ui/Radiogroup.tsx": [
-    "/build/assets/Contact-CWJ5F5je.js"
+    "/build/assets/Contact-C52fqJn7.js"
   ],
   "resources/js/Components/App/ui/SectionHeading.tsx": [
     "/build/assets/SectionHeading-DFmz_Ycu.js"
   ],
   "resources/js/Components/App/ui/Select.tsx": [
-    "/build/assets/Contact-CWJ5F5je.js"
+    "/build/assets/Contact-C52fqJn7.js"
   ],
   "resources/js/Components/Core/Breadcrumbs.tsx": [
     "/build/assets/Breadcrumbs-CH7E_0xj.js"
   ],
   "resources/js/Components/Core/Carousel.tsx": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Components/Core/GoogleLoginButton.tsx": [
@@ -133,16 +133,16 @@
     "/build/assets/PageHero-C8hwoM9j.js"
   ],
   "resources/js/Contexts/AuthModalContext.tsx": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/Layouts/AuthenticatedLayout.tsx": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/Layouts/GuestLayout.tsx": [
     "/build/assets/GuestLayout-Bpsb9b0M.js"
   ],
   "resources/js/Pages/About.tsx": [
-    "/build/assets/About-Cv_8kCts.js",
+    "/build/assets/About-X565BvPt.js",
     "/build/assets/aos-DvB2Xm2x.css"
   ],
   "resources/js/Pages/Admin/AdminLayout.tsx": [
@@ -166,19 +166,19 @@
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Categories/CategoryForm.tsx": [
-    "/build/assets/CategoryForm-DGpz3J8g.js",
+    "/build/assets/CategoryForm-BdzFNfgN.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Categories/Create.tsx": [
-    "/build/assets/Create-0ISgjRNz.js",
+    "/build/assets/Create-GKRRw60B.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Categories/Edit.tsx": [
-    "/build/assets/Edit-CBwPqCrH.js",
+    "/build/assets/Edit-yeItyZU5.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Categories/Index.tsx": [
-    "/build/assets/Index-C8Tbt7_t.js",
+    "/build/assets/Index-CbJOPwxG.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Contacts/Index.tsx": [
@@ -194,11 +194,11 @@
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Departments/DepartmentForm.tsx": [
-    "/build/assets/DepartmentForm-DlJEggUW.js",
+    "/build/assets/DepartmentForm-C69MX9oF.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Departments/Index.tsx": [
-    "/build/assets/Index-DPvT4Cdd.js",
+    "/build/assets/Index-D0k5UuUk.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Gallery/Create.tsx": [
@@ -250,7 +250,7 @@
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Products/Index.tsx": [
-    "/build/assets/Index-RNd61lNg.js",
+    "/build/assets/Index-HOhS8QMa.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Admin/Roster/Index.tsx": [
@@ -310,27 +310,27 @@
     "/build/assets/AvailableSlots-BiD8K0YY.js"
   ],
   "resources/js/Pages/Booking/BookingHistory.tsx": [
-    "/build/assets/BookingHistory-f5mUwpMe.js"
+    "/build/assets/BookingHistory-BXBbmI3E.js"
   ],
   "resources/js/Pages/Booking/BookingWidget.tsx": [
     "/build/assets/BookingWidget-Cql3K66v.js",
     "/build/assets/BookingWidget-BIpG-jaY.css"
   ],
   "resources/js/Pages/Cart/Index.tsx": [
-    "/build/assets/Index-Cn2q-4zh.js",
+    "/build/assets/Index-DmeabP5I.js",
     "/build/assets/ReactToastify-GNLSjkBZ.css"
   ],
   "resources/js/Pages/Category/Show.tsx": [
-    "/build/assets/Show-BjrLLLMN.js"
+    "/build/assets/Show-BYahYwRp.js"
   ],
   "resources/js/Pages/Contact.tsx": [
-    "/build/assets/Contact-CWJ5F5je.js"
+    "/build/assets/Contact-C52fqJn7.js"
   ],
   "resources/js/Pages/Dashboard.tsx": [
-    "/build/assets/Dashboard-dzrGl3Dv.js"
+    "/build/assets/Dashboard-DTrjHZrV.js"
   ],
   "resources/js/Pages/Department/Index.tsx": [
-    "/build/assets/Index--2-Qv7n_.js"
+    "/build/assets/Index-1BQAEv-i.js"
   ],
   "resources/js/Pages/Error.tsx": [
     "/build/assets/Error-CDwC5T1w.js"
@@ -339,30 +339,30 @@
     "/build/assets/ErrorPage-BD92hy7W.js"
   ],
   "resources/js/Pages/Gallery/Index.tsx": [
-    "/build/assets/Index-C0zvPTEl.js"
+    "/build/assets/Index-UlKZ8VA6.js"
   ],
   "resources/js/Pages/GiftVoucher/GiftVoucherShop.tsx": [
-    "/build/assets/GiftVoucherShop-Be684Qaw.js"
+    "/build/assets/GiftVoucherShop-DNSVqtbn.js"
   ],
   "resources/js/Pages/GiftVoucher/GiftVoucherSuccess.tsx": [
-    "/build/assets/GiftVoucherSuccess-BafrjRCh.js"
+    "/build/assets/GiftVoucherSuccess-uJq39h3x.js"
   ],
   "resources/js/Pages/Home.tsx": [
-    "/build/assets/Home-BbVXXgIp.js",
+    "/build/assets/Home-Dp-HXbG4.js",
     "/build/assets/aos-DvB2Xm2x.css"
   ],
   "resources/js/Pages/LandingPage.tsx": [
     "/build/assets/LandingPage-DXg7tyMC.js"
   ],
   "resources/js/Pages/Order/OrdersHistory.tsx": [
-    "/build/assets/OrdersHistory-DdPLY3hS.js"
+    "/build/assets/OrdersHistory-JU4ApjgJ.js"
   ],
   "resources/js/Pages/Product/Show.tsx": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ],
   "resources/js/Pages/Profile/Edit.tsx": [
-    "/build/assets/Edit-Dsvs_ve8.js"
+    "/build/assets/Edit-C9xj3lMi.js"
   ],
   "resources/js/Pages/Profile/Partials/DeleteUserForm.tsx": [
     "/build/assets/DeleteUserForm-zNPkWdeS.js"
@@ -374,41 +374,44 @@
     "/build/assets/UpdateProfileInformationForm-B5wBO3tf.js"
   ],
   "resources/js/Pages/Profile/Partials/VendorDetails.tsx": [
-    "/build/assets/VendorDetails-CcwwC0lY.js"
+    "/build/assets/VendorDetails-wYfaurWC.js"
   ],
   "resources/js/Pages/Profile/ShippingAddresses.tsx": [
     "/build/assets/ShippingAddresses-eY_HICWK.js"
   ],
   "resources/js/Pages/Shop/ListProducts.tsx": [
-    "/build/assets/ListProducts-BEw8Pfu_.js"
+    "/build/assets/ListProducts-G1yxXDC5.js"
   ],
   "resources/js/Pages/Stripe/Success.tsx": [
-    "/build/assets/Success-BIWUb7cD.js"
+    "/build/assets/Success-HpzsNnT2.js"
   ],
   "resources/js/Pages/Vendor/Profile.tsx": [
-    "/build/assets/Profile-D9_B2y42.js"
+    "/build/assets/Profile-BFM_bLhV.js"
   ],
   "resources/js/Pages/Vouchers/Index.tsx": [
-    "/build/assets/Index-Fp9eqD5L.js"
+    "/build/assets/Index-Brsm5LNv.js"
   ],
   "resources/js/Pages/showProductGroup/Show.tsx": [
-    "/build/assets/Show-BnFz-U8R.js"
+    "/build/assets/Show-Ci6WcNVX.js"
   ],
   "resources/js/hooks/useScrollDirection.ts": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
+  ],
+  "resources/js/hooks/useVendorData.ts": [
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/ssr.tsx": [],
   "resources/js/utils/CurrencyFormatter.tsx": [
     "/build/assets/CurrencyFormatter-CayJY2sU.js"
   ],
   "resources/js/utils/PhoneFormat.ts": [
-    "/build/assets/AuthenticatedLayout-Bn2lZUbF.js"
+    "/build/assets/AuthenticatedLayout-4VE-mX00.js"
   ],
   "resources/js/utils/dateFormat.ts": [
     "/build/assets/dateFormat-BXhehSQs.js"
   ],
   "resources/js/utils/helpers.ts": [
-    "/build/assets/Show-DwnDozWe.js",
+    "/build/assets/Show-DDflDq25.js",
     "/build/assets/Show-vHIubPVI.css"
   ]
 }
