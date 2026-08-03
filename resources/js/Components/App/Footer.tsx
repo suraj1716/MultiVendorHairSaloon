@@ -5,13 +5,13 @@ import { formatAustralianPhone } from "@/utils/PhoneFormat";
 import { PageProps } from "@/types";
 
 export default function Footer() {
-  const { vendor, dpts = [] } = usePage<PageProps>().props;
+  const { vendor, dpts = [], categories = [] } = usePage<PageProps>().props;
   const vendorData = vendor?.data ?? null;
 
   const NAV_COLS = [
     {
       heading: "Services",
-      links: dpts.map((c) => ({
+      links: categories.map((c) => ({
         label: c.name,
         href: "/#services",
         scrollTo: "services",

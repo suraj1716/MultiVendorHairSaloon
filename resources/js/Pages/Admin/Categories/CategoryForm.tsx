@@ -14,6 +14,7 @@ interface Department { id: number; name: string; }
 interface ParentCategory { id: number; name: string; department_id: number | null; }
 interface CategoryFormData {
   name: string;
+  slug: string;
   description: string;
   parent_id: string;
   department_id: string;
@@ -25,6 +26,7 @@ interface Category {
   image_url: string | (() => string | null) | null;
   id: number;
   name: string;
+  slug: string;
   description: string | null;
   parent_id: number | null;
   department_id: number | null;
@@ -35,6 +37,19 @@ interface Props {
   departments: Department[];
   parentCategories: ParentCategory[];
   flash: { success?: string; error?: string };
+}
+
+/* ── Slug helper ── */
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip accents
+    .replace(/[^a-z0-9\s-]/g, "")    // strip invalid chars
+    .replace(/\s+/g, "-")            // spaces -> hyphens
+    .replace(/-+/g, "-")             // collapse hyphens
+    .replace(/^-+|-+$/g, "");        // trim leading/trailing hyphens
 }
 
 /* ── Styles ── */
@@ -105,6 +120,7 @@ export default function CategoryForm({ category, departments, parentCategories, 
 
   const { data, set, errors, processing, post, put } = useAdminForm<CategoryFormData>({
     name:          category?.name ?? "",
+    slug:          category?.slug ?? "",
     description:   category?.description ?? "",
     parent_id:     category?.parent_id ? String(category.parent_id) : "",
     department_id: category?.department_id ? String(category.department_id) : "",
@@ -112,6 +128,10 @@ export default function CategoryForm({ category, departments, parentCategories, 
     image:         null,
     _remove_image: false,
   });
+
+  // Tracks whether the user has manually edited the slug — once true,
+  // typing in Name no longer overwrites it.
+  const [slugTouched, setSlugTouched] = useState(isEdit && !!category?.slug);
 
   const [imagePreview, setImagePreview] = useState<string | null>(
     category?.image_url ? category.image_url : null
@@ -121,6 +141,19 @@ export default function CategoryForm({ category, departments, parentCategories, 
   const parentOptions = parentCategories.filter(
     (c) => !isEdit || c.id !== category!.id
   );
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    set("name", newName);
+    if (!slugTouched) {
+      set("slug", slugify(newName));
+    }
+  };
+
+  const handleSlugChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSlugTouched(true);
+    set("slug", slugify(e.target.value));
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
@@ -145,6 +178,7 @@ export default function CategoryForm({ category, departments, parentCategories, 
   const buildFormData = () => {
     const fd = new FormData();
     fd.append("name",          data.name);
+    fd.append("slug",          data.slug);
     fd.append("description",   data.description);
     fd.append("department_id", data.department_id);
     fd.append("parent_id",     data.parent_id);
@@ -246,12 +280,36 @@ export default function CategoryForm({ category, departments, parentCategories, 
                   <input
                     type="text"
                     value={data.name}
-                    onChange={(e) => set("name", e.target.value)}
+                    onChange={handleNameChange}
                     placeholder="e.g. Hair Colour"
                     style={inputClass(errors, "name")}
                   />
                   {errors.name && <span style={errorStyle}>{errors.name}</span>}
                 </div>
+
+                <div style={fieldWrap}>
+                  <label style={{
+                    ...labelStyle,
+                    color: errors.slug ? "#c0392b" : "var(--color-text-muted)",
+                  }}>
+                    Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={data.slug}
+                    onChange={handleSlugChange}
+                    placeholder="e.g. hair-colour"
+                    style={{ ...inputClass(errors, "slug"), fontFamily: "monospace" }}
+                  />
+                  {errors.slug && <span style={errorStyle}>{errors.slug}</span>}
+                  <span style={{
+                    fontFamily: "var(--font-body)", fontSize: "10px",
+                    color: "var(--color-text-muted)", marginTop: 4,
+                  }}>
+                    Auto-generated from name — edit to customise
+                  </span>
+                </div>
+
                 <div style={fieldWrap}>
                   <label style={{
                     ...labelStyle,

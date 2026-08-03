@@ -16,6 +16,7 @@ class Category extends Model
         'department_id',
         'active',
         'image', // make sure this is included
+        'slug'
     ];
     public function parent(): BelongsTo
     {

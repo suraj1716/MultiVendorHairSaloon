@@ -233,6 +233,7 @@ export type PageProps<
   totalPrice: number;
   miniCartItems: CartItem[];
   departments: Department[];
+  categories:Category[];
   dpts: Department[];
   vendor: { data: Vendor } | null;
   faqs: Faq[];
@@ -307,6 +308,7 @@ export type Category = {
   products_count: number;
   image_url: string | null;
   department: Department; // <---- important
+  slug:string;
 };
 
 export type Department = {
