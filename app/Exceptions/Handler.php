@@ -43,10 +43,18 @@ class Handler extends ExceptionHandler
         return parent::render($request, $exception);
     }
 
+    // In debug mode, always show the real error (Whoops/Ignition) instead of masking it
+    if (config('app.debug')) {
+        return parent::render($request, $exception);
+    }
+
     $status = 500;
     if ($this->isHttpException($exception)) {
         $status = $exception->getStatusCode();
     }
+
+    // Make sure it's actually logged even though we're showing a friendly page
+    report($exception);
 
     $messages = [
         404 => 'Page not found.',
