@@ -179,6 +179,23 @@ export default function Home({
   const [statsVisible, setStatsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
+
+
+  const [categoryProducts, setCategoryProducts] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(false);
+
+useEffect(() => {
+  if (!activeCategory) {
+    setCategoryProducts([]);
+    return;
+  }
+  setLoadingProducts(true);
+  axios
+    .get(route("categories.products", activeCategory.id))
+    .then((res) => setCategoryProducts(res.data.products))
+    .catch(() => setCategoryProducts([]))
+    .finally(() => setLoadingProducts(false));
+}, [activeCategory]);
   // useEffect(() => {
   //   const loadImages = async () => {
   //     const results: Record<number, string> = {};
