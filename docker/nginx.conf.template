@@ -6,6 +6,10 @@ server {
 
     client_max_body_size 100M;
 
+    # Send nginx logs to stdout/stderr so they show up in Render's log stream
+    access_log /dev/stdout;
+    error_log /dev/stderr warn;
+
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
 
