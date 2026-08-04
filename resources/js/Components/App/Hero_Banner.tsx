@@ -78,20 +78,30 @@ function Slide({
       }}
     >
       {/* background image */}
-      <img
-        src={banner.image_url ?? '/images/placeholder-category.jpg'}
-        alt={banner.title}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          objectPosition: "center",
-          transition: "transform 6s ease",
-          transform: active ? "scale(1.06)" : "scale(1)",
-        }}
-      />
+   <style>{`
+  .hero-slide-img {
+    object-position: center;
+  }
+  @media (max-width: 767px) {
+    .hero-slide-img {
+      object-position: 70% center; /* nudge toward subject; tune per your banner art */
+    }
+  }
+`}</style>
+<img
+  className="hero-slide-img"
+  src={banner.image_url ?? '/images/placeholder-category.jpg'}
+  alt={banner.title}
+  style={{
+    position: "absolute",
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    objectFit: "cover",
+    transition: "transform 6s ease",
+    transform: active ? "scale(1.06)" : "scale(1)",
+  }}
+/>
 
       {/* layered overlays */}
       <div
@@ -380,12 +390,12 @@ export default function HeroCarousel({ banners }: Props) {
 
   return (
     <div
-      style={{
-        position: "relative",
-        height: "min(92vh, 860px)",
-        overflow: "hidden",
-        userSelect: "none",
-      }}
+  style={{
+  position: "relative",
+  height: "clamp(420px, 70vh, 860px)", // shorter floor + ceiling than 92vh
+  overflow: "hidden",
+  userSelect: "none",
+}}
       aria-label="Hero carousel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}

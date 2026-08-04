@@ -50,6 +50,9 @@ Route::get('/storage/{path}', function (string $path) {
 // ── Public: home / products / categories / search ───────────────────────────
 Route::get('/', [ProductController::class, 'home'])->name('home');
 Route::get('/products/{product:slug}', [ProductController::class, 'show'])->name('product.show');
+
+Route::get('/categories/{category}/products', [CategoryController::class, 'products'])
+    ->name('categories.products');
 Route::get('/category/{category}', [CategoryController::class, 'show'])->name('category.show');
 Route::get('/product-groups/{productGroup}', [ProductController::class, 'showProductGroup'])->name('productGroup.show');
 

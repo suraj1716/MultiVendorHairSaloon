@@ -30,6 +30,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { Eyebrow, Ornament, Title } from "@/Components/App/ui/SectionHeading";
 import BentoTile from "@/Components/App/ui/BentoTile";
+import axios from "axios";
 
 /* ─────────────────────────────────────────────
    Types
@@ -179,6 +180,23 @@ export default function Home({
   const [statsVisible, setStatsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
+
+
+  const [categoryProducts, setCategoryProducts] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(false);
+
+useEffect(() => {
+  if (!activeCategory) {
+    setCategoryProducts([]);
+    return;
+  }
+  setLoadingProducts(true);
+  axios
+    .get(route("categories.products", activeCategory.id))
+    .then((res) => setCategoryProducts(res.data.products))
+    .catch(() => setCategoryProducts([]))
+    .finally(() => setLoadingProducts(false));
+}, [activeCategory]);
   // useEffect(() => {
   //   const loadImages = async () => {
   //     const results: Record<number, string> = {};
@@ -249,7 +267,10 @@ export default function Home({
     return () => clearInterval(t);
   }, []);
 
-  console.log("banners", banners);
+console.log("categories",categories)
+console.log("activecat",activeCategory)
+console.log("catprod",categoryProducts)
+
 
   return (
     <div
@@ -807,17 +828,17 @@ export default function Home({
     margin-top: 8px;
   }
 
-  @media (min-width: 1024px) {
-    .services-bento-desktop {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 240px);
-      gap: 10px;
-    }
-    .services-bento-mobile {
-      display: none;
-    }
+@media (min-width: 1024px) {
+  .services-bento-desktop {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 240px;
+    gap: 10px;
   }
+  .services-bento-mobile {
+    display: none;
+  }
+}
 
   @media (min-width: 640px) and (max-width: 1023px) {
     .services-bento-mobile {
@@ -896,38 +917,38 @@ export default function Home({
             </div>
 
             {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
-            <div className="services-bento-desktop">
-              {categories.slice(0, 9).map((cat, idx) => (
-                <BentoTile
-                  key={cat.id}
-                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
-                  title={cat.name}
-                  subtitle={`${cat.products_count} treatments`}
-                  size={idx === 0 || idx === 5 ? "hero" : "normal"}
-                  footer="Explore"
-                  onOpen={() => setActiveCategory(cat)}
-                  index={idx}
-                  style={{
-                    gridColumn: idx === 0 || idx === 5 ? "span 2" : "span 1",
-                  }}
-                />
-              ))}
-            </div>
+           <div className="services-bento-desktop">
+  {categories.map((cat, idx) => (
+    <BentoTile
+      key={cat.id}
+      image={cat.image_url ?? "/images/placeholder-category.jpg"}
+      title={cat.name}
+      subtitle={`${cat.products_count} treatments`}
+      size={idx % 5 === 0 ? "hero" : "normal"}
+      footer="Explore"
+      onOpen={() => setActiveCategory(cat)}
+      index={idx}
+      style={{
+        gridColumn: idx % 5 === 0 ? "span 2" : "span 1",
+      }}
+    />
+  ))}
+</div>
 
-            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
-            <div className="services-bento-mobile">
-              {categories.slice(0, 6).map((cat, idx) => (
-                <BentoTile
-                  key={cat.id}
-                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
-                  title={cat.name}
-                  subtitle={`${cat.products_count} treatments`}
-                  onOpen={() => setActiveCategory(cat)}
-                  index={idx}
-                  style={{ height: 175, minHeight: 175 }}
-                />
-              ))}
-            </div>
+          {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+<div className="services-bento-mobile">
+  {categories.map((cat, idx) => (
+    <BentoTile
+      key={cat.id}
+      image={cat.image_url ?? "/images/placeholder-category.jpg"}
+      title={cat.name}
+      subtitle={`${cat.products_count} treatments`}
+      onOpen={() => setActiveCategory(cat)}
+      index={idx}
+      style={{ height: 175, minHeight: 175 }}
+    />
+  ))}
+</div>
           </div>
         </section>
 
@@ -947,15 +968,16 @@ export default function Home({
             onClick={() => setActiveCategory(null)}
           >
             <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "min(520px, 90vw)",
-                background: "var(--color-surface-warm)",
-                overflow: "hidden",
-                border: "1px solid var(--color-border)",
-                boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
-              }}
-            >
+  onClick={(e) => e.stopPropagation()}
+  style={{
+    width: "min(520px, 90vw)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "var(--color-surface-warm)",
+    border: "1px solid var(--color-border)",
+    boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
+  }}
+>
               <div
                 style={{
                   height: 240,
@@ -1035,6 +1057,42 @@ export default function Home({
                   Browse our collection of {activeCategory.name.toLowerCase()}{" "}
                   products and services.
                 </p>
+
+
+<div style={{ marginBottom: "1.75rem" }}>
+  {loadingProducts ? (
+    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
+      Loading products…
+    </p>
+  ) : categoryProducts.length > 0 ? (
+    <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+      {categoryProducts.map((product) => (
+        <li
+          key={product.id}
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            paddingBottom: "0.5rem",
+            borderBottom: "1px solid var(--color-border)",
+          }}
+        >
+          <span style={{ color: "var(--color-text)", fontSize: "0.9rem" }}>
+            {product.title}
+          </span>
+          <span style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
+            ${product.price}
+          </span>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
+      No products found in this category.
+    </p>
+  )}
+</div>
+
 
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <button
