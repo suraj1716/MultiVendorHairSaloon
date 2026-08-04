@@ -30,6 +30,16 @@ use App\Http\Controllers\StaffController;
 use App\Http\Controllers\VoucherController;
 
 
+
+Route::get('/test-404', fn () => abort(404));
+Route::get('/test-403', fn () => abort(403));
+Route::get('/test-500', fn () => throw new \Exception('Test error'));
+Route::get('/test-validation', function () {
+    request()->validate(['email' => 'required|email']);
+});
+
+
+
 Route::get('/.well-known/appspecific/com.chrome.devtools.json', fn () => response()->noContent());
 // ── Public: storage file serving ────────────────────────────────────────────
 Route::get('/storage/{path}', function (string $path) {
