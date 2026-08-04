@@ -30,6 +30,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { Eyebrow, Ornament, Title } from "@/Components/App/ui/SectionHeading";
 import BentoTile from "@/Components/App/ui/BentoTile";
+import axios from "axios";
 
 /* ─────────────────────────────────────────────
    Types
@@ -266,7 +267,10 @@ useEffect(() => {
     return () => clearInterval(t);
   }, []);
 
-  console.log("banners", banners);
+console.log("categories",categories)
+console.log("activecat",activeCategory)
+console.log("catprod",categoryProducts)
+
 
   return (
     <div
@@ -831,6 +835,10 @@ useEffect(() => {
     grid-auto-rows: 240px;
     gap: 10px;
   }
+
+  .services-bento-mobile {
+    display: none;
+  }
 }
 
   @media (min-width: 640px) and (max-width: 1023px) {
@@ -910,38 +918,38 @@ useEffect(() => {
             </div>
 
             {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
-            <div className="services-bento-desktop">
-              {categories.slice(0, 9).map((cat, idx) => (
-                <BentoTile
-                  key={cat.id}
-                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
-                  title={cat.name}
-                  subtitle={`${cat.products_count} treatments`}
-                  size={idx === 0 || idx === 5 ? "hero" : "normal"}
-                  footer="Explore"
-                  onOpen={() => setActiveCategory(cat)}
-                  index={idx}
-                  style={{
-                    gridColumn: idx === 0 || idx === 5 ? "span 2" : "span 1",
-                  }}
-                />
-              ))}
-            </div>
+           <div className="services-bento-desktop">
+  {categories.map((cat, idx) => (
+    <BentoTile
+      key={cat.id}
+      image={cat.image_url ?? "/images/placeholder-category.jpg"}
+      title={cat.name}
+      subtitle={`${cat.products_count} treatments`}
+      size={idx % 5 === 0 ? "hero" : "normal"}
+      footer="Explore"
+      onOpen={() => setActiveCategory(cat)}
+      index={idx}
+      style={{
+        gridColumn: idx % 5 === 0 ? "span 2" : "span 1",
+      }}
+    />
+  ))}
+</div>
 
-            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
-            <div className="services-bento-mobile">
-              {categories.slice(0, 6).map((cat, idx) => (
-                <BentoTile
-                  key={cat.id}
-                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
-                  title={cat.name}
-                  subtitle={`${cat.products_count} treatments`}
-                  onOpen={() => setActiveCategory(cat)}
-                  index={idx}
-                  style={{ height: 175, minHeight: 175 }}
-                />
-              ))}
-            </div>
+          {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+<div className="services-bento-mobile">
+  {categories.map((cat, idx) => (
+    <BentoTile
+      key={cat.id}
+      image={cat.image_url ?? "/images/placeholder-category.jpg"}
+      title={cat.name}
+      subtitle={`${cat.products_count} treatments`}
+      onOpen={() => setActiveCategory(cat)}
+      index={idx}
+      style={{ height: 175, minHeight: 175 }}
+    />
+  ))}
+</div>
           </div>
         </section>
 
@@ -1086,7 +1094,8 @@ useEffect(() => {
   )}
 </div>
 
-                
+
+
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <button
                     onClick={() =>

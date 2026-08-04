@@ -672,6 +672,7 @@ namespace App\Models {
     /**
      * App\Models\Category
      *
+     * @property string $slug
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
      * @property bool $active
@@ -697,6 +698,7 @@ namespace App\Models {
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category whereActive($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category whereUpdatedAt($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category whereSlug($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category newModelQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category newQuery()
      * @method static \Illuminate\Database\Eloquent\Builder<Category>|Category query()

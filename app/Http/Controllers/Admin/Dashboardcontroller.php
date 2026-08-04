@@ -14,8 +14,9 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    public function index()
-    {
+   public function index()
+{
+    try {
         // ── Stat cards ────────────────────────────────────────────
         $totalRevenue   = Order::where('is_paid', true)->sum('total_price');
         $totalOrders    = Order::count();
@@ -34,7 +35,6 @@ class DashboardController extends Controller
             ->orderBy('date')
             ->pluck('total', 'date');
 
-        // Fill missing days with 0
         $salesLabels = [];
         $salesData   = [];
         for ($i = 29; $i >= 0; $i--) {
@@ -43,12 +43,10 @@ class DashboardController extends Controller
             $salesData[]   = round($salesRaw[$date] ?? 0, 2);
         }
 
-        // ── Orders by status ──────────────────────────────────────
         $ordersByStatus = Order::selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        // ── Recent orders ─────────────────────────────────────────
         $recentOrders = Order::with('user', 'vendorUser.vendor')
             ->latest()
             ->take(8)
@@ -62,7 +60,6 @@ class DashboardController extends Controller
                 'created_at'   => $o->created_at?->format('d M Y'),
             ]);
 
-        // ── Upcoming bookings ─────────────────────────────────────
         $upcomingBookings = Booking::with('user', 'order')
             ->whereDate('booking_date', '>=', today())
             ->orderBy('booking_date')
@@ -92,9 +89,20 @@ class DashboardController extends Controller
                 'labels' => $salesLabels,
                 'data'   => $salesData,
             ],
-            'ordersByStatus' => $ordersByStatus,
-            'recentOrders'   => $recentOrders,
+            'ordersByStatus'   => $ordersByStatus,
+            'recentOrders'     => $recentOrders,
             'upcomingBookings' => $upcomingBookings,
         ]);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file'  => $e->getFile(),
+            'line'  => $e->getLine(),
+            'trace' => collect($e->getTrace())->take(15)->map(fn($t) =>
+                ($t['file'] ?? '?') . ':' . ($t['line'] ?? '?') . ' ' . ($t['function'] ?? '')
+            ),
+        ], 500);
     }
+}
 }
