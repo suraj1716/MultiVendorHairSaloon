@@ -961,15 +961,16 @@ useEffect(() => {
             onClick={() => setActiveCategory(null)}
           >
             <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: "min(520px, 90vw)",
-                background: "var(--color-surface-warm)",
-                overflow: "hidden",
-                border: "1px solid var(--color-border)",
-                boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
-              }}
-            >
+  onClick={(e) => e.stopPropagation()}
+  style={{
+    width: "min(520px, 90vw)",
+    maxHeight: "90vh",
+    overflowY: "auto",
+    background: "var(--color-surface-warm)",
+    border: "1px solid var(--color-border)",
+    boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
+  }}
+>
               <div
                 style={{
                   height: 240,
