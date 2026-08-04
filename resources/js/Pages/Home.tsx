@@ -824,17 +824,14 @@ useEffect(() => {
     margin-top: 8px;
   }
 
-  @media (min-width: 1024px) {
-    .services-bento-desktop {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 240px);
-      gap: 10px;
-    }
-    .services-bento-mobile {
-      display: none;
-    }
+@media (min-width: 1024px) {
+  .services-bento-desktop {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 240px;
+    gap: 10px;
   }
+}
 
   @media (min-width: 640px) and (max-width: 1023px) {
     .services-bento-mobile {
