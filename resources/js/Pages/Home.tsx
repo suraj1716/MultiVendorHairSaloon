@@ -1073,7 +1073,7 @@ useEffect(() => {
           }}
         >
           <span style={{ color: "var(--color-text)", fontSize: "0.9rem" }}>
-            {product.name}
+            {product.title}
           </span>
           <span style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
             ${product.price}
