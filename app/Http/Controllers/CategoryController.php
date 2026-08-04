@@ -57,26 +57,19 @@ class CategoryController extends Controller
 
 
 
-    public function products(Category $category)
+public function products(Category $category)
 {
     $products = Cache::remember("category:{$category->id}:products", 300, function () use ($category) {
         return $category->products()
-            ->published()
-            ->vendorApproved()
-            ->select('id', 'title', 'price', 'category_id', 'created_by')
-            ->get()
-            ->map(function ($product) {
-                return [
-                    'id' => $product->id,
-                    'title' => $product->title,
-                    'price' => $product->price,
-                    'image' => $product->getFirstImageUrl(),
-                ];
-            });
+            ->forWebsite()
+            ->withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->get();
     });
 
-    return response()->json(['products' => $products]);
+    return response()->json([
+        'products' => ProductListResource::collection($products),
+    ]);
 }
-    
 
 }
