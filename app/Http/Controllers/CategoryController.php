@@ -61,9 +61,7 @@ public function products(Category $category)
 {
     $products = Cache::remember("category:{$category->id}:products", 300, function () use ($category) {
         return $category->products()
-            ->forWebsite()
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
+            ->where('status', 'published')
             ->get();
     });
 
