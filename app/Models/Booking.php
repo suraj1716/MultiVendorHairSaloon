@@ -16,6 +16,7 @@ class Booking extends Model
         'time_slot',
         'order_id',
         'staff_id',
+        'edited_at',
     ];
 
     protected $casts = [

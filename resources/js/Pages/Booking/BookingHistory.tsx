@@ -6,7 +6,9 @@ import BookingWidget from "./BookingWidget";
 import StaffSelectStep from "@/Components/App/StaffSelectStep";
 import dayjs from "dayjs";
 import Button from "@/Components/App/ui/Button";
-import OrderStatusBadge, { TimelineDot } from "@/Components/App/ui/OrderStatusBadge";
+import OrderStatusBadge, {
+  TimelineDot,
+} from "@/Components/App/ui/OrderStatusBadge";
 
 function ConfirmationModal({
   open,
@@ -175,57 +177,67 @@ export default function BookingHistory() {
     setSelectedStaffName(staffName ?? null);
   };
 
- const handleCancelBooking = (item: OrderItem, orderStatus: string, order: Order) => {
-  if (orderStatus !== "draft" && orderStatus !== "paid") {
-    console.warn("Booking can only be cancelled when order is draft or paid.");
-    return;
-  }
-  if (!item.booking?.id) {
-    console.error("Booking ID is missing.");
-    return;
-  }
+  const handleCancelBooking = (
+    item: OrderItem,
+    orderStatus: string,
+    order: Order,
+  ) => {
+    if (orderStatus !== "draft" && orderStatus !== "paid") {
+      console.warn(
+        "Booking can only be cancelled when order is draft or paid.",
+      );
+      return;
+    }
+    if (!item.booking?.id) {
+      console.error("Booking ID is missing.");
+      return;
+    }
 
-  const bookingDateObj = new Date(item.booking.booking_date);
-  const now = new Date();
-  const hoursUntilBooking = (bookingDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
-  const isFullRefund = hoursUntilBooking >= 24;
+    const bookingDateObj = new Date(item.booking.booking_date);
+    const now = new Date();
+    const hoursUntilBooking =
+      (bookingDateObj.getTime() - now.getTime()) / (1000 * 60 * 60);
+    const isFullRefund = hoursUntilBooking >= 24;
 
-  const grossTotal = order.total_price + (order.voucher_discount ?? 0);
-  const refundAmount = isFullRefund ? grossTotal : grossTotal - order.booking_fee;
+    const grossTotal = order.total_price + (order.voucher_discount ?? 0);
+    const refundAmount = isFullRefund
+      ? grossTotal
+      : grossTotal - order.booking_fee;
 
-  const giftCardNote =
-    Number(order.voucher_discount) > 0
-      ? `\nGift card used ($${Number(order.voucher_discount).toFixed(2)}) will be fully restored to your balance, regardless of timing.\n`
-      : "";
+    const giftCardNote =
+      Number(order.voucher_discount) > 0
+        ? `\nGift card used ($${Number(order.voucher_discount).toFixed(2)}) will be fully restored to your balance, regardless of timing.\n`
+        : "";
 
-  const confirmMessage = isFullRefund
-    ? `⚠️ Cancel this booking?\n\n` +
-      `More than 24 hours until your appointment — full refund applies.\n\n` +
-      `Total paid: $${grossTotal.toFixed(2)}\n` +
-      `You'll receive: $${refundAmount.toFixed(2)}\n` +
-      giftCardNote
-    : `⚠️ Cancel this booking?\n\n` +
-      `This is within 24 hours of your appointment — the booking fee is non-refundable.\n\n` +
-      `Total paid: $${grossTotal.toFixed(2)}\n` +
-      `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
-      `You'll receive: $${refundAmount.toFixed(2)}\n` +
-      giftCardNote +
-      `\nAlternatively, you can edit the booking to change the date/time instead.`;
+    const confirmMessage = isFullRefund
+      ? `⚠️ Cancel this booking?\n\n` +
+        `More than 24 hours until your appointment — full refund applies.\n\n` +
+        `Total paid: $${grossTotal.toFixed(2)}\n` +
+        `You'll receive: $${refundAmount.toFixed(2)}\n` +
+        giftCardNote
+      : `⚠️ Cancel this booking?\n\n` +
+        `This is within 24 hours of your appointment — the booking fee is non-refundable.\n\n` +
+        `Total paid: $${grossTotal.toFixed(2)}\n` +
+        `Booking fee (non-refundable): -$${order.booking_fee.toFixed(2)}\n` +
+        `You'll receive: $${refundAmount.toFixed(2)}\n` +
+        giftCardNote +
+        `\nAlternatively, you can edit the booking to change the date/time instead.`;
 
-  if (confirm(confirmMessage)) {
-    router.post(
-      route("bookings.cancel", item.booking.id),
-      {},
-      {
-        onSuccess: () => alert("Booking cancelled. Refund will be processed."),
-        onError: (errs) => {
-          console.error("Failed to cancel booking", errs);
-          alert("Cancellation failed. Please try again.");
+    if (confirm(confirmMessage)) {
+      router.post(
+        route("bookings.cancel", item.booking.id),
+        {},
+        {
+          onSuccess: () =>
+            alert("Booking cancelled. Refund will be processed."),
+          onError: (errs) => {
+            console.error("Failed to cancel booking", errs);
+            alert("Cancellation failed. Please try again.");
+          },
         },
-      },
-    );
-  }
-};
+      );
+    }
+  };
 
   const handleConfirmBooking = (date: string, slot: string) => {
     if (!editingItem || !editingItem.booking) {
@@ -405,41 +417,52 @@ export default function BookingHistory() {
                         </div>
                       </div>
 
-                     <div
-  style={{
-    padding: "14px 24px",
-    fontFamily: "var(--font-body)",
-    fontSize: "var(--text-sm)",
-    color: "var(--color-text-muted)",
-  }}
->
-  <span style={{ color: "var(--color-text)" }}>
-    {order.vendor.store_name}
-  </span>
-  {" · "}
-  {order.vendor.store_address}
+                      <div
+                        style={{
+                          padding: "14px 24px",
+                          fontFamily: "var(--font-body)",
+                          fontSize: "var(--text-sm)",
+                          color: "var(--color-text-muted)",
+                        }}
+                      >
+                        <span style={{ color: "var(--color-text)" }}>
+                          {order.vendor.store_name}
+                        </span>
+                        {" · "}
+                        {order.vendor.store_address}
 
-  {order.orderItems.map(
-    (item) =>
-      item.booking && (
-        <div
-          key={item.id}
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "12px",
-            color: "var(--color-text)",
-            marginTop: 4,
-          }}
-        >
-          {new Date(item.booking.booking_date).toLocaleDateString()} · {item.booking.time_slot}
-          {" · "}
-          <span style={{ color: "var(--color-text-muted)" }}>
-            {item.booking.staff ? `with ${item.booking.staff.name}` : "No staff preference"}
-          </span>
-        </div>
-      ),
-  )}
-</div>
+                        {(() => {
+                          const booking = order.orderItems.find(
+                            (item) => item.booking,
+                          )?.booking;
+
+                          return (
+                            booking && (
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "12px",
+                                  color: "var(--color-text)",
+                                  marginTop: 4,
+                                }}
+                              >
+                                {new Date(
+                                  booking.booking_date,
+                                ).toLocaleDateString()}{" "}
+                                · {booking.time_slot}
+                                {" · "}
+                                <span
+                                  style={{ color: "var(--color-text-muted)" }}
+                                >
+                                  {booking.staff
+                                    ? `with ${booking.staff.name}`
+                                    : "No staff preference"}
+                                </span>
+                              </div>
+                            )
+                          );
+                        })()}
+                      </div>
                       {order.orderItems.map((item, i) => (
                         <div
                           key={item.id}
@@ -495,7 +518,6 @@ export default function BookingHistory() {
                                   .join(" · ")}
                               </div>
                             )}
-
                           </div>
 
                           <div

@@ -34,12 +34,20 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
 
-    $exceptions->reportable(function (Throwable $e) {
-        if (request()->is('.well-known/appspecific/*')) {
-            return false;
-        }
-    });
-    $exceptions->render(function (Throwable $exception, $request) {
+        $exceptions->reportable(function (Throwable $e) {
+            if (request()->is('.well-known/appspecific/*')) {
+                return false;
+            }
+        });
+
+        // ── TEMP DEBUG: custom render() disabled entirely so Laravel's
+        // default error handling takes over — Whoops/Ignition in debug
+        // mode, or Laravel's own default error page otherwise. This lets
+        // the real /admindashboard crash surface. Restore the block below
+        // once the root cause is found and fixed.
+
+        /*
+        $exceptions->render(function (Throwable $exception, $request) {
             if (
                 $exception instanceof \Illuminate\Validation\ValidationException
                 || $exception instanceof \Illuminate\Auth\AuthenticationException
@@ -73,5 +81,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 'message' => $message,
             ])->toResponse($request)->setStatusCode($status);
         });
+        */
     })
     ->create();

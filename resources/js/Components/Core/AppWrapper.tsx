@@ -26,81 +26,70 @@ const AppWrapper: React.FC<AppWrapperProps> = ({ App, props }) => {
     const [errorStatus, setErrorStatus] = useState<number>(500);
 
     useEffect(() => {
-  let lastUrl = window.location.pathname; // track current page before any navigation
+        let lastUrl = window.location.pathname; // track current page before any navigation
+        let timer: NodeJS.Timeout;
 
-  let timer: NodeJS.Timeout;
+        const removeStart = router.on("start", (event: any) => {
+            timer = setTimeout(() => setLoading(true), 300);
+        });
 
-  const removeStart = router.on("start", (event: any) => {
-    timer = setTimeout(() => setLoading(true), 300);
-  });
+        const removeFinish = router.on("finish", () => {
+            clearTimeout(timer);
+            setLoading(false);
+        });
 
-  const removeFinish = router.on("finish", () => {
-    clearTimeout(timer);
-    setLoading(false);
-  });
+        // ── TEMP DEBUG: no longer flips networkError/setErrorStatus, so the
+        // custom <ErrorPage> below won't intercept real error responses.
+        // Restore the two setState calls once /admindashboard is fixed.
+        const removeError = router.on("error", (event: any) => {
+            const status = event.detail?.response?.status ?? 500;
+            console.error("Inertia router error:", status, event.detail);
+            // setErrorStatus(status);
+            // setNetworkError(true);
+        });
 
-  const removeError = router.on("error", (event: any) => {
-    const status = event.detail?.response?.status ?? 500;
-    setErrorStatus(status);
-    setNetworkError(true);
-  });
+        const removeInvalid = router.on("invalid", () => {
+            clearTimeout(timer);
+            setLoading(false);
+        });
 
-  const removeInvalid = router.on("invalid", () => {
-    clearTimeout(timer);
-    setLoading(false);
-  });
+        const removeSuccess = router.on("success", (event: any) => {
+            const page = event.detail.page;
+            const isLoginPage = page.component === "Auth/LoginPage";
+            const cameFromRedirect = !page.props?.auth?.user;
+            if (isLoginPage && cameFromRedirect) {
+                const returnTo = lastUrl; // the page user was actually on before this redirect
+                router.visit(returnTo, {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => {
+                        setTimeout(() => openLogin(), 50);
+                    },
+                });
+                return; // don't update lastUrl to the login page itself
+            }
+            lastUrl = page.url; // remember this page for next time
+        });
 
-  const removeSuccess = router.on("success", (event: any) => {
-    const page = event.detail.page;
-    const isLoginPage = page.component === "Auth/LoginPage";
-    const cameFromRedirect = !page.props?.auth?.user;
+        const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+            console.error("Unhandled rejection:", event.reason);
+            // TEMP DEBUG: disabled so an unrelated JS promise rejection
+            // elsewhere on the page can't trigger the custom ErrorPage either.
+            // setErrorStatus(0);
+            // setNetworkError(true);
+        };
+        window.addEventListener("unhandledrejection", onUnhandledRejection);
 
-    if (isLoginPage && cameFromRedirect) {
-      const returnTo = lastUrl; // the page user was actually on before this redirect
-      router.visit(returnTo, {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-          setTimeout(() => openLogin(), 50);
-        },
-      });
-      return; // don't update lastUrl to the login page itself
-    }
-
-    lastUrl = page.url; // remember this page for next time
-  });
-
- const onUnhandledRejection = (event: PromiseRejectionEvent) => {
-+   console.error("Unhandled rejection:", event.reason);
-    setErrorStatus(0);
-    setNetworkError(true);
-};
-
-  window.addEventListener("unhandledrejection", onUnhandledRejection);
-
-  return () => {
-    clearTimeout(timer);
-    removeStart();
-    removeFinish();
-    removeError();
-    removeInvalid();
-    removeSuccess();
-    window.removeEventListener("unhandledrejection", onUnhandledRejection);
-  };
-}, [openLogin]);
-
-    if (networkError) {
-        return (
-            <ErrorPage
-                statusCode={errorStatus}
-                message={
-                    errorStatus === 0
-                        ? "Network error occurred. Please check your connection and try again."
-                        : `A server error occurred (status code: ${errorStatus}).`
-                }
-            />
-        );
-    }
+        return () => {
+            clearTimeout(timer);
+            removeStart();
+            removeFinish();
+            removeError();
+            removeInvalid();
+            removeSuccess();
+            window.removeEventListener("unhandledrejection", onUnhandledRejection);
+        };
+    }, [openLogin]);
 
     return (
         <>

@@ -171,7 +171,7 @@ class BookingController extends Controller
             ->join('orders', 'bookings.order_id', '=', 'orders.id')
             ->whereDate('bookings.booking_date', $date)
             ->whereRaw('LOWER(TRIM(bookings.time_slot)) = ?', [$timeSlot])
-           ->whereNotIn('orders.status', ['cancelled', 'refunded'])
+            ->whereNotIn('orders.status', ['cancelled', 'refunded'])
             ->where(function ($q) {
                 $q->where('orders.status', '!=', \App\Enums\OrderStatusEnum::Draft->value)
                     ->orWhere('orders.created_at', '>=', now()->subMinutes(5));
@@ -466,7 +466,9 @@ class BookingController extends Controller
         $booking->update([
             'booking_date' => $validated['booking_date'],
             'time_slot' => $validated['time_slot'],
-            'staff_id' => array_key_exists('staff_id', $validated) ? $validated['staff_id'] : $booking->staff_id,
+            'staff_id' => array_key_exists('staff_id', $validated)
+                ? $validated['staff_id']
+                : $booking->staff_id,
             'edited_at' => $isOwner && !$isVendor ? now() : $booking->edited_at,
         ]);
 
@@ -503,12 +505,7 @@ class BookingController extends Controller
             }
         }
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'message' => 'Booking updated successfully.',
-                'booking' => $booking->fresh(),
-            ]);
-        }
+
 
         return redirect()->back()->with('success', 'Booking updated successfully.');
     }

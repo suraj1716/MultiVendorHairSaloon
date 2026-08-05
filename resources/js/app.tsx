@@ -20,7 +20,13 @@ router.on("error", (event) => {
   }
 });
 
+// ── TEMP DEBUG: disabled so raw Laravel error responses (Whoops/Ignition,
+// or the default Laravel error page) render instead of being swallowed by
+// a toast. Restore the preventDefault() block once /admindashboard is fixed.
 router.on("invalid", (event) => {
+  console.error("Invalid Inertia response:", event.detail.response);
+
+  /*
   const isAdminRoute = window.location.pathname.startsWith("/dashboard");
 
   if (isAdminRoute) {
@@ -28,6 +34,7 @@ router.on("invalid", (event) => {
     toast.error("Something went wrong. Please try again.");
     console.error("Invalid Inertia response:", event.detail.response);
   }
+  */
 });
 
 createInertiaApp({
@@ -40,19 +47,19 @@ createInertiaApp({
 
   // Previously missing entirely, which is why the default Inertia bar
   // (blue, 250ms delay, spinner on) was showing on every navigation.
-progress: {
-  color: "var(--color-primary)",
-  showSpinner: false,
-  delay: 350,
-  includeCSS: true,
-},
+  progress: {
+    color: "var(--color-primary)",
+    showSpinner: false,
+    delay: 350,
+    includeCSS: true,
+  },
 
   setup({ el, App, props }) {
     if (import.meta.env.SSR) {
+      // TEMP DEBUG: ErrorBoundary removed so SSR render errors surface
+      // instead of being caught and replaced with a fallback UI.
       hydrateRoot(el,
-        <ErrorBoundary>
-          <AppWrapper App={App} props={props} />
-        </ErrorBoundary>
+        <AppWrapper App={App} props={props} />
       );
     } else {
       if (!root) {
@@ -60,7 +67,7 @@ progress: {
       }
       root.render(
          <AuthModalProvider>
-        <ErrorBoundary>
+
           <AppWrapper App={App} props={props} />
           <Toaster
             position="top-right"
@@ -95,7 +102,7 @@ progress: {
               },
             }}
           />
-        </ErrorBoundary>
+
         </AuthModalProvider>
       );
     }

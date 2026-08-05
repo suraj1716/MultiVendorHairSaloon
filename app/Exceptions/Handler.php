@@ -36,6 +36,16 @@ class Handler extends ExceptionHandler
 
     public function render($request, Throwable $exception)
     {
+        // ── Explicit logging so this ALWAYS shows in Render's log tab (stderr),
+        // regardless of what happens below. This runs before anything else.
+        report($exception);
+
+        // ── TEMP: custom error handling disabled to expose real errors ──
+        // Original custom logic commented out below. Restore once the
+        // underlying /admindashboard crash is diagnosed and fixed.
+        return parent::render($request, $exception);
+
+        /*
         // Let Laravel/Inertia handle validation and auth exceptions the normal way —
         // this is what produces the 422 response your frontend's onError expects.
         if (
@@ -75,5 +85,6 @@ class Handler extends ExceptionHandler
             report($renderException); // guarantees this at least hits the log
             return response($message, $status);
         }
+        */
     }
 }
