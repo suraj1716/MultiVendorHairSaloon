@@ -1,15 +1,14 @@
 # --- Stage 1: build frontend assets ---
 
 FROM node:20-slim AS frontend
-
 WORKDIR /app
 
+ARG VITE_APP_NAME
+ENV VITE_APP_NAME=$VITE_APP_NAME
+
 COPY package.json package-lock.json ./
-
 RUN npm install
-
 COPY . .
-
 RUN npm run build
 
 
