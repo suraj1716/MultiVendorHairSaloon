@@ -336,7 +336,7 @@ const isAdmin =
   const { url } = usePage();
   const onHomePage = url === "/" || url.startsWith("/#");
 const vendor = useVendorDetails();
-
+console.log('vendor tiktok_url:', vendor?.tiktok_url, typeof vendor?.tiktok_url);
 
   const SOCIALS = [
     {

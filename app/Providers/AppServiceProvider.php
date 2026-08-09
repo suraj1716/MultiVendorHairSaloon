@@ -14,6 +14,11 @@ use Filament\Support\Components\Badge;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\URL;
+use App\Models\Product;
+use App\Models\Vendor;
+use App\Observers\ProductObserver;
+use App\Observers\VendorObserver;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -31,20 +36,24 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-Model::preventSilentlyDiscardingAttributes(true);
+
+     Product::observe(ProductObserver::class);
+    Vendor::observe(VendorObserver::class);
+
+        Model::preventSilentlyDiscardingAttributes(true);
 
         if ($this->app->environment('production')) {
             URL::forceScheme('https');
         }
- Inertia::share('auth', function () {
-        return [
-            'user' => Auth::user() ? new AuthUserResource(Auth::user()) : null,
-        ];
-    });
+        Inertia::share('auth', function () {
+            return [
+                'user' => Auth::user() ? new AuthUserResource(Auth::user()) : null,
+            ];
+        });
 
         Schedule::command('payout:vendors')
-        ->monthlyOn(15,'17:50')
-        ->withoutOverlapping();
+            ->monthlyOn(15, '17:50')
+            ->withoutOverlapping();
 
         Vite::prefetch(concurrency: 3);
     }
