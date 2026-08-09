@@ -1,6 +1,6 @@
 import { Head, Link } from "@inertiajs/react";
 import { CurrencyFormatter } from "@/utils/CurrencyFormatter";
-import { CheckCircleIcon, GiftIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, CheckIcon, GiftIcon } from "@heroicons/react/24/outline";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, Order } from "@/types";
 
@@ -20,13 +20,23 @@ function Success({ orders }: PageProps<{ orders: Order[] }>) {
                 width: "88px",
                 height: "88px",
                 backgroundColor: "var(--color-primary-light)",
-                opacity: 0.12,
+                opacity: 1,
               }}
             >
-              <CheckCircleIcon
-                className="size-12"
-                style={{ color: "var(--color-primary)" }}
-              />
+    <div
+  className="flex size-14 items-center justify-center rounded-full"
+  style={{
+    backgroundColor: "var(--color-primary)",
+  }}
+>
+  <CheckIcon
+    className="size-10"
+    style={{
+      color: "#fff",
+      strokeWidth: 2,
+    }}
+  />
+</div>
             </div>
             <h1
               style={{

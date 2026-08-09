@@ -376,88 +376,87 @@ class CartService
         Cookie::queue(self::COOKIE_NAME, json_encode($cartItems), self::COOKIE_LIFETIME);
     }
 
-    protected function saveItemToDatabase(
-        int $productId,
-        int $quantity,
-        $price,
-        array $optionIds,
-        ?string $attachmentPath = null,
-        ?string $attachmentFileName = null,
-        bool $designer = false
-    ): void {
-        $userId           = Auth::id();
-        $optionIds        = $this->normalizeOptionIds($optionIds);
-        ksort($optionIds);
-        $encodedOptionIds = json_encode($optionIds);
+  protected function saveItemToDatabase(
+    int $productId,
+    int $quantity,
+    $price,
+    array $optionIds,
+    ?string $attachmentPath = null,
+    ?string $attachmentFileName = null,
+    bool $designer = false
+): void {
+    $userId           = Auth::id();
+    $optionIds        = $this->normalizeOptionIds($optionIds);
+    ksort($optionIds);
+    $encodedOptionIds = json_encode($optionIds);
 
-        $cartItem = CartItem::where('user_id', $userId)
-            ->where('product_id', $productId)
-            ->where('variation_type_option_ids', $encodedOptionIds)
-            ->first();
+    $cartItem = CartItem::where('user_id', $userId)
+        ->where('product_id', $productId)
+        ->where('variation_type_option_ids', $encodedOptionIds)
+        ->first();
 
-        if ($cartItem) {
-            $updateData = ['quantity' => DB::raw('quantity + ' . $quantity)];
-            if ($attachmentPath !== null)     $updateData['attachment_path'] = $attachmentPath;
-            if ($attachmentFileName !== null) $updateData['attachment_name'] = $attachmentFileName;
-            $cartItem->update($updateData);
-        } else {
-            CartItem::create([
-                'user_id'                    => $userId,
-                'item_type' => 'product',
-                'product_id'                 => $productId,
-                'quantity'                   => $quantity,
-                'variation_type_option_ids'  => $optionIds,
-                'price'                      => $price,
-                'attachment_path'            => $attachmentPath,
-                'attachment_name'            => $attachmentFileName,
-                'designer'                   => $designer,
-            ]);
-        }
+    if ($cartItem) {
+        $updateData = ['quantity' => 1];
+        if ($attachmentPath !== null)     $updateData['attachment_path'] = $attachmentPath;
+        if ($attachmentFileName !== null) $updateData['attachment_name'] = $attachmentFileName;
+        $cartItem->update($updateData);
+    } else {
+        CartItem::create([
+            'user_id'                    => $userId,
+            'item_type' => 'product',
+            'product_id'                 => $productId,
+            'quantity'                   => 1,
+            'variation_type_option_ids'  => $optionIds,
+            'price'                      => $price,
+            'attachment_path'            => $attachmentPath,
+            'attachment_name'            => $attachmentFileName,
+            'designer'                   => $designer,
+        ]);
+    }
+}
+
+protected function saveItemToCookies(
+    int $productId,
+    int $quantity,
+    $price,
+    $optionIds,
+    ?string $attachmentPath = null,
+    ?string $attachmentFileName = null,
+    bool $designer = false
+): void {
+    if (is_string($optionIds)) {
+        $decoded   = json_decode($optionIds, true);
+        $optionIds = is_array($decoded) ? $decoded : [];
+    } elseif (! is_array($optionIds)) {
+        $optionIds = [];
     }
 
-    protected function saveItemToCookies(
-        int $productId,
-        int $quantity,
-        $price,
-        $optionIds,
-        ?string $attachmentPath = null,
-        ?string $attachmentFileName = null,
-        bool $designer = false
-    ): void {
-        if (is_string($optionIds)) {
-            $decoded   = json_decode($optionIds, true);
-            $optionIds = is_array($decoded) ? $decoded : [];
-        } elseif (! is_array($optionIds)) {
-            $optionIds = [];
+    ksort($optionIds);
+    $normalizedOptionIds = array_map('strval', $optionIds);
+    $encodedOptionIds    = json_encode($normalizedOptionIds);
+    $cartItems           = $this->getCartItemsFromCookies();
+    $itemKey             = $productId . '_' . $encodedOptionIds;
+
+    if (isset($cartItems[$itemKey])) {
+        $cartItems[$itemKey]['quantity'] = 1;
+        if ($attachmentPath !== null) {
+            $cartItems[$itemKey]['attachment_path'] = $attachmentPath;
+            $cartItems[$itemKey]['attachment_name'] = $attachmentFileName;
         }
-
-        ksort($optionIds);
-        $normalizedOptionIds = array_map('strval', $optionIds);
-        $encodedOptionIds    = json_encode($normalizedOptionIds);
-        $cartItems           = $this->getCartItemsFromCookies();
-        $itemKey             = $productId . '_' . $encodedOptionIds;
-
-        if (isset($cartItems[$itemKey])) {
-            $cartItems[$itemKey]['quantity'] += $quantity;
-            if ($attachmentPath !== null) {
-                $cartItems[$itemKey]['attachment_path'] = $attachmentPath;
-                $cartItems[$itemKey]['attachment_name'] = $attachmentFileName;
-            }
-        } else {
-            $cartItems[$itemKey] = [
-                'product_id'      => $productId,
-                'quantity'        => $quantity,
-                'price'           => $price,
-                'option_ids'      => $normalizedOptionIds,
-                'attachment_path' => $attachmentPath,
-                'attachment_name' => $attachmentFileName,
-                'designer'        => $designer,
-            ];
-        }
-
-        Cookie::queue(self::COOKIE_NAME, json_encode($cartItems), self::COOKIE_LIFETIME);
+    } else {
+        $cartItems[$itemKey] = [
+            'product_id'      => $productId,
+            'quantity'        => 1,
+            'price'           => $price,
+            'option_ids'      => $normalizedOptionIds,
+            'attachment_path' => $attachmentPath,
+            'attachment_name' => $attachmentFileName,
+            'designer'        => $designer,
+        ];
     }
 
+    Cookie::queue(self::COOKIE_NAME, json_encode($cartItems), self::COOKIE_LIFETIME);
+}
     protected function removeItemFromDatabase(int $productId, array $optionIds): void
     {
         $userId    = Auth::id();

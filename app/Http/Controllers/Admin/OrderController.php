@@ -481,7 +481,7 @@ class OrderController extends Controller
 
         $refundService = app(RefundService::class);
 
-      // Per-type guard — full/booking_fee/except_booking_fee can only be processed
+        // Per-type guard — full/booking_fee/except_booking_fee can only be processed
         // once per order; custom amounts are allowed multiple times, capped by the
         // remaining refundable total (checked at line ~500 below).
         if ($type !== 'custom' && $refundService->hasRefundType($order, $type)) {
@@ -505,23 +505,23 @@ class OrderController extends Controller
                 }
             }
 
-           $amount = match ($request->type) {
-    'full' => $isStripe
-        ? $refundService->refundBookingFeeAndOrder($order)
-        : ($isManual
-            ? $refundService->refundManual($order)
-            : ($isGiftCard ? $order->total_price : 0)),
+            $amount = match ($request->type) {
+                'full' => $isStripe
+                    ? $refundService->refundBookingFeeAndOrder($order)
+                    : ($isManual
+                        ? $refundService->refundManual($order)
+                        : ($isGiftCard ? $order->total_price : 0)),
 
-    'except_booking_fee' => $isStripe
-        ? $refundService->refundExcludingBookingFee($order)
-        : 0,
+                'except_booking_fee' => $isStripe
+                    ? $refundService->refundExcludingBookingFee($order)
+                    : 0,
 
-    'booking_fee' => $refundService->refundBookingFeeOnly($order),
+                'booking_fee' => $refundService->refundBookingFeeOnly($order),
 
-    'custom' => $isStripe
-        ? $refundService->refundCustomAmount($order, (float) $request->amount)
-        : 0, // custom cash/manual refunds should be handled outside the system, same as your other manual flows
-};
+                'custom' => $isStripe
+                    ? $refundService->refundCustomAmount($order, (float) $request->amount)
+                    : 0, // custom cash/manual refunds should be handled outside the system, same as your other manual flows
+            };
 
             // Gift card full refund doesn't touch Stripe — mark it manually
             if ($type === 'full' && $isGiftCard) {

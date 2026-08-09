@@ -18,7 +18,7 @@
   /* --- Brand Colors (jewel-tone) --- */
   --color-primary:        #188533;   /* deep forest green */
   --color-primary-light:  #0ca239;
-  --color-primary-dark:   #0b9632;
+  --color-primary-dark:   #067227;
   --color-primary-50:     #F5FAF6;   /* very light tint — for bg-alt */
   --color-primary-100:    #E9F5EB;
   --color-primary-200:    #D9EEDD;
@@ -34,7 +34,7 @@
   --color-bg-dark-black:        #1C1A17;   /* rich near-black */
 
   --color-surface:        #FFFFFF;
-  --color-surface-warm:   #ffffff;
+  --color-surface-warm:   #fef8f8;
 
   /* --- Text --- */
   --color-text:           #1C1A17;
@@ -103,6 +103,26 @@
   --shadow-md:   0 4px 16px var(--color-shadow);
   --shadow-lg:   0 8px 32px var(--color-shadow-strong);
   --shadow-xl:   0 16px 48px var(--color-shadow-strong);
+}
+
+
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-text-fill-color: rgba(244, 243, 243, 0.88) !important;
+
+    -webkit-box-shadow:
+        0 0 0 1000px var(--color-primary) inset !important;
+    box-shadow:
+        0 0 0 1000px var(--color-primary) inset !important;
+
+    background-color: transparent !important;
+    caret-color: rgba(202, 198, 198, 0.88);
+
+    border: 1px solid rgba(135, 23, 23, 0.06) !important;
+    border-radius: 2px !important;
 }
 
 /* ============================================================
@@ -341,6 +361,15 @@ a:hover { color: var(--color-primary-light); }
 .btn-lg {
   padding: 1rem 2.5rem;
   font-size: var(--text-base);
+}
+
+.btn:disabled,
+.btn-disabled {
+  background-color: #e5e7eb;
+  color: #6b7280;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 /* ============================================================

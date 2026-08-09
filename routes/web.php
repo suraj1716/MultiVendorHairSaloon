@@ -146,7 +146,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::get('/orders-history', [OrderController::class, 'index'])->name('orders.history');
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
     // Route::post('/admin/orders/{order}/refund', [OrderController::class, 'refund'])
     //     ->name('admin.orders.refund')
@@ -176,7 +176,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/stripe/success', [StripeController::class, 'success'])->name('stripe.success');
         Route::get('/stripe/failure', [StripeController::class, 'failure'])->name('stripe.failure');
-        Route::post('/become-a-vendor', [VendorController::class, 'store'])->name('vendor.store');
+        Route::post('/create-vendor', [VendorController::class, 'store'])->name('vendor.store');
+        Route::post('/become-a-vendor', [VendorController::class, 'become'])->name('vendor.become-vendor');
 
         Route::get('/stripe/connect/{user?}', [StripeController::class, 'connect'])->name('stripe.connect');
     });

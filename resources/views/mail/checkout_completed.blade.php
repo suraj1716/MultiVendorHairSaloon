@@ -1,69 +1,94 @@
 <x-mail::message>
-# 🛍️ Your Order Has Been Completed!
+<a
+    href="{{ config('app.url') }}"
+    style="display:inline-block; text-decoration:none;"
+>
+    <img
+        src="https://pub-52e671ba26c14bb5b10e0e3d0f45dfac.r2.dev/logo/logo.png"
+        alt="{{ config('app.name') }}"
+        style="display:block; max-width:180px; max-height:60px; width:auto; height:auto; border:0;"
+    >
+</a>
 
-@foreach($orders as $order)
+# Order Confirmation
 
-Your order has been successfully placed! 🎉 Here are your order details:
+Thank you for your order. Your receipt is below.
+
+@foreach ($orders as $order)
 
 <x-mail::panel>
-**Order Information**
-🔖 **Order ID:** {{ $order->id }}
-🗓 **Order Date:** {{ $order->created_at->format('F j, Y - g:i A') }}
-💳 **Payment Method:** {{ $order->payment_method }}
-**Store:** <a href="{{ url('/') }}">{{ $order->vendorUser->vendor->store_name }}</a>
+<table width="100%" cellpadding="0" cellspacing="0">
+<tr>
+<td style="padding:0; border:0;">
+<strong>Order #{{ $order->id }}</strong><br>
+<span style="color:#6B6560; font-size:13px;">{{ $order->created_at->format('F j, Y \a\t g:i A') }}</span>
+</td>
+<td align="right" style="padding:0; border:0;">
+<span style="color:#6B6560; font-size:13px;">{{ $order->vendorUser->vendor->store_name }}</span><br>
+<span style="color:#6B6560; font-size:13px;">{{ ucfirst($order->payment_method) }}</span>
+</td>
+</tr>
+</table>
 </x-mail::panel>
 
-## 📦 Ordered Items:
+@if ($order->booking)
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:20px;">
+<tr>
+<td style="padding:0; border:0;">
+<span style="color:#6B6560; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Booking Date</span><br>
+<span style="font-size:14px;">{{ \Carbon\Carbon::parse($order->booking->booking_date)->format('l, F j, Y') }} &middot; {{ $order->booking->time_slot }}</span>
+</td>
+</tr>
+</table>
+@endif
 
-<table width="100%" style="border-collapse: collapse; margin-bottom: 20px;">
+<div class="table">
+<table width="100%" cellpadding="0" cellspacing="0">
     <thead>
         <tr>
-            <th align="left" style="border-bottom: 1px solid #ddd; padding: 8px;">Product</th>
-            <th align="center" style="border-bottom: 1px solid #ddd; padding: 8px;">Quantity</th>
-            <th align="right" style="border-bottom: 1px solid #ddd; padding: 8px;">Price</th>
+            <th align="left">Item</th>
+            <th align="right">Price</th>
         </tr>
     </thead>
     <tbody>
         @foreach ($order->orderItems as $orderItem)
         <tr>
-            <td style="padding: 8px; display: flex; align-items: center;">
-                <img src="{{ $orderItem->product->getImageForOptions($orderItem->variation_type_option_ids) }}" alt="{{ $orderItem->product->title }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
-                {{ $orderItem->product->title }}
-            </td>
-            <td align="center" style="padding: 8px;">{{ $orderItem->quantity }}</td>
-            <td align="right" style="padding: 8px;">${{ number_format($orderItem->price, 2) }}</td>
+            <td>{{ $orderItem->product->title }}</td>
+            <td align="right">${{ number_format($orderItem->price, 2) }}</td>
         </tr>
         @endforeach
     </tbody>
-</table>
-
----
-
-## 💰 Order Total:
-
-<table width="100%" style="margin-bottom: 20px;">
-    <tbody>
+    <tfoot>
         <tr>
-            <td>🧾 <strong>Total Price:</strong></td>
-            <td align="right"><strong>${{ number_format($order->total_price, 2) }}</strong></td>
+            <td align="right" style="border-top:1px solid #E8E0D5; padding-top:14px;"><strong>Total</strong></td>
+            <td align="right" style="border-top:1px solid #E8E0D5; padding-top:14px;"><strong>${{ number_format($order->total_price, 2) }}</strong></td>
         </tr>
-    </tbody>
+    </tfoot>
 </table>
+</div>
 
-📦 **Shipping Address:**
-{{ $order->shipping_address }}
-
----
-
-Your order will be processed and shipped soon. You will receive an update when it's on its way!
-If you have any questions or concerns, feel free to contact us.
+@if ($order->shipping_address)
+<table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+<tr>
+<td style="padding:0; border:0;">
+<span style="color:#6B6560; font-size:12px; text-transform:uppercase; letter-spacing:0.05em;">Shipping Address</span><br>
+<span style="font-size:14px;">{{ $order->shipping_address }}</span>
+</td>
+</tr>
+</table>
+@endif
 
 <x-mail::button :url="route('orders.show', $order->id)" color="success">
-🔍 View Order Details
+View Order
 </x-mail::button>
 
-Thank you for shopping with us!
-**{{ config('app.name') }} Team**
+@if (!$loop->last)
+---
+@endif
 
 @endforeach
+
+If you have any questions about your order, simply reply to this email.
+
+{{ config('app.name') }}
 </x-mail::message>

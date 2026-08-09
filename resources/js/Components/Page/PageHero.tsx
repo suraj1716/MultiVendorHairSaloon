@@ -59,14 +59,31 @@ export default function PageHero({
         {eyebrow && <p className="page-hero-eyebrow">{eyebrow}</p>}
 
         <h1 className="page-hero-title">{title}</h1>
-   {/* ornament */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <div style={{ width: 48, height: 1, background: "var(--color-accent)" }} />
-              <div style={{ width: 5, height: 5, background: "var(--color-accent)", transform: "rotate(45deg)" }} />
-              <div style={{ width: 48, height: 1, background: "var(--color-accent)" }} />
-            </div>
+        {/* ornament */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{ width: 48, height: 1, background: "var(--color-accent)" }}
+          />
+          <div
+            style={{
+              width: 5,
+              height: 5,
+              background: "var(--color-accent)",
+              transform: "rotate(45deg)",
+            }}
+          />
+          <div
+            style={{ width: 48, height: 1, background: "var(--color-accent)" }}
+          />
+        </div>
         {subtitle && <p className="page-hero-subtitle">{subtitle}</p>}
-
       </div>
     </div>
   );

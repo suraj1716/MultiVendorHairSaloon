@@ -437,9 +437,6 @@ class BookingController extends Controller
 
 
 
-
-
-
     public function update(Request $request, Booking $booking)
     {
         $validated = $request->validate([
@@ -450,6 +447,7 @@ class BookingController extends Controller
 
         // Authorization: user must own booking or vendor
         $vendorUserId = $booking->order?->vendor_user_id;
+
         $isOwner = $booking->user_id === Auth::id();
         $isVendor = $vendorUserId === Auth::id();
 
@@ -457,24 +455,105 @@ class BookingController extends Controller
             abort(403);
         }
 
-        // Customers may only edit a booking once — vendors/admins are exempt
+        // Customers may only edit once.
+        // Vendors are exempt.
         if ($isOwner && !$isVendor && $booking->edited_at) {
-            return redirect()->back()->with('error', 'This booking has already been edited once. Please contact support for further changes.');
+            return redirect()->back()->withErrors([
+                'booking' => 'This booking has already been edited once. Please contact support for further changes.',
+            ]);
         }
 
-        // Update booking details
-        $booking->update([
-            'booking_date' => $validated['booking_date'],
-            'time_slot' => $validated['time_slot'],
-            'staff_id' => array_key_exists('staff_id', $validated)
-                ? $validated['staff_id']
-                : $booking->staff_id,
-            'edited_at' => $isOwner && !$isVendor ? now() : $booking->edited_at,
+        /*
+    |--------------------------------------------------------------------------
+    | Check new staff/date/time availability
+    |--------------------------------------------------------------------------
+    |
+    | The booking itself represents the staff reservation.
+    | Therefore, when editing, we only need to make sure that another
+    | booking isn't already using the requested staff/date/time.
+    |
+    | IMPORTANT:
+    | Exclude the current booking from the query.
+    |
+    */
+
+        $staffId = array_key_exists('staff_id', $validated)
+            ? $validated['staff_id']
+            : $booking->staff_id;
+
+        if ($staffId !== null) {
+            $normalizedSlot = strtolower(trim($validated['time_slot']));
+
+            $conflict = Booking::query()
+                ->whereDate('booking_date', $validated['booking_date'])
+                ->whereRaw(
+                    'LOWER(TRIM(time_slot)) = ?',
+                    [$normalizedSlot]
+                )
+                ->where('staff_id', $staffId)
+                ->where('id', '!=', $booking->id)
+                ->exists();
+
+            if ($conflict) {
+                return redirect()->back()->withErrors([
+                    'time_slot' => 'This staff member is already booked for this date and time.',
+                ]);
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Update booking + order atomically
+    |--------------------------------------------------------------------------
+    */
+
+        DB::transaction(function () use (
+            $booking,
+            $validated,
+            $staffId,
+            $isOwner,
+            $isVendor
+        ) {
+            // Update booking
+            $booking->update([
+                'booking_date' => $validated['booking_date'],
+                'time_slot' => $validated['time_slot'],
+                'staff_id' => $staffId,
+
+                // Customer edit is recorded.
+                // Vendor edits do not consume customer's edit.
+                'edited_at' => $isOwner && !$isVendor
+                    ? now()
+                    : $booking->edited_at,
+            ]);
+
+            /*
+        |--------------------------------------------------------------------------
+        | Keep Order.staff_id synchronized with Booking.staff_id
+        |--------------------------------------------------------------------------
+        */
+
+            if ($booking->order) {
+                $booking->order->update([
+                    'staff_id' => $staffId,
+                ]);
+            }
+        });
+        // TEMP DEBUG
+        Log::info('Booking edited_at after update', [
+            'booking_id' => $booking->id,
+            'isOwner' => $isOwner,
+            'isVendor' => $isVendor,
+            'edited_at' => $booking->fresh()->edited_at,
         ]);
+        /*
+    |--------------------------------------------------------------------------
+    | Google Calendar
+    |--------------------------------------------------------------------------
+    */
 
         $user = Auth::user();
 
-        // If user has Google token and booking has an event ID, update Google Calendar
         if ($user->google_access_token && $booking->google_event_id) {
             try {
                 $googleService = new \App\Services\GoogleCalendarService([
@@ -482,32 +561,43 @@ class BookingController extends Controller
                     'refresh_token' => $user->google_refresh_token,
                 ]);
 
-                $startTime = explode(' - ', $booking->time_slot)[0];
-                $endTime = explode(' - ', $booking->time_slot)[1];
-                $startDateTime = (new \DateTime($booking->booking_date . ' ' . $startTime))->format(\DateTime::RFC3339);
-                $endDateTime = (new \DateTime($booking->booking_date . ' ' . $endTime))->format(\DateTime::RFC3339);
+                $parts = explode(' - ', $booking->time_slot, 2);
 
-                $googleService->updateEvent(
-                    $booking->google_event_id,
-                    'Booking Appointment',
-                    "Updated Booking ID: {$booking->id}",
-                    $startDateTime,
-                    $endDateTime,
-                    'Australia/Sydney'
-                );
+                if (count($parts) === 2) {
+                    [$startTime, $endTime] = $parts;
 
-                if ($googleService->newAccessToken) {
-                    $user->google_access_token = $googleService->newAccessToken;
-                    $user->save();
+                    $startDateTime = (new \DateTime(
+                        $booking->booking_date->format('Y-m-d') . ' ' . trim($startTime)
+                    ))->format(\DateTime::RFC3339);
+
+                    $endDateTime = (new \DateTime(
+                        $booking->booking_date->format('Y-m-d') . ' ' . trim($endTime)
+                    ))->format(\DateTime::RFC3339);
+
+                    $googleService->updateEvent(
+                        $booking->google_event_id,
+                        'Booking Appointment',
+                        "Updated Booking ID: {$booking->id}",
+                        $startDateTime,
+                        $endDateTime,
+                        'Australia/Sydney'
+                    );
+
+                    if ($googleService->newAccessToken) {
+                        $user->google_access_token = $googleService->newAccessToken;
+                        $user->save();
+                    }
                 }
             } catch (\Exception $e) {
-                Log::error('Google Calendar update failed: ' . $e->getMessage());
+                Log::error(
+                    'Google Calendar update failed: ' . $e->getMessage()
+                );
             }
         }
 
-
-
-        return redirect()->back()->with('success', 'Booking updated successfully.');
+        return redirect()
+            ->back()
+            ->with('success', 'Booking updated successfully.');
     }
 
 
@@ -614,26 +704,28 @@ class BookingController extends Controller
             // the 24-hour window — the booking fee split only applies to the Stripe amount.
             $voucherRestored = $refundService->restoreVoucherForOrder($order);
 
-            if ($refundAmount <= 0 && $voucherRestored <= 0) {
-                return redirect()->back()->with('error', 'Nothing was refunded for this booking.');
-            }
-
             $order->update([
                 'status' => OrderStatusEnum::Cancelled->value,
                 'refunded_at' => now(),
                 'refund_amount' => ($order->refund_amount ?? 0) + $refundAmount,
             ]);
 
-            $refundService->recordRefund($order, $refundType, $refundAmount, reason: 'Customer-initiated booking cancellation');
-
-            $message = $isFullRefund
-                ? "Booking cancelled. Full refund of \${$refundAmount} processed"
-                : "Booking cancelled within 24 hours — refund of \${$refundAmount} processed (booking fee non-refundable)";
-
-            if ($voucherRestored > 0) {
-                $message .= " and \${$voucherRestored} restored to your gift card balance";
+            if ($refundAmount > 0 || $voucherRestored > 0) {
+                $refundService->recordRefund($order, $refundType, $refundAmount, reason: 'Customer-initiated booking cancellation');
             }
-            $message .= '.';
+
+            if ($isManual && $refundAmount === 0) {
+                $message = "Booking cancelled. Please contact support to arrange your refund, as this was paid manually.";
+            } else {
+                $message = $isFullRefund
+                    ? "Booking cancelled. Full refund of \${$refundAmount} processed"
+                    : "Booking cancelled within 24 hours — refund of \${$refundAmount} processed (booking fee non-refundable)";
+
+                if ($voucherRestored > 0) {
+                    $message .= " and \${$voucherRestored} restored to your gift card balance";
+                }
+                $message .= '.';
+            }
 
             return redirect()->back()->with('success', $message);
         } catch (\Exception $e) {

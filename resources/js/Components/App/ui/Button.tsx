@@ -1,20 +1,13 @@
-// resources/js/Components/App/ui/Button.tsx
-//
-// Wraps the .btn / .btn-primary / .btn-accent / .btn-outline / .btn-ghost /
-// .btn-outline-light classes already defined in index.css, so every button
-// in the app pulls from the same source of truth instead of:
-//   - Breeze's PrimaryButton / SecondaryButton / DangerButton (Components/Core)
-//   - shadcn's Button (Components/ui/button.tsx)
-//   - hand-rolled inline style={{...}} buttons per page
-//
-// Usage:
-//   <Button variant="primary">Save</Button>
-//   <Button variant="outline" size="sm" disabled={processing}>Cancel</Button>
-//   <Button variant="accent" as="a" href="/shop">Book a Consultation</Button>
-
 import React from "react";
 
-type Variant = "primary" | "accent" | "outline" | "outline-light" | "ghost" | "danger";
+type Variant =
+  | "primary"
+  | "accent"
+  | "outline"
+  | "outline-light"
+  | "ghost"
+  | "danger";
+
 type Size = "sm" | "md" | "lg";
 
 interface BaseProps {
@@ -25,10 +18,14 @@ interface BaseProps {
 }
 
 type ButtonAsButton = BaseProps &
-  React.ButtonHTMLAttributes<HTMLButtonElement> & { as?: "button" };
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    as?: "button";
+  };
 
 type ButtonAsAnchor = BaseProps &
-  React.AnchorHTMLAttributes<HTMLAnchorElement> & { as: "a" };
+  React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+    as: "a";
+  };
 
 type ButtonProps = ButtonAsButton | ButtonAsAnchor;
 
@@ -55,7 +52,18 @@ export default function Button({
   as,
   ...rest
 }: ButtonProps) {
-  const classes = ["btn", variantClass[variant], sizeClass[size], className]
+  const isDisabled =
+    as === "a"
+      ? false
+      : (rest as React.ButtonHTMLAttributes<HTMLButtonElement>).disabled;
+
+  const classes = [
+    "btn",
+    variantClass[variant],
+    sizeClass[size],
+    isDisabled ? "btn-disabled" : "",
+    className,
+  ]
     .filter(Boolean)
     .join(" ");
 

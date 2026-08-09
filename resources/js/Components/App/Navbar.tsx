@@ -329,8 +329,10 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const isAdmin =  auth?.user?.roles?.includes("Admin") ||
-  auth?.user?.roles?.includes("Vendor");
+const isAdmin =
+  auth?.user?.roles?.includes("Admin") ||
+  (auth?.user?.roles?.includes("Vendor") &&
+    auth?.user?.vendor?.status === "approved");
   const { url } = usePage();
   const onHomePage = url === "/" || url.startsWith("/#");
 const vendor = useVendorDetails();

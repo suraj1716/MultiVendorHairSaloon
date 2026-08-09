@@ -22,7 +22,7 @@ class RefundProcessedForVendor extends Mailable
 public function build()
 {
     return $this->subject('A Refund Has Been Issued for an Order')
-        ->view('emails.refund.vendor');
+        ->view('mail.refund.vendor');
 }
 
 
@@ -42,7 +42,7 @@ public function build()
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'mail.refund.vendor',
         );
     }
 

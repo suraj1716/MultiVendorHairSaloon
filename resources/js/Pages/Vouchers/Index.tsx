@@ -4,6 +4,7 @@ import { useState } from "react";
 import Button from "@/Components/App/ui/Button";
 import { Eyebrow } from "@/Components/App/ui/SectionHeading";
 import { input as sharedInput } from "@/Components/App/formStyles";
+import PageHero from "@/Components/Page/PageHero";
 
 type Voucher = {
   id?: number;
@@ -86,6 +87,8 @@ function GiftCardTile({
   }
 
   return (
+
+
     <div
       style={{
         position: "relative",
@@ -98,6 +101,7 @@ function GiftCardTile({
         opacity: isUsable ? 1 : 0.75,
       }}
     >
+
       {/* decorative corner accent */}
       <div
         style={{
@@ -428,6 +432,13 @@ export default function Vouchers({
 
   return (
     <AuthenticatedLayout>
+        {/* ── Page heading ── */}
+          <PageHero
+            eyebrow="Promotions & Rewards"
+            title={<>Your <em>Vouchers</em></>}
+            subtitle="Your gift card balances, plus a quick way to check any promo or gift code."
+            breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gallery" }]}
+          />
       <div
         style={{
           maxWidth: "1230px",
@@ -439,35 +450,7 @@ export default function Vouchers({
           gap: "var(--space-2xl)",
         }}
       >
-        {/* ── Page heading ── */}
-        <div>
-          <div style={{ marginBottom: "var(--space-sm)" }}>
-            <Eyebrow>Promotions & Rewards</Eyebrow>
-          </div>
-          <h1
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(2rem, 4vw, 2.75rem)",
-              fontWeight: 300,
-              color: "var(--color-text)",
-              lineHeight: 1.1,
-              marginBottom: "var(--space-sm)",
-            }}
-          >
-            Your Vouchers
-          </h1>
-          <p style={{ color: "var(--color-text-muted)", fontSize: "var(--text-sm)", margin: 0 }}>
-            Your gift card balances, plus a quick way to check any promo or gift code.
-          </p>
-          <div
-            style={{
-              width: "48px",
-              height: "1px",
-              background: "var(--color-accent)",
-              marginTop: "var(--space-lg)",
-            }}
-          />
-        </div>
+
 
         {/* ── Purchased gift cards ── */}
         <VoucherSection

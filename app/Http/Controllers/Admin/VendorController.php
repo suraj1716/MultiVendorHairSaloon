@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\RolesEnum;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Enums\VendorType;
+use App\Mail\VendorApproved;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -238,12 +241,25 @@ class VendorController extends Controller
         return redirect()->route('admin.vendors.index')->with('success', 'Vendor updated.');
     }
 
-    public function updateStatus(Request $request, Vendor $vendor)
-    {
-        $request->validate(['status' => 'required|in:active,approved,rejected']);
-        $vendor->update(['status' => $request->status]);
-        return back()->with('success', 'Vendor status updated.');
+
+public function updateStatus(Request $request, Vendor $vendor)
+{
+    $request->validate(['status' => 'required|in:active,approved,rejected']);
+
+    $wasApproved = $vendor->status === 'approved';
+
+    $vendor->update(['status' => $request->status]);
+
+    if ($request->status === 'approved' && !$vendor->user->hasRole(RolesEnum::Vendor)) {
+        $vendor->user->assignRole(RolesEnum::Vendor);
     }
+
+    if ($request->status === 'approved' && !$wasApproved) {
+        Mail::to($vendor->user->email)->send(new VendorApproved($vendor));
+    }
+
+    return back()->with('success', 'Vendor status updated.');
+}
 
     public function destroy(Vendor $vendor)
     {

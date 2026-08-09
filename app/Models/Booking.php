@@ -12,7 +12,7 @@ class Booking extends Model
 
     protected $fillable = [
         'user_id',
-          'booking_date',
+        'booking_date',
         'time_slot',
         'order_id',
         'staff_id',
@@ -21,10 +21,10 @@ class Booking extends Model
 
     protected $casts = [
         'is_read' => 'boolean',
-         'booking_date' => 'date',
+        'booking_date' => 'date',
     ];
 
-protected static function booted()
+    protected static function booted()
     {
         static::saving(function (Booking $booking) {
             $booking->sort_minutes = TimeSlotParser::toMinutes($booking->time_slot);

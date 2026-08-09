@@ -180,23 +180,21 @@ export default function Home({
   const [statsVisible, setStatsVisible] = useState(false);
   const [activeTestimonial, setActiveTestimonial] = useState(0);
 
-
-
   const [categoryProducts, setCategoryProducts] = useState([]);
-const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
 
-useEffect(() => {
-  if (!activeCategory) {
-    setCategoryProducts([]);
-    return;
-  }
-  setLoadingProducts(true);
-  axios
-    .get(route("categories.products", activeCategory.id))
-    .then((res) => setCategoryProducts(res.data.products))
-    .catch(() => setCategoryProducts([]))
-    .finally(() => setLoadingProducts(false));
-}, [activeCategory]);
+  useEffect(() => {
+    if (!activeCategory) {
+      setCategoryProducts([]);
+      return;
+    }
+    setLoadingProducts(true);
+    axios
+      .get(route("categories.products", activeCategory.id))
+      .then((res) => setCategoryProducts(res.data.products))
+      .catch(() => setCategoryProducts([]))
+      .finally(() => setLoadingProducts(false));
+  }, [activeCategory]);
   // useEffect(() => {
   //   const loadImages = async () => {
   //     const results: Record<number, string> = {};
@@ -267,10 +265,9 @@ useEffect(() => {
     return () => clearInterval(t);
   }, []);
 
-console.log("categories",categories)
-console.log("activecat",activeCategory)
-console.log("catprod",categoryProducts)
-
+  console.log("categories", categories);
+  console.log("activecat", activeCategory);
+  console.log("catprod", categoryProducts);
 
   return (
     <div
@@ -279,7 +276,7 @@ console.log("catprod",categoryProducts)
     >
       <AuthenticatedLayout>
         {/* ══ HERO ══ */}
-        <div className="relative z-0">
+        <div className="relative z-0 ">
           <HeroCarousel
             banners={(banners ?? []).map((b) => ({
               ...b,
@@ -917,38 +914,38 @@ console.log("catprod",categoryProducts)
             </div>
 
             {/* Desktop bento — 3x3, visible only from 1024px up via CSS */}
-           <div className="services-bento-desktop">
-  {categories.map((cat, idx) => (
-    <BentoTile
-      key={cat.id}
-      image={cat.image_url ?? "/images/placeholder-category.jpg"}
-      title={cat.name}
-      subtitle={`${cat.products_count} treatments`}
-      size={idx % 5 === 0 ? "hero" : "normal"}
-      footer="Explore"
-      onOpen={() => setActiveCategory(cat)}
-      index={idx}
-      style={{
-        gridColumn: idx % 5 === 0 ? "span 2" : "span 1",
-      }}
-    />
-  ))}
-</div>
+            <div className="services-bento-desktop">
+              {categories.map((cat, idx) => (
+                <BentoTile
+                  key={cat.id}
+                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
+                  title={cat.name}
+                  subtitle={`${cat.products_count} treatments`}
+                  size={idx % 5 === 0 ? "hero" : "normal"}
+                  footer="Explore"
+                  onOpen={() => setActiveCategory(cat)}
+                  index={idx}
+                  style={{
+                    gridColumn: idx % 5 === 0 ? "span 2" : "span 1",
+                  }}
+                />
+              ))}
+            </div>
 
-          {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
-<div className="services-bento-mobile">
-  {categories.map((cat, idx) => (
-    <BentoTile
-      key={cat.id}
-      image={cat.image_url ?? "/images/placeholder-category.jpg"}
-      title={cat.name}
-      subtitle={`${cat.products_count} treatments`}
-      onOpen={() => setActiveCategory(cat)}
-      index={idx}
-      style={{ height: 175, minHeight: 175 }}
-    />
-  ))}
-</div>
+            {/* Mobile / tablet — 2 cols under 640px, 3 cols 640–1024px, visible only below 1024px via CSS */}
+            <div className="services-bento-mobile">
+              {categories.map((cat, idx) => (
+                <BentoTile
+                  key={cat.id}
+                  image={cat.image_url ?? "/images/placeholder-category.jpg"}
+                  title={cat.name}
+                  subtitle={`${cat.products_count} treatments`}
+                  onOpen={() => setActiveCategory(cat)}
+                  index={idx}
+                  style={{ height: 175, minHeight: 175 }}
+                />
+              ))}
+            </div>
           </div>
         </section>
 
@@ -968,16 +965,16 @@ console.log("catprod",categoryProducts)
             onClick={() => setActiveCategory(null)}
           >
             <div
-  onClick={(e) => e.stopPropagation()}
-  style={{
-    width: "min(520px, 90vw)",
-    maxHeight: "90vh",
-    overflowY: "auto",
-    background: "var(--color-surface-warm)",
-    border: "1px solid var(--color-border)",
-    boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
-  }}
->
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "min(520px, 90vw)",
+                maxHeight: "90vh",
+                overflowY: "auto",
+                background: "var(--color-surface-warm)",
+                border: "1px solid var(--color-border)",
+                boxShadow: "0 40px 100px rgba(0,0,0,0.4)",
+              }}
+            >
               <div
                 style={{
                   height: 240,
@@ -1058,41 +1055,65 @@ console.log("catprod",categoryProducts)
                   products and services.
                 </p>
 
-
-<div style={{ marginBottom: "1.75rem" }}>
-  {loadingProducts ? (
-    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
-      Loading products…
-    </p>
-  ) : categoryProducts.length > 0 ? (
-    <ul style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-      {categoryProducts.map((product) => (
-        <li
-          key={product.id}
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            paddingBottom: "0.5rem",
-            borderBottom: "1px solid var(--color-border)",
-          }}
-        >
-          <span style={{ color: "var(--color-text)", fontSize: "0.9rem" }}>
-            {product.title}
-          </span>
-          <span style={{ color: "var(--color-text-muted)", fontSize: "0.85rem" }}>
-            ${product.price}
-          </span>
-        </li>
-      ))}
-    </ul>
-  ) : (
-    <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem" }}>
-      No products found in this category.
-    </p>
-  )}
-</div>
-
+                <div style={{ marginBottom: "1.75rem" }}>
+                  {loadingProducts ? (
+                    <p
+                      style={{
+                        color: "var(--color-text-muted)",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      Loading products…
+                    </p>
+                  ) : categoryProducts.length > 0 ? (
+                    <ul
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "0.75rem",
+                      }}
+                    >
+                      {categoryProducts.map((product) => (
+                        <li
+                          key={product.id}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            paddingBottom: "0.5rem",
+                            borderBottom: "1px solid var(--color-border)",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "var(--color-text)",
+                              fontSize: "0.9rem",
+                            }}
+                          >
+                            {product.title}
+                          </span>
+                          <span
+                            style={{
+                              color: "var(--color-text-muted)",
+                              fontSize: "0.85rem",
+                            }}
+                          >
+                            ${product.price}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p
+                      style={{
+                        color: "var(--color-text-muted)",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      No products found in this category.
+                    </p>
+                  )}
+                </div>
 
                 <div style={{ display: "flex", gap: "0.75rem" }}>
                   <button
@@ -1104,7 +1125,7 @@ console.log("catprod",categoryProducts)
                     }
                     className="btn btn-primary"
                   >
-                    View Category
+                    Book Appointment
                   </button>
 
                   <button

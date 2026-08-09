@@ -132,17 +132,61 @@ class VendorController extends Controller
     //     ]);;
     // }
 
+
+// App\Http\Controllers\VendorController.php
+
+public function become(Request $request)
+{
+     $user = $request->user();
+
+    if ($user->email !== config('services.vendor_owner_email')) {
+        abort(403, 'Vendor registration is not available.');
+    }
+
+    if ($user->hasRole(RolesEnum::Vendor)) {
+        return back()->with('error', 'You are already a vendor.');
+    }
+
+    $vendor = $user->vendor;
+
+    if ($vendor && $vendor->status === VendorStatusEnum::Pending->value) {
+        Log::info('vendor.become rejected: already pending', ['user_id' => $user->id]);
+        return back()->with('error', 'Your vendor request is already pending review.');
+    }
+
+    if (!$vendor) {
+        $vendor = new Vendor();
+        $vendor->user_id = $user->id;
+        // store_name is NOT NULL in the DB — placeholder until the vendor
+        // fills in the real one via the edit form after approval
+        $vendor->store_name = 'vendor-' . $user->id;
+    }
+
+    $vendor->status = VendorStatusEnum::Pending->value;
+
+    Log::info('vendor.become saving', [
+        'user_id' => $user->id,
+        'status' => $vendor->status,
+        'existing_vendor' => $vendor->exists,
+    ]);
+
+    $vendor->save();
+
+    Log::info('vendor.become saved', ['vendor_user_id' => $vendor->user_id]);
+
+    return back()->with('success', 'Vendor request submitted — we will review it shortly.');
+}
     public function store(Request $request)
     {
         $user = $request->user();
-$request->merge([
-    'store_name' => Str::slug($request->input('store_name')),
-]);
+        $request->merge([
+            'store_name' => Str::slug($request->input('store_name')),
+        ]);
         // Validate input
         $validated = $request->validate(
             [
                 'store_name' => [
-                    'required',
+                    'nullable',
                     'regex:/^[a-z0-9-]+$/',
                     Rule::unique('vendors', 'store_name')->ignore($user->id, 'user_id'),
                 ],

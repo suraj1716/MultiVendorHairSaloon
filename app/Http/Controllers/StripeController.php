@@ -315,6 +315,44 @@ class StripeController extends Controller
                         ->delete();
                 }
 
+
+                $isFullyVoucherCovered =
+                    ((int) ($session['amount_total'] ?? 0)) === 0
+                    && ($session['payment_status'] ?? null) === 'no_payment_required';
+
+                if ($isFullyVoucherCovered && $orders->isNotEmpty()) {
+                    Log::info('Fully voucher-covered order — sending order emails', [
+                        'session_id' => $session->id,
+                        'orders' => $orders->pluck('id')->toArray(),
+                    ]);
+
+                    foreach ($orders as $order) {
+                        // Vendor email
+                        if ($order->vendorUser) {
+                            try {
+                                Mail::to($order->vendorUser)
+                                    ->send(new NewOrderMail($order));
+                            } catch (\Exception $e) {
+                                Log::error(
+                                    "Failed to send vendor order email for Order #{$order->id}: "
+                                        . $e->getMessage()
+                                );
+                            }
+                        }
+                    }
+
+                    // Customer email
+                    try {
+                        Mail::to($orders[0]->user)
+                            ->send(new CheckoutCompleted($orders));
+                    } catch (\Exception $e) {
+                        Log::error(
+                            "Failed to send checkout completed email for voucher order: "
+                                . $e->getMessage()
+                        );
+                    }
+                }
+
                 break;
 
             case 'refund.created':
@@ -505,16 +543,16 @@ class StripeController extends Controller
 
         return DB::transaction(function () use ($vouchers, $template, $userId, $qty, $total, $session) {
             $order = Order::create([
-                'user_id'           => $userId,
-                'vendor_user_id'    => null,
-                'payment_method'    => 'card',
-                'total_price'       => $total,
-                'status'            => OrderStatusEnum::Paid->value,
-                'is_paid'           => true,
-                'payment_intent'    => $session->payment_intent,
-                'stripe_charge_id'  => $session->payment_intent,
-                'stripe_session_id' => $session->id,
-            ]);
+    'user_id'           => $userId,
+    'vendor_user_id'    => $template?->vendor_user_id,
+    'payment_method'    => 'card',
+    'total_price'       => $total,
+    'status'            => OrderStatusEnum::Paid->value,
+    'is_paid'            => true,
+    'payment_intent'    => $session->payment_intent,
+    'stripe_charge_id'  => $session->payment_intent,
+    'stripe_session_id' => $session->id,
+]);
 
             OrderItem::create([
                 'order_id'              => $order->id,
@@ -561,9 +599,7 @@ class StripeController extends Controller
 
         // Step 1: Create Stripe Account if it doesn't exist
         if (!$user->stripe_account_id) {
-            $user->createStripeAccount(['type' => 'express']);
-
-            // After creation, get the latest user record with new stripe_account_id
+            @$user->createStripeAccount(['type' => 'express']);
             $user->refresh();
         }
 
@@ -574,7 +610,6 @@ class StripeController extends Controller
             if ($account->details_submitted && empty($account->requirements->currently_due)) {
                 // ✅ Onboarding complete
                 if (!$user->stripe_account_active && $user->charges_enabled) {
-                    dd($account->charges_enabled);
                     $user->stripe_account_active = true;
                     $user->save();
                 }

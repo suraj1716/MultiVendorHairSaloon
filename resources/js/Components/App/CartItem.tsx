@@ -63,7 +63,7 @@ function CartItem({ item }: { item: CartItemType }) {
             style={{
               width: "100%",
               height: "100%",
-              objectFit: "contain",
+              objectFit: "cover",
               transition: "transform var(--transition-slow)",
             }}
             onMouseEnter={(e) => ((e.currentTarget as HTMLImageElement).style.transform = "scale(1.05)")}

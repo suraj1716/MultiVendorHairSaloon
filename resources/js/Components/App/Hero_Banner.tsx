@@ -60,25 +60,25 @@ function Slide({
   active: boolean;
   direction: "left" | "right";
 }) {
-
   return (
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        transition: "opacity 800ms ease, transform 800ms ease",
-        opacity: active ? 1 : 0,
-        transform: active
-          ? "scale(1)"
-          : direction === "right"
-          ? "scale(1.03)"
-          : "scale(0.97)",
-        zIndex: active ? 1 : 0,
-        pointerEvents: active ? "all" : "none",
-      }}
-    >
+   <div
+  className="md:py-24 lg:py-32 xl:py-32 2xl:py-48"
+  style={{
+    position: "absolute",
+    inset: 0,
+    transition: "opacity 800ms ease, transform 800ms ease",
+    opacity: active ? 1 : 0,
+    transform: active
+      ? "scale(1)"
+      : direction === "right"
+        ? "scale(1.03)"
+        : "scale(0.97)",
+    zIndex: active ? 1 : 0,
+    pointerEvents: active ? "all" : "none",
+  }}
+>
       {/* background image */}
-   <style>{`
+      <style>{`
   .hero-slide-img {
     object-position: center;
   }
@@ -88,20 +88,20 @@ function Slide({
     }
   }
 `}</style>
-<img
-  className="hero-slide-img"
-  src={banner.image_url ?? '/images/placeholder-category.jpg'}
-  alt={banner.title}
-  style={{
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    transition: "transform 6s ease",
-    transform: active ? "scale(1.06)" : "scale(1)",
-  }}
-/>
+      <img
+        className="hero-slide-img"
+        src={banner.image_url ?? "/images/placeholder-category.jpg"}
+        alt={banner.title}
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          transition: "transform 6s ease",
+          transform: active ? "scale(1.06)" : "scale(1)",
+        }}
+      />
 
       {/* layered overlays */}
       <div
@@ -122,16 +122,17 @@ function Slide({
       />
 
       {/* content */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          display: "flex",
-          alignItems: "center",
-          padding: "0 6vw",
-          zIndex: 2,
-        }}
-      >
+     <div
+  style={{
+    position: "absolute",
+    inset: 0,
+    display: "flex",
+    alignItems: "center",
+    padding: "40px 6vw",
+    boxSizing: "border-box",
+    zIndex: 2,
+  }}
+>
         <div
           style={{
             maxWidth: 620,
@@ -173,13 +174,17 @@ function Slide({
               wi === arr.length - 1 ? (
                 <em
                   key={wi}
-                  style={{ fontStyle: "italic", color: "var(--color-accent-light)" }}
+                  style={{
+                    fontStyle: "italic",
+                    color: "var(--color-accent-light)",
+                  }}
                 >
-                  {" "}{word}
+                  {" "}
+                  {word}
                 </em>
               ) : (
                 <span key={wi}>{word} </span>
-              )
+              ),
             )}
           </h1>
 
@@ -271,7 +276,8 @@ function Slide({
               onMouseEnter={(e) => {
                 (e.currentTarget as HTMLAnchorElement).style.background =
                   "rgba(255,255,255,0.1)";
-                (e.currentTarget as HTMLAnchorElement).style.borderColor = "white";
+                (e.currentTarget as HTMLAnchorElement).style.borderColor =
+                  "white";
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLAnchorElement).style.background =
@@ -335,13 +341,13 @@ function Slide({
 ───────────────────────────────────────────── */
 export default function HeroCarousel({ banners }: Props) {
   const activeBanners = banners.filter((b) => b.is_active);
-  const total         = activeBanners.length;
+  const total = activeBanners.length;
 
-  const [current, setCurrent]     = useState(0);
+  const [current, setCurrent] = useState(0);
   const [direction, setDirection] = useState<"left" | "right">("right");
-  const [paused, setPaused]       = useState(false);
-  const intervalRef               = useRef<ReturnType<typeof setInterval> | null>(null);
-  const progressRef               = useRef<HTMLDivElement>(null);
+  const [paused, setPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   const goTo = useCallback(
     (idx: number, dir: "left" | "right" = "right") => {
@@ -367,7 +373,7 @@ export default function HeroCarousel({ banners }: Props) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "ArrowRight") next();
-      if (e.key === "ArrowLeft")  prev();
+      if (e.key === "ArrowLeft") prev();
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -379,7 +385,11 @@ export default function HeroCarousel({ banners }: Props) {
   if (total === 1) {
     return (
       <div
-        style={{ position: "relative", height: "min(92vh, 860px)", overflow: "hidden" }}
+        style={{
+          position: "relative",
+          height: "min(92vh, 860px)",
+          overflow: "hidden",
+        }}
         aria-label="Hero banner"
       >
         <Slide banner={activeBanners[0]} active direction="right" />
@@ -387,15 +397,14 @@ export default function HeroCarousel({ banners }: Props) {
     );
   }
 
-
   return (
     <div
-  style={{
-  position: "relative",
-  height: "clamp(420px, 70vh, 860px)", // shorter floor + ceiling than 92vh
-  overflow: "hidden",
-  userSelect: "none",
-}}
+      style={{
+        position: "relative",
+        height: "clamp(520px, 78vh, 900px)", // shorter floor + ceiling than 92vh
+        overflow: "hidden",
+        userSelect: "none",
+      }}
       aria-label="Hero carousel"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -413,7 +422,7 @@ export default function HeroCarousel({ banners }: Props) {
       {/* ── PREV / NEXT arrows ── */}
       {[
         { label: "Previous", action: prev, side: "left" as const },
-        { label: "Next",     action: next, side: "right" as const },
+        { label: "Next", action: next, side: "right" as const },
       ].map(({ label, action, side }) => (
         <button
           key={side}
@@ -461,7 +470,11 @@ export default function HeroCarousel({ banners }: Props) {
               transform: side === "left" ? "rotate(180deg)" : "none",
             }}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"
+            />
           </svg>
         </button>
       ))}
@@ -525,7 +538,13 @@ export default function HeroCarousel({ banners }: Props) {
           >
             {String(current + 1).padStart(2, "0")}
           </span>
-          <div style={{ width: 24, height: 1, background: "rgba(255,255,255,0.3)" }} />
+          <div
+            style={{
+              width: 24,
+              height: 1,
+              background: "rgba(255,255,255,0.3)",
+            }}
+          />
           <span
             style={{
               fontFamily: "var(--font-body)",

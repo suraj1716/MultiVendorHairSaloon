@@ -34,6 +34,65 @@ type Props = {
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+
+const STATUS_OPTIONS = [
+  { value: "active", label: "Pending" },   // enum quirk: Pending's value is 'active'
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "var(--color-text-muted)",   // grey — Pending
+  approved: "var(--color-success)",
+  rejected: "var(--color-error)",
+};
+
+function StatusDropdown({ vendor }: { vendor: Vendor }) {
+  const [updating, setUpdating] = useState(false);
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newStatus = e.target.value;
+    setUpdating(true);
+    router.patch(
+      route("admin.vendors.status", vendor.user_id),
+      { status: newStatus },
+      {
+        preserveScroll: true,
+        onSuccess: () => toast.success("Status updated"),
+        onError: () => toast.error("Failed to update status"),
+        onFinish: () => setUpdating(false),
+      }
+    );
+  };
+
+  return (
+    <select
+      value={vendor.status}
+      onChange={handleChange}
+      disabled={updating}
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: "var(--text-xs)",
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
+        color: STATUS_COLORS[vendor.status] ?? "var(--color-text)",
+        background: "var(--color-bg)",
+        border: "1px solid var(--color-border)",
+        padding: "4px 8px",
+        cursor: updating ? "default" : "pointer",
+        opacity: updating ? 0.6 : 1,
+      }}
+    >
+      {STATUS_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+
 const inputStyle: React.CSSProperties = {
   width: "100%",
   padding: "0.75rem 1rem",
@@ -560,6 +619,10 @@ export default function VendorsIndex({ vendors, filters, statuses, types }: Prop
     });
   };
 
+
+
+
+
   return (
     <AdminLayout>
       <Head title="Admin — Vendors" />
@@ -614,7 +677,7 @@ export default function VendorsIndex({ vendors, filters, statuses, types }: Prop
             <Td>
               <span style={{ color: "var(--color-primary)", fontWeight: 500 }}>A${v.booking_fee}</span>
             </Td>
-            <Td><StatusBadge status={v.status} /></Td>
+           <Td><StatusDropdown vendor={v} /></Td>
             <Td muted>{v.created_at}</Td>
             <Td>
               <div style={{ display: "flex", gap: 6 }}>

@@ -157,6 +157,7 @@ export interface Booking {
   booking_date: string;
   time_slot: string;
   notes: string;
+   edited_at: string | null;
 }
 export type CartItem = {
   is_gift_card: any;

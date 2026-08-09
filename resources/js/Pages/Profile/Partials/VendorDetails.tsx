@@ -1,14 +1,9 @@
 import { FormEventHandler, FormEvent, useEffect, useState } from "react";
-import { useForm, usePage } from "@inertiajs/react";
+import { Link, useForm, usePage } from "@inertiajs/react";
 import Modal from "@/Components/App/ui/Modal";
 import Button from "@/Components/App/ui/Button";
 import Badge from "@/Components/App/ui/Badge";
-import {
-  label,
-  input,
-  err,
-  fieldWrap,
-} from "@/Components/App/formStyles";
+import { label, input, err, fieldWrap } from "@/Components/App/formStyles";
 
 const indexToWeekday: Record<string, string> = {
   "0": "sunday",
@@ -20,14 +15,12 @@ const indexToWeekday: Record<string, string> = {
   "6": "saturday",
 };
 const weekdayToIndex: Record<string, string> = Object.fromEntries(
-  Object.entries(indexToWeekday).map(([k, v]) => [v, k])
+  Object.entries(indexToWeekday).map(([k, v]) => [v, k]),
 );
 
 type VendorDetailsProps = { className?: string };
 
 export default function VendorDetails({ className }: VendorDetailsProps) {
-  const [showBecomeVendorConfirmation, setShowBecomeVendorConfirmation] =
-    useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const user = usePage().props.auth.user;
   const token = usePage().props.csrf_token;
@@ -49,9 +42,17 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
   useEffect(() => {
     if (vendor && vendor.status === "approved") {
-          console.log("RAW VENDOR PROP:", vendor);
-    console.log("booking_fee:", vendor.booking_fee, typeof vendor.booking_fee);
-    console.log("vendor_type:", vendor.vendor_type, typeof vendor.vendor_type);
+      console.log("RAW VENDOR PROP:", vendor);
+      console.log(
+        "booking_fee:",
+        vendor.booking_fee,
+        typeof vendor.booking_fee,
+      );
+      console.log(
+        "vendor_type:",
+        vendor.vendor_type,
+        typeof vendor.vendor_type,
+      );
 
       const cleanedRecurringDays = (vendor.recurring_closed_days ?? [])
         .flat()
@@ -59,7 +60,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
         .filter(
           (day, index, self) =>
             ["0", "1", "2", "3", "4", "5", "6"].includes(day) &&
-            self.indexOf(day) === index
+            self.indexOf(day) === index,
         )
         .map((dayIndex) => indexToWeekday[dayIndex]);
 
@@ -84,18 +85,6 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
     setData("store_name", ev.target.value.toLowerCase().replace(/\s+/g, "-"));
   };
 
-  const becomeVendor: FormEventHandler = (ev: FormEvent<Element>) => {
-    ev.preventDefault();
-    post(route("vendor.store"), {
-      preserveScroll: true,
-      onSuccess: () => {
-        closeModal();
-        setSuccessMessage("you can now create and publish products");
-      },
-      onError: () => {},
-    });
-  };
-
   const updateVendor: FormEventHandler = (ev) => {
     ev.preventDefault();
     const recurringClosedDaysAsIndices = data.recurring_closed_days
@@ -116,15 +105,6 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
     });
   };
 
-  const closeModal = () => setShowBecomeVendorConfirmation(false);
-
-  const vendorBadgeVariant =
-    user?.vendor?.status === "pending"
-      ? "warning"
-      : user?.vendor?.status === "rejected"
-      ? "error"
-      : "success";
-
   return (
     <section className={className}>
       {recentlySuccessful && successMessage && (
@@ -144,25 +124,16 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
         </div>
       )}
 
-      {user.vendor?.status && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
-          <Badge variant={vendorBadgeVariant}>{user.vendor.status_label}</Badge>
-        </div>
-      )}
-
-      {/* {!user.vendor && (
-        <Button
-          variant="primary"
-          disabled={processing}
-          onClick={() => setShowBecomeVendorConfirmation(true)}
-        >
-          Become a Vendor
-        </Button>
-      )} */}
-
       {user.vendor &&
-        (user.vendor.status === "pending" || user.vendor.status === "rejected") && (
-          <p style={{ fontFamily: "var(--font-body)", fontSize: "13px", color: "var(--color-text-muted)" }}>
+        (user.vendor.status === "pending" ||
+          user.vendor.status === "rejected") && (
+          <p
+            style={{
+              fontFamily: "var(--font-body)",
+              fontSize: "13px",
+              color: "var(--color-text-muted)",
+            }}
+          >
             {user.vendor.status === "pending" &&
               "Your vendor request is under review. Please wait for approval."}
             {user.vendor.status === "rejected" &&
@@ -172,9 +143,14 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
       {user.vendor && user.vendor.status === "approved" && (
         <>
-          <form onSubmit={updateVendor} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <form
+            onSubmit={updateVendor}
+            style={{ display: "flex", flexDirection: "column", gap: 16 }}
+          >
             <div style={fieldWrap}>
-              <label style={label} htmlFor="store_name">Store Name</label>
+              <label style={label} htmlFor="store_name">
+                Store Name
+              </label>
               <input
                 id="store_name"
                 style={input}
@@ -188,7 +164,9 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             </div>
 
             <div style={fieldWrap}>
-              <label style={label} htmlFor="booking_fee">Booking Fee (in AUD)</label>
+              <label style={label} htmlFor="booking_fee">
+                Booking Fee (in AUD)
+              </label>
               <input
                 id="booking_fee"
                 type="number"
@@ -201,7 +179,9 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             </div>
 
             <div style={fieldWrap}>
-              <label style={label} htmlFor="vendor_type">Vendor Type</label>
+              <label style={label} htmlFor="vendor_type">
+                Vendor Type
+              </label>
               <select
                 id="vendor_type"
                 style={input}
@@ -216,7 +196,9 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             </div>
 
             <div style={fieldWrap}>
-              <label style={label} htmlFor="store_address">Store Address</label>
+              <label style={label} htmlFor="store_address">
+                Store Address
+              </label>
               <textarea
                 id="store_address"
                 style={{ ...input, minHeight: 80, resize: "vertical" }}
@@ -224,12 +206,22 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                 onChange={(e) => setData("store_address", e.target.value)}
                 placeholder="Enter your Store Address"
               />
-              {errors.store_address && <p style={err}>{errors.store_address}</p>}
+              {errors.store_address && (
+                <p style={err}>{errors.store_address}</p>
+              )}
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 16,
+              }}
+            >
               <div style={fieldWrap}>
-                <label style={label} htmlFor="start_time">Start Time</label>
+                <label style={label} htmlFor="start_time">
+                  Start Time
+                </label>
                 <input
                   id="start_time"
                   type="time"
@@ -241,7 +233,9 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
               </div>
 
               <div style={fieldWrap}>
-                <label style={label} htmlFor="end_time">End Time</label>
+                <label style={label} htmlFor="end_time">
+                  End Time
+                </label>
                 <input
                   id="end_time"
                   type="time"
@@ -254,21 +248,33 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
             </div>
 
             <div style={fieldWrap}>
-              <label style={label} htmlFor="slot_interval">Slot Interval (minutes)</label>
+              <label style={label} htmlFor="slot_interval">
+                Slot Interval (minutes)
+              </label>
               <input
                 id="slot_interval"
                 type="number"
                 min={5}
                 style={input}
                 value={data.slot_interval}
-                onChange={(e) => setData("slot_interval", Number(e.target.value))}
+                onChange={(e) =>
+                  setData("slot_interval", Number(e.target.value))
+                }
               />
-              {errors.slot_interval && <p style={err}>{errors.slot_interval}</p>}
+              {errors.slot_interval && (
+                <p style={err}>{errors.slot_interval}</p>
+              )}
             </div>
 
             <div style={fieldWrap}>
               <label style={label}>Closed Days</label>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gap: 8,
+                }}
+              >
                 {[
                   "sunday",
                   "monday",
@@ -292,7 +298,11 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                   >
                     <input
                       type="checkbox"
-                      style={{ accentColor: "var(--color-accent)", width: 14, height: 14 }}
+                      style={{
+                        accentColor: "var(--color-accent)",
+                        width: 14,
+                        height: 14,
+                      }}
                       checked={data.recurring_closed_days.includes(day)}
                       onChange={(e) => {
                         if (e.target.checked) {
@@ -303,7 +313,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                         } else {
                           setData(
                             "recurring_closed_days",
-                            data.recurring_closed_days.filter((d) => d !== day)
+                            data.recurring_closed_days.filter((d) => d !== day),
                           );
                         }
                       }}
@@ -312,11 +322,15 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                   </label>
                 ))}
               </div>
-              {errors.recurring_closed_days && <p style={err}>{errors.recurring_closed_days}</p>}
+              {errors.recurring_closed_days && (
+                <p style={err}>{errors.recurring_closed_days}</p>
+              )}
             </div>
 
             <div style={fieldWrap}>
-              <label style={label} htmlFor="closed_dates">Closed Dates (comma separated)</label>
+              <label style={label} htmlFor="closed_dates">
+                Closed Dates (comma separated)
+              </label>
               <input
                 id="closed_dates"
                 type="text"
@@ -343,7 +357,7 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
 
           <form
             action={route("stripe.connect")}
-            method="post"
+            method="get"
             style={{ marginTop: 32 }}
           >
             <input type="hidden" name="_token" value={token} />
@@ -360,40 +374,30 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                 You are successfully connected to Stripe.
               </p>
             )}
-            <Button
-              type="submit"
-              variant="outline"
-              className="w-full"
-              disabled={user.stripe_account_active}
-            >
-              Connect to Stripe
-            </Button>
+            <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
+              <div style={{ flex: 1 }}>
+                <Button
+                  type="submit"
+                  variant="accent"
+                  className="w-full"
+                  disabled={user.stripe_account_active}
+                >
+                  Connect to Stripe
+                </Button>
+              </div>
+
+              <Link
+                href={route("admin.dashboard")}
+                style={{ display: "block", flex: 1 }}
+              >
+                <Button type="button" variant="outline" className="w-full">
+                  Go to Dashboard
+                </Button>
+              </Link>
+            </div>
           </form>
         </>
       )}
-
-      <Modal show={showBecomeVendorConfirmation} onClose={closeModal}>
-        <form onSubmit={becomeVendor} style={{ padding: 32 }}>
-          <h3
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 400,
-              fontSize: "var(--text-lg)",
-              color: "var(--color-text)",
-            }}
-          >
-            Are you sure you want to be a Vendor?
-          </h3>
-          <div style={{ marginTop: 24, display: "flex", justifyContent: "flex-end", gap: 12 }}>
-            <Button type="button" variant="ghost" onClick={closeModal}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" disabled={processing}>
-              Confirm
-            </Button>
-          </div>
-        </form>
-      </Modal>
     </section>
   );
 }

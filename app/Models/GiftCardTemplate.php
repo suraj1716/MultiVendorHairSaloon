@@ -14,6 +14,7 @@ class GiftCardTemplate extends Model
         'image_path',
         'active',
         'sort_order',
+        'vendor_user_id'
     ];
 
     protected $casts = [
@@ -32,4 +33,8 @@ class GiftCardTemplate extends Model
             ? \Storage::disk('r2')->url($this->image_path)
             : asset('images/gift-card-placeholder.png');
     }
+    public function vendorUser()
+{
+    return $this->belongsTo(User::class, 'vendor_user_id');
+}
 }

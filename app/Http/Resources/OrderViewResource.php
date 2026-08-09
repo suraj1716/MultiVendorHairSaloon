@@ -64,6 +64,7 @@ class OrderViewResource extends JsonResource
                         'id' => $this->booking->id,
                         'booking_date' => $this->booking->booking_date,
                         'time_slot' => $this->booking->time_slot,
+                        'edited_at' => $this->booking->edited_at,
                         'staff' => $this->booking->staff ? [
                             'id' => $this->booking->staff->id,
                             'name' => $this->booking->staff->name,

@@ -50,4 +50,8 @@ return [
         ],
     ],
 
+
+
+    'vendor_owner_email' => env('VENDOR_OWNER_EMAIL'),
+
 ];

@@ -4,6 +4,7 @@ import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order } from "@/types";
 import OrderStatusBadge, { TimelineDot } from "@/Components/App/ui/OrderStatusBadge";
 import Pagination from "@/Components/App/ui/Pagination";
+import PageHero from "@/Components/Page/PageHero";
 
 export default function OrdersHistory() {
   const { orders } =
@@ -24,6 +25,13 @@ export default function OrdersHistory() {
         </h2>
       }
     >
+ <PageHero
+        eyebrow=""
+        title={<>Your <em>Orders</em></>}
+        subtitle=""
+        breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gallery" }]}
+      />
+
       <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
         <div className="max-w-3xl mx-auto px-4 py-16">
           {orders?.data?.length === 0 ? (
@@ -127,9 +135,9 @@ export default function OrdersHistory() {
                           <div
                             style={{
                               fontFamily: "var(--font-display)",
-                              fontSize: "var(--text-lg)",
-                              fontWeight: 400,
-                              color: "var(--color-accent-dark, var(--color-primary))",
+                              fontSize: "var(--text-2xl)",
+                              fontWeight: 600,
+                              color: "var(--color-primary, var(--color-primary))",
                             }}
                           >
                             ${grossTotal.toFixed(2)}

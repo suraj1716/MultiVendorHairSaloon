@@ -133,7 +133,7 @@ const submit: FormEventHandler = async (e) => {
         onClick={(e) => e.stopPropagation()}
         style={{
           position: "relative",
-          background: "rgb(28, 26, 23)",
+          background: "var(--color-primary)",
           border: "1px solid rgba(212, 175, 90, 0.2)",
           borderRadius: "2px",
           width: "100%",
@@ -179,7 +179,7 @@ const submit: FormEventHandler = async (e) => {
               fontSize: "0.65rem",
               letterSpacing: "0.25em",
               textTransform: "uppercase",
-              color: "rgba(212,175,90,0.75)",
+              color: "var(--color-accent)",
               marginBottom: "0.6rem",
             }}
           >
@@ -201,7 +201,7 @@ const submit: FormEventHandler = async (e) => {
             style={{
               width: "2rem",
               height: "1px",
-              background: "rgba(212,175,90,0.45)",
+              background:"var(--color-accent)",
               margin: "0.85rem auto 0",
             }}
           />
@@ -298,17 +298,17 @@ const submit: FormEventHandler = async (e) => {
                 style={{
                   fontSize: "0.75rem",
                   letterSpacing: "0.04em",
-                  color: "rgba(212,175,90,0.65)",
+                  color: "var(--color-accent)",
                   textDecoration: "none",
                   transition: "color 0.2s",
                 }}
                 onMouseEnter={(e) =>
                   ((e.currentTarget as HTMLAnchorElement).style.color =
-                    "rgba(212,175,90,1)")
+                   "var(--color-accent-dark)")
                 }
                 onMouseLeave={(e) =>
                   ((e.currentTarget as HTMLAnchorElement).style.color =
-                    "rgba(212,175,90,0.65)")
+                    "var(--color-accent)")
                 }
               >
                 Forgot password?
@@ -335,39 +335,39 @@ const submit: FormEventHandler = async (e) => {
           )}
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={processing}
-            style={{
-              width: "100%",
-              padding: "0.85rem",
-              background: processing
-                ? "rgba(212,175,90,0.4)"
-                : "rgba(212,175,90,0.9)",
-              border: "none",
-              borderRadius: "2px",
-              color: "rgb(28,26,23)",
-              fontFamily: "Jost, sans-serif",
-              fontSize: "0.72rem",
-              fontWeight: 600,
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              cursor: processing ? "not-allowed" : "pointer",
-              transition: "background 0.2s",
-            }}
-            onMouseEnter={(e) => {
-              if (!processing)
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(212,175,90,1)";
-            }}
-            onMouseLeave={(e) => {
-              if (!processing)
-                (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(212,175,90,0.9)";
-            }}
-          >
-            {processing ? "Signing in…" : "Sign In"}
-          </button>
+         <button
+  type="submit"
+  disabled={processing}
+  style={{
+    width: "100%",
+    padding: "0.85rem",
+    background: processing
+      ? "var(--color-primary-200)"
+      : "var(--color-accent)",
+    border: "none",
+    borderRadius: "2px",
+    color: "var(--color-bg-dark-black)",
+    fontFamily: "var(--font-body)",
+    fontSize: "0.72rem",
+    fontWeight: 600,
+    letterSpacing: "0.18em",
+    textTransform: "uppercase",
+    cursor: processing ? "not-allowed" : "pointer",
+    transition: "background 0.2s",
+  }}
+  onMouseEnter={(e) => {
+    if (!processing) {
+      e.currentTarget.style.background = "var(--color-accent-dark)";
+    }
+  }}
+  onMouseLeave={(e) => {
+    if (!processing) {
+      e.currentTarget.style.background = "var(--color-accent)";
+    }
+  }}
+>
+  {processing ? "Signing in…" : "Sign In"}
+</button>
 
           {/* Divider */}
           <div
@@ -381,12 +381,12 @@ const submit: FormEventHandler = async (e) => {
               style={{
                 flex: 1,
                 height: "1px",
-                background: "rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.35)",
               }}
             />
             <span
               style={{
-                color: "rgba(255,255,255,0.25)",
+                color: "rgba(255,255,255,0.35)",
                 fontSize: "0.7rem",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
@@ -398,7 +398,7 @@ const submit: FormEventHandler = async (e) => {
               style={{
                 flex: 1,
                 height: "1px",
-                background: "rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.35)",
               }}
             />
           </div>
@@ -411,7 +411,7 @@ const submit: FormEventHandler = async (e) => {
               textAlign: "center",
               fontSize: "0.75rem",
               letterSpacing: "0.04em",
-              color: "rgba(255,255,255,0.35)",
+              color: "rgba(255,255,255,0.75)",
               margin: 0,
             }}
           >
@@ -423,7 +423,7 @@ const submit: FormEventHandler = async (e) => {
                 background: "none",
                 border: "none",
                 padding: 0,
-                color: "rgba(212,175,90,0.75)",
+                color: "var(--color-accent)",
                 fontSize: "0.75rem",
                 letterSpacing: "0.04em",
                 cursor: "pointer",
@@ -433,11 +433,11 @@ const submit: FormEventHandler = async (e) => {
               }}
               onMouseEnter={(e) =>
                 ((e.currentTarget as HTMLButtonElement).style.color =
-                  "rgba(212,175,90,1)")
+                  "var(--color-accent-dark)")
               }
               onMouseLeave={(e) =>
                 ((e.currentTarget as HTMLButtonElement).style.color =
-                  "rgba(212,175,90,0.75)")
+                  "var(--color-accent)")
               }
             >
               Create an account
@@ -455,10 +455,14 @@ function inputStyle(hasError: boolean): React.CSSProperties {
   return {
     width: "100%",
     background: "rgba(255,255,255,0.04)",
-    border: `1px solid ${hasError ? "rgba(220,60,60,0.6)" : "rgba(255,255,255,0.1)"}`,
+    border: `1px solid ${
+      hasError
+        ? "rgba(255,255,255,0.1)"
+        : "rgba(255,255,255,0.1)"
+    }`,
     borderRadius: "2px",
     padding: "0.75rem 1rem",
-    color: "rgba(255,255,255,0.88)",
+    color: "var(--color-surface)",
     fontFamily: "Jost, sans-serif",
     fontSize: "0.875rem",
     letterSpacing: "0.02em",
@@ -485,7 +489,7 @@ function Field({
           fontSize: "0.68rem",
           letterSpacing: "0.14em",
           textTransform: "uppercase",
-          color: "rgba(255,255,255,0.4)",
+          color: "var(--color-surface-warm)",
         }}
       >
         {label}

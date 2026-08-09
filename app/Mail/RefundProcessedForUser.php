@@ -22,7 +22,7 @@ class RefundProcessedForUser extends Mailable
 public function build()
 {
     return $this->subject('Your Refund Has Been Processed')
-        ->view('emails.refund.user');
+        ->view('mail.refund.user');
 }
 
 
@@ -42,7 +42,7 @@ public function build()
     public function content(): Content
     {
         return new Content(
-            view: 'view.name',
+            view: 'mail.refund.user',
         );
     }
 

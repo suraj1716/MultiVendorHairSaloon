@@ -25,17 +25,41 @@ type GiftCardTemplate = {
   active: boolean;
   sort_order: number;
   vouchers_count: number;
+  vendor_user_id: number;
+  vendor: {
+    id: number;
+    name: string;
+    email: string;
+  } | null;
 };
+
+interface Vendor {
+  id: number;
+  name: string;
+}
 
 interface Props {
   templates: {
     data: GiftCardTemplate[];
     links: any;
   };
-  filters: { search?: string; active?: string };
+
+  vendors: Vendor[];
+
+  filters: {
+    search?: string;
+    active?: string;
+    vendor_user_id?: string;
+  };
 }
 
-function Td({ children, muted = false }: { children: React.ReactNode; muted?: boolean }) {
+function Td({
+  children,
+  muted = false,
+}: {
+  children: React.ReactNode;
+  muted?: boolean;
+}) {
   return (
     <td
       style={{
@@ -51,7 +75,13 @@ function Td({ children, muted = false }: { children: React.ReactNode; muted?: bo
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div style={{ marginBottom: "var(--space-md)" }}>
       {label && (
@@ -75,7 +105,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function ErrorText({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ color: "var(--color-error)", fontSize: "var(--text-xs)", marginTop: 4 }}>
+    <p
+      style={{
+        color: "var(--color-error)",
+        fontSize: "var(--text-xs)",
+        marginTop: 4,
+      }}
+    >
       {children}
     </p>
   );
@@ -83,31 +119,34 @@ function ErrorText({ children }: { children: React.ReactNode }) {
 
 function TemplateModal({
   template,
+  vendors,
   onClose,
 }: {
   template?: GiftCardTemplate;
+  vendors: Vendor[];
   onClose: () => void;
 }) {
   const isEdit = !!template;
-  const { data, set, errors, processing, post } = useAdminForm({
-    title: template?.title ?? "",
-    description: template?.description ?? "",
-    amount: template?.amount ?? "",
-    sort_order: template?.sort_order ?? 0,
-    active: template?.active ?? true,
-    image: null as File | null,
-  });
-const [imagePreview, setImagePreview] = useState<string | null>(null);
+const { data, set, errors, processing, post } = useAdminForm({
+  vendor_user_id: template?.vendor_user_id ?? "",
+  title: template?.title ?? "",
+  description: template?.description ?? "",
+  amount: template?.amount ?? "",
+  sort_order: template?.sort_order ?? 0,
+  active: template?.active ?? true,
+  image: null as File | null,
+});
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-const handleImageChange = (file: File | null) => {
-  set("image", file);
+  const handleImageChange = (file: File | null) => {
+    set("image", file);
 
-  if (file) {
-    setImagePreview(URL.createObjectURL(file));
-  } else {
-    setImagePreview(null);
-  }
-};
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      setImagePreview(null);
+    }
+  };
   const handleSubmit = () => {
     const url = isEdit
       ? route("admin.gift-card-templates.update", template!.id)
@@ -120,13 +159,13 @@ const handleImageChange = (file: File | null) => {
       },
     });
   };
-useEffect(() => {
-  return () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-  };
-}, [imagePreview]);
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
   return (
     <div
       onClick={onClose}
@@ -165,6 +204,28 @@ useEffect(() => {
         >
           {isEdit ? "Edit Gift Card Template" : "New Gift Card Template"}
         </h3>
+
+        <Field label="Vendor">
+  <select
+    value={data.vendor_user_id}
+    onChange={(e) =>
+      set("vendor_user_id", Number(e.target.value))
+    }
+    style={inputClass(errors, "vendor_user_id")}
+  >
+    <option value="">Select vendor</option>
+
+    {vendors.map((vendor) => (
+      <option key={vendor.id} value={vendor.id}>
+        {vendor.name}
+      </option>
+    ))}
+  </select>
+
+  {errors.vendor_user_id && (
+    <ErrorText>{errors.vendor_user_id}</ErrorText>
+  )}
+</Field>
 
         <Field label="Title">
           <input
@@ -209,31 +270,31 @@ useEffect(() => {
           {errors.sort_order && <ErrorText>{errors.sort_order}</ErrorText>}
         </Field>
 
-    <Field label="Image">
-  <input
-    type="file"
-    accept="image/*"
-    onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
-    style={inputClass(errors, "image")}
-  />
+        <Field label="Image">
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageChange(e.target.files?.[0] ?? null)}
+            style={inputClass(errors, "image")}
+          />
 
-  {errors.image && <ErrorText>{errors.image}</ErrorText>}
+          {errors.image && <ErrorText>{errors.image}</ErrorText>}
 
-{(imagePreview || template?.image_url) && (
-  <img
-    src={imagePreview ?? template?.image_url}
-    alt=""
-    style={{
-      width: 56,
-      height: 56,
-      objectFit: "cover",
-      marginTop: 8,
-      borderRadius: "var(--radius-sm)",
-      border: "1px solid var(--color-border)",
-    }}
-  />
-)}
-</Field>
+          {(imagePreview || template?.image_url) && (
+            <img
+              src={imagePreview ?? template?.image_url}
+              alt=""
+              style={{
+                width: 56,
+                height: 56,
+                objectFit: "cover",
+                marginTop: 8,
+                borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--color-border)",
+              }}
+            />
+          )}
+        </Field>
 
         {isEdit && (
           <Field label="">
@@ -257,12 +318,27 @@ useEffect(() => {
           </Field>
         )}
 
-        <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: "var(--space-lg)" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            justifyContent: "flex-end",
+            marginTop: "var(--space-lg)",
+          }}
+        >
           <AdminBtn variant="ghost" onClick={onClose}>
             Cancel
           </AdminBtn>
-          <AdminBtn variant="primary" onClick={handleSubmit} disabled={processing}>
-            {processing ? "Saving…" : isEdit ? "Save Changes" : "Create Template"}
+          <AdminBtn
+            variant="primary"
+            onClick={handleSubmit}
+            disabled={processing}
+          >
+            {processing
+              ? "Saving…"
+              : isEdit
+                ? "Save Changes"
+                : "Create Template"}
           </AdminBtn>
         </div>
       </div>
@@ -270,11 +346,15 @@ useEffect(() => {
   );
 }
 
-export default function GiftCardTemplatesIndex({ templates, filters }: Props) {
-  const [modalTarget, setModalTarget] = useState<"new" | GiftCardTemplate | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<GiftCardTemplate | null>(null);
+export default function GiftCardTemplatesIndex({ templates, filters,vendors }: Props) {
+  const [modalTarget, setModalTarget] = useState<
+    "new" | GiftCardTemplate | null
+  >(null);
+  const [deleteTarget, setDeleteTarget] = useState<GiftCardTemplate | null>(
+    null,
+  );
 
-
+  console.log(templates.data);
   const handleToggle = (id: number) => {
     router.patch(
       route("admin.gift-card-templates.toggle", id),
@@ -283,7 +363,7 @@ export default function GiftCardTemplatesIndex({ templates, filters }: Props) {
         preserveScroll: true,
         onSuccess: () => toast.success("Status updated"),
         onError: () => toast.error("Failed"),
-      }
+      },
     );
   };
 
@@ -307,11 +387,12 @@ export default function GiftCardTemplatesIndex({ templates, filters }: Props) {
       <Head title="Admin — Gift Card Templates" />
 
       {modalTarget && (
-        <TemplateModal
-          template={modalTarget === "new" ? undefined : modalTarget}
-          onClose={() => setModalTarget(null)}
-        />
-      )}
+  <TemplateModal
+    template={modalTarget === "new" ? undefined : modalTarget}
+    vendors={vendors}
+    onClose={() => setModalTarget(null)}
+  />
+)}
 
       {deleteTarget && (
         <ConfirmModal
@@ -333,35 +414,84 @@ export default function GiftCardTemplatesIndex({ templates, filters }: Props) {
         }
       />
 
-      <FilterBar
-        routeName="admin.gift-card-templates.index"
-        filters={filters}
-        fields={[
-          { key: "search", placeholder: "Search title…" },
-          {
-            key: "active",
-            type: "select",
-            placeholder: "All statuses",
-            options: [
-              { value: "1", label: "active" },
-              { value: "0", label: "inactive" },
-            ],
-          },
-        ]}
-      />
+     <FilterBar
+  routeName="admin.gift-card-templates.index"
+  filters={filters}
+  fields={[
+    {
+      key: "search",
+      placeholder: "Search title…",
+    },
+    {
+      key: "vendor_user_id",
+      type: "select",
+      placeholder: "All vendors",
+      options: vendors.map((vendor) => ({
+        value: String(vendor.id),
+        label: vendor.name,
+      })),
+    },
+    {
+      key: "active",
+      type: "select",
+      placeholder: "All statuses",
+      options: [
+        { value: "1", label: "Active" },
+        { value: "0", label: "Inactive" },
+      ],
+    },
+  ]}
+/>
 
-      <AdminTable headers={["Image", "Title", "Amount", "Sort", "Issued", "Status", "Actions"]}>
+      <AdminTable
+        headers={[
+          "Image",
+          "Title",
+          "Created By",
+          "Amount",
+          "Sort",
+          "Issued",
+          "Status",
+          "Actions",
+        ]}
+      >
         {templates.data.map((t) => (
           <tr key={t.id}>
             <Td>
               <img
                 src={t.image_url}
                 alt={t.title}
-                style={{ width: 44, height: 44, objectFit: "cover", borderRadius: "var(--radius-sm)" }}
+                style={{
+                  width: 44,
+                  height: 44,
+                  objectFit: "cover",
+                  borderRadius: "var(--radius-sm)",
+                }}
               />
             </Td>
             <Td>
               <span style={{ fontWeight: 600 }}>{t.title}</span>
+            </Td>
+            <Td>
+              {t.vendor_email ? (
+                <span
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  {t.vendor_email}
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: "var(--text-sm)",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  —
+                </span>
+              )}
             </Td>
             <Td>
               <span style={{ color: "var(--color-primary)", fontWeight: 500 }}>
@@ -373,17 +503,30 @@ export default function GiftCardTemplatesIndex({ templates, filters }: Props) {
             <Td>
               <button
                 onClick={() => handleToggle(t.id)}
-                style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                }}
               >
                 <StatusBadge status={t.active ? "active" : "inactive"} />
               </button>
             </Td>
             <Td>
               <div style={{ display: "flex", gap: 6 }}>
-                <ActionBtn variant="edit" title="Edit" onClick={() => setModalTarget(t)}>
+                <ActionBtn
+                  variant="edit"
+                  title="Edit"
+                  onClick={() => setModalTarget(t)}
+                >
                   <Icons.Edit />
                 </ActionBtn>
-                <ActionBtn variant="delete" title="Delete" onClick={() => setDeleteTarget(t)}>
+                <ActionBtn
+                  variant="delete"
+                  title="Delete"
+                  onClick={() => setDeleteTarget(t)}
+                >
                   <Icons.Delete />
                 </ActionBtn>
               </div>

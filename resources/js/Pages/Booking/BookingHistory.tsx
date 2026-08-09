@@ -9,6 +9,8 @@ import Button from "@/Components/App/ui/Button";
 import OrderStatusBadge, {
   TimelineDot,
 } from "@/Components/App/ui/OrderStatusBadge";
+import Modal from "@/Components/App/ui/Modal";
+import PageHero from "@/Components/Page/PageHero";
 
 function ConfirmationModal({
   open,
@@ -133,6 +135,9 @@ export default function BookingHistory() {
   const { orders } =
     usePage<PageProps<{ orders: PaginationProps<Order> }>>().props;
 
+  const [editConfirmItem, setEditConfirmItem] = useState<OrderItem | null>(
+    null,
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
@@ -265,6 +270,17 @@ export default function BookingHistory() {
     );
   };
 
+  const requestEditBooking = (item: OrderItem) => {
+    setEditConfirmItem(item);
+  };
+
+  const confirmEditBooking = () => {
+    if (editConfirmItem) {
+      handleEditBooking(editConfirmItem);
+    }
+    setEditConfirmItem(null);
+  };
+
   return (
     <AuthenticatedLayout
       header={
@@ -280,6 +296,12 @@ export default function BookingHistory() {
         </h2>
       }
     >
+       <PageHero
+              eyebrow=""
+              title={<>Your <em>Bookings</em></>}
+              subtitle=""
+              breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Bookings" }]}
+            />
       <div
         className="min-h-screen"
         style={{ backgroundColor: "var(--color-bg)" }}
@@ -320,6 +342,16 @@ export default function BookingHistory() {
                   (item) => item.booking && today < item.booking.booking_date,
                 );
 
+                const editableItem = order.orderItems.find(
+                  (item) =>
+                    item.booking &&
+                    today < item.booking.booking_date &&
+                    !item.booking.edited_at,
+                );
+
+                if (order.id === 18) {
+                  console.log("order 18 status:", order.status);
+                }
                 return (
                   <div
                     key={order.id}
@@ -546,45 +578,59 @@ export default function BookingHistory() {
                             alignItems: "center",
                           }}
                         >
-                          {order.status === "cancelled" ? (
-                            <span
-                              style={{
-                                fontFamily: "var(--font-body)",
-                                fontSize: "12px",
-                                color: "var(--color-error, #c0392b)",
-                              }}
-                            >
-                              Cancelled
-                            </span>
-                          ) : cancellableItem ? (
+                          {cancellableItem ? (
                             <>
                               <Button
                                 variant="primary"
                                 size="sm"
+                                disabled={!editableItem}
                                 onClick={() => {
-                                  const itemToEdit = order.orderItems.find(
-                                    (item) =>
-                                      item.booking &&
-                                      today < item.booking.booking_date,
-                                  );
-                                  if (itemToEdit) handleEditBooking(itemToEdit);
-                                  else
-                                    alert(
-                                      "No editable booking found in this order.",
-                                    );
+                                  if (editableItem)
+                                    setEditConfirmItem(editableItem);
                                 }}
+                                title={
+                                  !editableItem
+                                    ? "This booking has already been edited once"
+                                    : undefined
+                                }
+                                style={
+                                  !editableItem
+                                    ? {
+                                        opacity: 0.5,
+                                        cursor: "not-allowed",
+                                        pointerEvents: "none",
+                                      }
+                                    : undefined
+                                }
                               >
                                 Edit Booking
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
-                                onClick={() =>
-                                  handleCancelBooking(
-                                    cancellableItem,
-                                    order.status,
-                                    order,
-                                  )
+                                disabled={order.status === "cancelled"}
+                                onClick={() => {
+                                  if (order.status !== "cancelled") {
+                                    handleCancelBooking(
+                                      cancellableItem,
+                                      order.status,
+                                      order,
+                                    );
+                                  }
+                                }}
+                                title={
+                                  order.status === "cancelled"
+                                    ? "This order has already been cancelled"
+                                    : undefined
+                                }
+                                style={
+                                  order.status === "cancelled"
+                                    ? {
+                                        opacity: 0.5,
+                                        cursor: "not-allowed",
+                                        pointerEvents: "none",
+                                      }
+                                    : undefined
                                 }
                               >
                                 Cancel Booking
@@ -629,6 +675,50 @@ export default function BookingHistory() {
             onSubmit={() => {}}
           />
         )}
+
+        <Modal
+          show={!!editConfirmItem}
+          onClose={() => setEditConfirmItem(null)}
+          maxWidth="sm"
+        >
+          <div style={{ padding: "24px" }}>
+            <h3
+              style={{
+                fontFamily: "var(--font-heading, var(--font-display))",
+                fontSize: "16px",
+                color: "var(--color-text)",
+                marginBottom: "8px",
+              }}
+            >
+              Edit booking?
+            </h3>
+            <p
+              style={{
+                fontFamily: "var(--font-body)",
+                fontSize: "14px",
+                color: "var(--color-text-muted)",
+                marginBottom: "20px",
+              }}
+            >
+              You can only edit this booking once. Are you sure you want to
+              continue?
+            </p>
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}
+            >
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setEditConfirmItem(null)}
+              >
+                No
+              </Button>
+              <Button variant="primary" size="sm" onClick={confirmEditBooking}>
+                Yes
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         <ConfirmationModal
           open={confirmModalOpen}

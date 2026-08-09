@@ -12,40 +12,40 @@ class Order extends Model
     protected $casts = [
         'variation_type_option_ids' => 'array',
         'total_price' => 'float',
-         'refunded_at' => 'datetime',
-    'manual_paid_at' => 'datetime',
-    'created_at' => 'datetime',
-    'updated_at' => 'datetime',
+        'refunded_at' => 'datetime',
+        'manual_paid_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
 
     ];
 
-protected $fillable = [
-    'is_read',
-    'stripe_charge_id',
-    'stripe_amount',
-    'stripe_session_id',
-    'user_id',
-    'vendor_user_id',
-    'total_price',
-    'booking_fee',
-    'status',
-    'shipping_address_id',
-    'payment_intent',
-    'online_payment_comission',
-    'website_payment_comission',
-    'vendor_subtotal',
-    'is_paid',
-    'manual_paid_at',
-    'payment_method',
-    'staff_id',
-    'voucher_id',
-    'voucher_discount',
-    'discount_amount',
-    'refund_amount',
-    'refunded_at',
-    'refund_id',
-    'refund_reason',
-];
+    protected $fillable = [
+        'is_read',
+        'stripe_charge_id',
+        'stripe_amount',
+        'stripe_session_id',
+        'user_id',
+        'vendor_user_id',
+        'total_price',
+        'booking_fee',
+        'status',
+        'shipping_address_id',
+        'payment_intent',
+        'online_payment_comission',
+        'website_payment_comission',
+        'vendor_subtotal',
+        'is_paid',
+        'manual_paid_at',
+        'payment_method',
+        'staff_id',
+        'voucher_id',
+        'voucher_discount',
+        'discount_amount',
+        'refund_amount',
+        'refunded_at',
+        'refund_id',
+        'refund_reason',
+    ];
 
 
     public function orderItems()
@@ -53,10 +53,10 @@ protected $fillable = [
         return $this->hasMany(OrderItem::class, 'order_id');
     }
 
-public function refunds()
-{
-    return $this->hasMany(Refund::class);
-}
+    public function refunds()
+    {
+        return $this->hasMany(Refund::class);
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
@@ -69,10 +69,10 @@ public function refunds()
         return $this->belongsTo(Vendor::class, 'vendor_user_id', 'user_id');
     }
 
-public function staff(): BelongsTo
-{
-    return $this->belongsTo(Staff::class);
-}
+    public function staff(): BelongsTo
+    {
+        return $this->belongsTo(Staff::class);
+    }
 
     public function vendorUser(): BelongsTo
     {
