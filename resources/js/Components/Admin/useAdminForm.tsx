@@ -33,17 +33,16 @@ export function useAdminForm<T extends Record<string, any>>(initial: T) {
     });
   };
 
-  const put = (url: string, options?: { transform?: (d: T) => any; onSuccess?: () => void }) => {
-    setProcessing(true);
-    const payload = options?.transform ? options.transform(dataRef.current) : dataRef.current;
-    if (payload instanceof FormData) payload.append("_method", "PUT");
-    router.post(url, payload, {
-      forceFormData: true,
-      preserveScroll: true,
-      onSuccess: () => options?.onSuccess?.(),
-      onFinish:  () => setProcessing(false),
-    });
-  };
+const put = (url: string, options?: { transform?: (d: T) => any; onSuccess?: () => void }) => {
+  setProcessing(true);
+  const payload = options?.transform ? options.transform(dataRef.current) : dataRef.current;
+  router.post(url, { ...payload, _method: "PUT" }, {
+    forceFormData: true,
+    preserveScroll: true,
+    onSuccess: () => options?.onSuccess?.(),
+    onFinish:  () => setProcessing(false),
+  });
+};
 
   return { data, set, errors, processing, post, put };
 }

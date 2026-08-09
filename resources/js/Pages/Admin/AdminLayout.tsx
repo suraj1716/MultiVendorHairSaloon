@@ -19,6 +19,12 @@ const NAV_GROUPS = [
     group: "Catalogue",
     icon: "📦",
     items: [
+         {
+        label: "Hero Banner",
+        href: "admin.hero-banner.index",
+        icon: "🏷️",
+        countKey: null,
+      },
       {
         label: "Departments",
         href: "admin.departments.index",

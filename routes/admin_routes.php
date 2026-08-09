@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\PayoutController;
 use App\Http\Controllers\Admin\RosterController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\HeroBannerController;
 
 // ── React Admin Dashboard ──────────────────────────────────────────────────
 // All routes protected by auth + Admin/Vendor role
@@ -157,6 +158,10 @@ Route::middleware(['auth', 'verified', 'role:Admin|Vendor'])
             Route::post('/', [PayoutController::class, 'store'])->name('store');
             Route::delete('/{payout}', [PayoutController::class, 'destroy'])->name('destroy');
         });
+
+        Route::resource('hero-banner', HeroBannerController::class)->except(['show']);
+        Route::patch('hero-banner/{heroBanner}/toggle', [HeroBannerController::class, 'toggle'])
+            ->name('hero-banner.toggle');
     });
 
 
