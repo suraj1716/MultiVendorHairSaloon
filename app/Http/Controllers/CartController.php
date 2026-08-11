@@ -30,7 +30,7 @@ use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
 use App\Mail\NewOrderMail;
-use App\Mail\CheckoutCompleted
+use App\Mail\CheckoutCompleted;
 
 
 class CartController extends Controller
