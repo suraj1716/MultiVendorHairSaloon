@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Http\Resources\AuthUserResource;
+use App\Mail\BrevoApiTransport;
 use App\Models\Department;
 use App\Services\CartService;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,7 @@ use App\Models\Product;
 use App\Models\Vendor;
 use App\Observers\ProductObserver;
 use App\Observers\VendorObserver;
+use Illuminate\Support\Facades\Mail;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,8 +39,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
 
-     Product::observe(ProductObserver::class);
-    Vendor::observe(VendorObserver::class);
+        Mail::extend('brevo-api', function (array $config = []) {
+            return new BrevoApiTransport(config('services.brevo.api_key'));
+        });
+
+        Product::observe(ProductObserver::class);
+        Vendor::observe(VendorObserver::class);
 
         Model::preventSilentlyDiscardingAttributes(true);
 

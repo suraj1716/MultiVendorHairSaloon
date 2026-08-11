@@ -45,7 +45,8 @@ class GoogleController extends Controller
                     'given_name'  => $googleUser->user['given_name'] ?? null,
                     'family_name' => $googleUser->user['family_name'] ?? null,
                     'locale'      => $googleUser->user['locale'] ?? null,
-               'email_verified_at' => now(),
+
+                     'email_verified_at' => now(),
                     // 'google_access_token'  => $googleUser->token,
                     // 'google_refresh_token' => $googleUser->refreshToken ?? null,
                     // 'token_expires_at'     => now()->addSeconds($googleUser->expiresIn),

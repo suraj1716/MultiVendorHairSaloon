@@ -101,25 +101,17 @@ class StripeController extends Controller
                     }
 
                     foreach ($orders as $order) {
-    $vendorShare = $order->total_price * 100 / $totalAmount;
-    $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
-    $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
-    $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
+                        $vendorShare = $order->total_price * 100 / $totalAmount;
+                        $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
+                        $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
+                        $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
 
-    $order->online_payment_comission = $orderOnlinePaymentCommission;
-    $order->website_payment_comission = $orderWebsitePaymentCommission;
-    $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
-    $order->stripe_charge_id = $chargeId;
-    $order->save();
-
-    if ($order->vendorUser) {
-        Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
-    }
-}
-
-if ($orders->isNotEmpty()) {
-    Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
-}
+                        $order->online_payment_comission = $orderOnlinePaymentCommission;
+                        $order->website_payment_comission = $orderWebsitePaymentCommission;
+                        $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
+                        $order->stripe_charge_id = $chargeId;
+                        $order->save();
+                    }
                 } catch (\Exception $e) {
                     Log::error('charge.updated handler failed: ' . $e->getMessage());
                 }
@@ -281,7 +273,15 @@ if ($orders->isNotEmpty()) {
                     //     });
                     // }
                 }
+                foreach ($orders as $order) {
+                    if ($order->vendorUser) {
+                        Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
+                    }
+                }
 
+                if ($orders->isNotEmpty()) {
+                    Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
+                }
                 // Gift card vouchers purchased via gift card shop — activate them now that payment is confirmed
                 if (!empty($metadata['voucher_ids'])) {
                     $ids = explode(',', $metadata['voucher_ids']);
@@ -547,16 +547,16 @@ if ($orders->isNotEmpty()) {
 
         return DB::transaction(function () use ($vouchers, $template, $userId, $qty, $total, $session) {
             $order = Order::create([
-    'user_id'           => $userId,
-    'vendor_user_id'    => $template?->vendor_user_id,
-    'payment_method'    => 'card',
-    'total_price'       => $total,
-    'status'            => OrderStatusEnum::Paid->value,
-    'is_paid'            => true,
-    'payment_intent'    => $session->payment_intent,
-    'stripe_charge_id'  => $session->payment_intent,
-    'stripe_session_id' => $session->id,
-]);
+                'user_id'           => $userId,
+                'vendor_user_id'    => $template?->vendor_user_id,
+                'payment_method'    => 'card',
+                'total_price'       => $total,
+                'status'            => OrderStatusEnum::Paid->value,
+                'is_paid'            => true,
+                'payment_intent'    => $session->payment_intent,
+                'stripe_charge_id'  => $session->payment_intent,
+                'stripe_session_id' => $session->id,
+            ]);
 
             OrderItem::create([
                 'order_id'              => $order->id,

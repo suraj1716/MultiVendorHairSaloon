@@ -36,7 +36,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'google_access_token',
         'google_refresh_token',
         'token_expires_at',
-    'email_verified_at',
+'email_verified_at',
     ];
 
 
