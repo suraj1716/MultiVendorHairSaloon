@@ -29,6 +29,10 @@ use Inertia\Inertia;
 use Stripe\Checkout\Session;
 use Stripe\Stripe;
 
+use App\Mail\NewOrderMail;
+use App\Mail\CheckoutCompleted
+
+
 class CartController extends Controller
 {
     /**
@@ -444,33 +448,38 @@ class CartController extends Controller
             // ── Fully covered by voucher: skip Stripe entirely ──
             // ── Fully covered by voucher: skip Stripe entirely ──
             if ($combinedTotalDue <= 0) {
-                foreach ($orders as $order) {
-                    $order->status = OrderStatusEnum::Paid->value;
-                    $order->payment_method = 'gift_card';
-                    $order->is_paid = true;
-                    $order->save();
-                }
+    foreach ($orders as $order) {
+        $order->status = OrderStatusEnum::Paid->value;
+        $order->payment_method = 'gift_card';
+        $order->is_paid = true;
+        $order->save();
 
-                // Clear the cart items that were just checked out — the Stripe
-                // path does this via webhook/success(), but this branch never
-                // touches Stripe at all, so it must clear the cart itself.
-                $orderedProductIds = collect($orders)
-                    ->flatMap(fn($o) => $o->orderItems()->pluck('product_id'))
-                    ->unique()
-                    ->values();
+        if ($order->vendorUser) {
+            Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
+        }
+    }
 
-                if ($orderedProductIds->isNotEmpty()) {
-                    CartItem::where('user_id', $user->id)
-                        ->whereIn('product_id', $orderedProductIds)
-                        ->where('saved_for_later', false)
-                        ->delete();
-                }
+    $orderedProductIds = collect($orders)
+        ->flatMap(fn($o) => $o->orderItems()->pluck('product_id'))
+        ->unique()
+        ->values();
 
-                DB::commit();
+    if ($orderedProductIds->isNotEmpty()) {
+        CartItem::where('user_id', $user->id)
+            ->whereIn('product_id', $orderedProductIds)
+            ->where('saved_for_later', false)
+            ->delete();
+    }
 
-                return Inertia::render('Stripe/Success', [
-                    'orders' => OrderViewResource::collection($orders)->collection->toArray(),
-                ]);
+    if (!empty($orders)) {
+        Mail::to($user)->queue(new CheckoutCompleted($orders));
+    }
+
+    DB::commit();
+
+    return Inertia::render('Stripe/Success', [
+        'orders' => OrderViewResource::collection($orders)->collection->toArray(),
+    ]);
             }
             // dd($combinedTotal);
             Log::info('Checkout totals', [
