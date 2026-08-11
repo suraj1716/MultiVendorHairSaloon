@@ -101,21 +101,25 @@ class StripeController extends Controller
                     }
 
                     foreach ($orders as $order) {
-                        $vendorShare = $order->total_price * 100 / $totalAmount;
-                        $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
-                        $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
-                        $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
+    $vendorShare = $order->total_price * 100 / $totalAmount;
+    $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
+    $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
+    $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
 
-                        $order->online_payment_comission = $orderOnlinePaymentCommission;
-                        $order->website_payment_comission = $orderWebsitePaymentCommission;
-                        $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
-                        $order->stripe_charge_id = $chargeId;
-                        $order->save();
+    $order->online_payment_comission = $orderOnlinePaymentCommission;
+    $order->website_payment_comission = $orderWebsitePaymentCommission;
+    $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
+    $order->stripe_charge_id = $chargeId;
+    $order->save();
 
-                        Mail::to($order->vendorUser)->send(new NewOrderMail($order));
-                    }
+    if ($order->vendorUser) {
+        Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
+    }
+}
 
-                    Mail::to($orders[0]->user)->send(new CheckoutCompleted($orders));
+if ($orders->isNotEmpty()) {
+    Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
+}
                 } catch (\Exception $e) {
                     Log::error('charge.updated handler failed: ' . $e->getMessage());
                 }
