@@ -1,14 +1,5 @@
 <x-mail::message>
-<a
-    href="{{ config('app.url') }}"
-    style="display:inline-block; text-decoration:none;"
->
-    <img
-        src="https://pub-52e671ba26c14bb5b10e0e3d0f45dfac.r2.dev/logo/logo.png"
-        alt="{{ config('app.name') }}"
-        style="display:block; max-width:180px; max-height:60px; width:auto; height:auto; border:0;"
-    >
-</a>
+<a href="{{ config('app.url') }}" style="display:inline-block; text-decoration:none;"><img src="https://pub-52e671ba26c14bb5b10e0e3d0f45dfac.r2.dev/logo/logo.png" alt="{{ config('app.name') }}" style="display:block; max-width:180px; max-height:60px; width:auto; height:auto; border:0;"></a>
 
 # Order Confirmation
 
