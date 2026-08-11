@@ -296,12 +296,19 @@ export default function BookingHistory() {
         </h2>
       }
     >
-       <PageHero
-              eyebrow=""
-              title={<>Your <em>Bookings</em></>}
-              subtitle=""
-              breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Bookings" }]}
-            />
+      <PageHero
+        eyebrow=""
+        title={
+          <>
+            Your <em>Bookings</em>
+          </>
+        }
+        subtitle=""
+        breadcrumbs={[
+          { label: "Home", href: route("home") },
+          { label: "Bookings" },
+        ]}
+      />
       <div
         className="min-h-screen"
         style={{ backgroundColor: "var(--color-bg)" }}
@@ -440,12 +447,35 @@ export default function BookingHistory() {
                                 marginTop: 2,
                               }}
                             >
-                              Gift card −$
+                              Voucher −$
                               {Number(order.voucher_discount).toFixed(2)}
-                              {Number(order.total_price) === 0 &&
-                                " · fully covered"}
                             </div>
                           )}
+                          {Number(order.total_price) > 0 && (
+                            <div
+                              style={{
+                                fontFamily: "var(--font-body)",
+                                fontSize: "11px",
+                                color: "var(--color-text-muted)",
+                                marginTop: 2,
+                              }}
+                            >
+                              Card − ${Number(order.total_price).toFixed(2)}
+                            </div>
+                          )}
+                          {Number(order.total_price) === 0 &&
+                            Number(order.voucher_discount) > 0 && (
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "11px",
+                                  color: "var(--color-text-muted)",
+                                  marginTop: 2,
+                                }}
+                              >
+                                Fully covered
+                              </div>
+                            )}
                         </div>
                       </div>
 
@@ -522,20 +552,15 @@ export default function BookingHistory() {
                           />
 
                           <div style={{ flex: 1, minWidth: 160 }}>
-                            <Link
-                              href={route("product.show", {
-                                slug: item.product.slug,
-                              })}
+                            <span
                               style={{
                                 fontFamily: "var(--font-body)",
                                 fontSize: "var(--text-sm)",
                                 color: "var(--color-text)",
-                                textDecoration: "none",
                               }}
-                              className="hover:underline"
                             >
                               {item.product.title}
-                            </Link>
+                            </span>
                             {(item.variation_summary ?? []).length > 0 && (
                               <div
                                 style={{

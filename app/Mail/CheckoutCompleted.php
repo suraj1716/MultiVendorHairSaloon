@@ -21,7 +21,10 @@ class CheckoutCompleted extends Mailable
     {
         //
     }
-
+public function build()
+{
+    return $this->view('mail.checkout_completed');
+}
     /**
      * Get the message envelope.
      */
@@ -38,7 +41,7 @@ class CheckoutCompleted extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'mail.checkout_completed',
+            view: 'mail.checkout_completed',
         );
     }
 

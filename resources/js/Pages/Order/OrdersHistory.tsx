@@ -2,7 +2,9 @@ import React from "react";
 import { Link, usePage } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { PageProps, PaginationProps, Order } from "@/types";
-import OrderStatusBadge, { TimelineDot } from "@/Components/App/ui/OrderStatusBadge";
+import OrderStatusBadge, {
+  TimelineDot,
+} from "@/Components/App/ui/OrderStatusBadge";
 import Pagination from "@/Components/App/ui/Pagination";
 import PageHero from "@/Components/Page/PageHero";
 
@@ -25,14 +27,24 @@ export default function OrdersHistory() {
         </h2>
       }
     >
- <PageHero
+      <PageHero
         eyebrow=""
-        title={<>Your <em>Orders</em></>}
+        title={
+          <>
+            Your <em>Orders</em>
+          </>
+        }
         subtitle=""
-        breadcrumbs={[{ label: "Home", href: route("home") }, { label: "Gallery" }]}
+        breadcrumbs={[
+          { label: "Home", href: route("home") },
+          { label: "Gallery" },
+        ]}
       />
 
-      <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "var(--color-bg)" }}
+      >
         <div className="max-w-3xl mx-auto px-4 py-16">
           {orders?.data?.length === 0 ? (
             <div
@@ -62,7 +74,9 @@ export default function OrdersHistory() {
               />
 
               {orders.data.map((order, idx) => {
-                const grossTotal = Number(order.total_price) + Number(order.voucher_discount ?? 0);
+                const grossTotal =
+                  Number(order.total_price) +
+                  Number(order.voucher_discount ?? 0);
 
                 return (
                   <div
@@ -87,11 +101,14 @@ export default function OrdersHistory() {
                         marginBottom: 8,
                       }}
                     >
-                      {new Date(order.created_at).toLocaleDateString(undefined, {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      })}
+                      {new Date(order.created_at).toLocaleDateString(
+                        undefined,
+                        {
+                          day: "numeric",
+                          month: "long",
+                          year: "numeric",
+                        },
+                      )}
                     </div>
 
                     {/* Card */}
@@ -132,29 +149,57 @@ export default function OrdersHistory() {
                         </div>
 
                         <div style={{ textAlign: "right" }}>
-                          <div
-                            style={{
-                              fontFamily: "var(--font-display)",
-                              fontSize: "var(--text-2xl)",
-                              fontWeight: 600,
-                              color: "var(--color-primary, var(--color-primary))",
-                            }}
-                          >
-                            ${grossTotal.toFixed(2)}
-                          </div>
                           {Number(order.voucher_discount) > 0 && (
+                            <>
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-display)",
+                                  fontSize: "var(--text-2xl)",
+                                  fontWeight: 600,
+                                  color: "var(--color-primary)",
+                                }}
+                              >
+                                ${grossTotal.toFixed(2)}
+                              </div>
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "11px",
+                                  color: "var(--color-text-muted)",
+                                  marginTop: 2,
+                                }}
+                              >
+                                Voucher −$
+                                {Number(order.voucher_discount).toFixed(2)}
+                              </div>
+                            </>
+                          )}
+                          {Number(order.total_price) > 0 && (
                             <div
                               style={{
                                 fontFamily: "var(--font-body)",
-                                fontSize: "11px",
+                                fontSize: "12px",
                                 color: "var(--color-text-muted)",
-                                marginTop: 2,
+                                marginTop:
+                                  Number(order.voucher_discount) > 0 ? 4 : 0,
                               }}
                             >
-                              Gift card −${Number(order.voucher_discount).toFixed(2)}
-                              {Number(order.total_price) === 0 && " · fully covered"}
+                              Card − ${Number(order.total_price).toFixed(2)}
                             </div>
                           )}
+                          {Number(order.total_price) === 0 &&
+                            Number(order.voucher_discount) > 0 && (
+                              <div
+                                style={{
+                                  fontFamily: "var(--font-body)",
+                                  fontSize: "11px",
+                                  color: "var(--color-text-muted)",
+                                  marginTop: 2,
+                                }}
+                              >
+                                Fully covered
+                              </div>
+                            )}
                         </div>
                       </div>
 
@@ -171,18 +216,32 @@ export default function OrdersHistory() {
                         }}
                       >
                         <span>
-                          <span style={{ color: "var(--color-text)" }}>{order.vendor.store_name}</span>
+                          <span style={{ color: "var(--color-text)" }}>
+                            {order.vendor.store_name}
+                          </span>
                           {" · "}
                           {order.vendor.store_address}
                         </span>
                         {order.payment_method && (
-                          <span className="capitalize">Paid via {order.payment_method}</span>
-                        )}
-                        {order.vendor.vendor_type === "appointment" && order.booking_date && (
-                          <span>
-                            {new Date(order.booking_date).toLocaleDateString()} · {order.time_slot}
+                          <span className="capitalize">
+                            Paid via{" "}
+                            {order.voucher_discount > 0 &&
+                            order.payment_method === "card"
+                              ? "Voucher + Card"
+                              : order.payment_method === "gift_card"
+                                ? "Voucher"
+                                : order.payment_method}
                           </span>
                         )}
+                        {order.vendor.vendor_type === "appointment" &&
+                          order.booking_date && (
+                            <span>
+                              {new Date(
+                                order.booking_date,
+                              ).toLocaleDateString()}{" "}
+                              · {order.time_slot}
+                            </span>
+                          )}
                       </div>
 
                       {/* Items */}
@@ -195,7 +254,10 @@ export default function OrdersHistory() {
                               alignItems: "center",
                               gap: 14,
                               padding: "14px 24px",
-                              borderTop: i === 0 ? "1px solid var(--color-border)" : "none",
+                              borderTop:
+                                i === 0
+                                  ? "1px solid var(--color-border)"
+                                  : "none",
                             }}
                           >
                             {item.product?.image ? (
@@ -247,21 +309,24 @@ export default function OrdersHistory() {
                                   Booking Fee
                                 </span>
                               )}
-                              {item.variation_summary && item.variation_summary.length > 0 && (
-                                <div
-                                  style={{
-                                    fontFamily: "var(--font-body)",
-                                    fontSize: "12px",
-                                    color: "var(--color-text-muted)",
-                                    marginTop: 2,
-                                  }}
-                                >
-                                  {item.variation_summary.map((v) => `${v.type}: ${v.option}`).join(" · ")}
-                                </div>
-                              )}
+                              {item.variation_summary &&
+                                item.variation_summary.length > 0 && (
+                                  <div
+                                    style={{
+                                      fontFamily: "var(--font-body)",
+                                      fontSize: "12px",
+                                      color: "var(--color-text-muted)",
+                                      marginTop: 2,
+                                    }}
+                                  >
+                                    {item.variation_summary
+                                      .map((v) => `${v.type}: ${v.option}`)
+                                      .join(" · ")}
+                                  </div>
+                                )}
                               {item.attachment_path && (
-
-                                <a  href={`/storage/${item.attachment_path}`}
+                                <a
+                                  href={`/storage/${item.attachment_path}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   style={{

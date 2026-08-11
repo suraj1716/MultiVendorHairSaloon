@@ -22,6 +22,7 @@ use App\Services\GoogleCalendarService;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -448,38 +449,38 @@ class CartController extends Controller
             // ── Fully covered by voucher: skip Stripe entirely ──
             // ── Fully covered by voucher: skip Stripe entirely ──
             if ($combinedTotalDue <= 0) {
-    foreach ($orders as $order) {
-        $order->status = OrderStatusEnum::Paid->value;
-        $order->payment_method = 'gift_card';
-        $order->is_paid = true;
-        $order->save();
+                foreach ($orders as $order) {
+                    $order->status = OrderStatusEnum::Paid->value;
+                    $order->payment_method = 'gift_card';
+                    $order->is_paid = true;
+                    $order->save();
 
-        if ($order->vendorUser) {
-            Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
-        }
-    }
+                    if ($order->vendorUser) {
+                        Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
+                    }
+                }
 
-    $orderedProductIds = collect($orders)
-        ->flatMap(fn($o) => $o->orderItems()->pluck('product_id'))
-        ->unique()
-        ->values();
+                $orderedProductIds = collect($orders)
+                    ->flatMap(fn($o) => $o->orderItems()->pluck('product_id'))
+                    ->unique()
+                    ->values();
 
-    if ($orderedProductIds->isNotEmpty()) {
-        CartItem::where('user_id', $user->id)
-            ->whereIn('product_id', $orderedProductIds)
-            ->where('saved_for_later', false)
-            ->delete();
-    }
+                if ($orderedProductIds->isNotEmpty()) {
+                    CartItem::where('user_id', $user->id)
+                        ->whereIn('product_id', $orderedProductIds)
+                        ->where('saved_for_later', false)
+                        ->delete();
+                }
 
-    if (!empty($orders)) {
-        Mail::to($user)->queue(new CheckoutCompleted($orders));
-    }
+                if (!empty($orders)) {
+                    Mail::to($user)->queue(new CheckoutCompleted(collect($orders)));
+                }
 
-    DB::commit();
+                DB::commit();
 
-    return Inertia::render('Stripe/Success', [
-        'orders' => OrderViewResource::collection($orders)->collection->toArray(),
-    ]);
+                return Inertia::render('Stripe/Success', [
+                    'orders' => OrderViewResource::collection($orders)->collection->toArray(),
+                ]);
             }
             // dd($combinedTotal);
             Log::info('Checkout totals', [
