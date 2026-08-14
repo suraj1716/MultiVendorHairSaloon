@@ -39,14 +39,7 @@ class HandleInertiaRequests extends Middleware
         $cartItems = $cartService->getCartItems();
 
         return array_merge(parent::share($request), [
-            'auth' => [
-                'user' => $request->user()
-                    ? array_merge(
-                        $request->user()->load('vendor')->toArray(),
-                        ['roles' => $request->user()->getRoleNames()]
-                    )
-                    : null,
-            ],
+
             'vendorOwnerEmail' => config('services.vendor_owner_email'),
             'appName' => config('app.name'),
             'csrf_token' => csrf_token(),

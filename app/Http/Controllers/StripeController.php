@@ -359,6 +359,35 @@ class StripeController extends Controller
 
                 break;
 
+
+
+            case 'account.updated':
+                try {
+                    $account = $event->data->object;
+
+                    $user = User::where('stripe_account_id', $account->id)->first();
+
+                    if (!$user) {
+                        Log::warning('account.updated received for unknown stripe_account_id', ['account_id' => $account->id]);
+                        break;
+                    }
+
+                    $isActive = (bool) ($account->charges_enabled && $account->payouts_enabled);
+
+                    if ($user->stripe_account_active !== $isActive) {
+                        $user->stripe_account_active = $isActive;
+                        $user->save();
+
+                        Log::info('Stripe account status synced', [
+                            'user_id' => $user->id,
+                            'stripe_account_active' => $isActive,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('account.updated handler failed: ' . $e->getMessage());
+                }
+                break;
+
             case 'refund.created':
                 $refund = $event->data->object;
                 $paymentIntent = $refund['payment_intent'] ?? null;

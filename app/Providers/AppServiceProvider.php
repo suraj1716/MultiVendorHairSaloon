@@ -57,9 +57,6 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
-        Schedule::command('payout:vendors')
-            ->monthlyOn(15, '17:50')
-            ->withoutOverlapping();
 
         Vite::prefetch(concurrency: 3);
     }
