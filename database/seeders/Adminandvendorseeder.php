@@ -15,7 +15,7 @@ class AdminAndVendorSeeder extends Seeder
     {
         // ── Admin ──────────────────────────────────────────────
         $admin = User::firstOrCreate(
-            ['email' => 'admin@hairsalon.com'],
+            ['email' => 'shrestha.suraj.2013@gmail.com'],
             [
                 'name'              => 'Salon Admin',
                 'password'          => Hash::make('password'),

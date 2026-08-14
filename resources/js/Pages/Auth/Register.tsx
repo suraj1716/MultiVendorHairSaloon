@@ -91,7 +91,8 @@ export default function RegisterModal({
 
     const [clientErrors, setClientErrors] = useState<RegisterClientErrors>({});
     const modalRef = useRef<HTMLDivElement>(null);
-
+const [showPassword, setShowPassword] = useState(false);
+const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const validate = () => {
         const next: RegisterClientErrors = {};
 
@@ -291,39 +292,168 @@ export default function RegisterModal({
                         />
                     </Field>
 
-                    <Field label="Password" error={passwordError}>
-                        <input
-                            id="reg-password"
-                            name="password"
-                            type="password"
-                            autoComplete="new-password"
-                            value={data.password}
-                            onChange={(e) => {
-                                setData("password", e.target.value);
-                                if (clientErrors.password)
-                                    setClientErrors((p) => ({ ...p, password: undefined }));
-                            }}
-                            placeholder="••••••••"
-                            style={inputStyle(!!passwordError)}
-                        />
-                    </Field>
+                 <Field label="Password" error={passwordError}>
+    <div style={{ position: "relative" }}>
+        <input
+            id="reg-password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            autoComplete="new-password"
+            value={data.password}
+            onChange={(e) => {
+                setData("password", e.target.value);
 
-                    <Field label="Confirm Password" error={confirmError}>
-                        <input
-                            id="reg-password-confirm"
-                            name="password_confirmation"
-                            type="password"
-                            autoComplete="new-password"
-                            value={data.password_confirmation}
-                            onChange={(e) => {
-                                setData("password_confirmation", e.target.value);
-                                if (clientErrors.password_confirmation)
-                                    setClientErrors((p) => ({ ...p, password_confirmation: undefined }));
-                            }}
-                            placeholder="••••••••"
-                            style={inputStyle(!!confirmError)}
-                        />
-                    </Field>
+                if (clientErrors.password) {
+                    setClientErrors((p) => ({
+                        ...p,
+                        password: undefined,
+                    }));
+                }
+            }}
+            placeholder="••••••••"
+            style={{
+                ...inputStyle(!!passwordError),
+                paddingRight: "44px",
+            }}
+        />
+
+        <button
+            type="button"
+            onClick={() => setShowPassword((prev) => !prev)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                border: "none",
+                background: "transparent",
+                padding: "4px",
+                cursor: "pointer",
+                color: "var(--color-surface)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            {showPassword ? (
+                <svg
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <path d="M3 3l18 18" />
+                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                    <path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c5.5 0 9.3 4 10 8-.3 1.7-1.1 3.2-2.2 4.4" />
+                    <path d="M6.6 6.6C4.5 7.9 3.1 9.9 2 12c.7 4 4.5 8 10 8 1.4 0 2.7-.3 3.9-.8" />
+                </svg>
+            ) : (
+                <svg
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            )}
+        </button>
+    </div>
+</Field>
+
+
+<Field label="Confirm Password" error={confirmError}>
+    <div style={{ position: "relative" }}>
+        <input
+            id="reg-password-confirm"
+            name="password_confirmation"
+            type={showConfirmPassword ? "text" : "password"}
+            autoComplete="new-password"
+            value={data.password_confirmation}
+            onChange={(e) => {
+                setData("password_confirmation", e.target.value);
+
+                if (clientErrors.password_confirmation) {
+                    setClientErrors((p) => ({
+                        ...p,
+                        password_confirmation: undefined,
+                    }));
+                }
+            }}
+            placeholder="••••••••"
+            style={{
+                ...inputStyle(!!confirmError),
+                paddingRight: "44px",
+            }}
+        />
+
+        <button
+            type="button"
+            onClick={() => setShowConfirmPassword((prev) => !prev)}
+            aria-label={
+                showConfirmPassword
+                    ? "Hide confirm password"
+                    : "Show confirm password"
+            }
+            style={{
+                position: "absolute",
+                right: "12px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                border: "none",
+                background: "transparent",
+                padding: "4px",
+                cursor: "pointer",
+                color: "var(--color-text-muted)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            {showConfirmPassword ? (
+                <svg
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <path d="M3 3l18 18" />
+                    <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                    <path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c5.5 0 9.3 4 10 8-.3 1.7-1.1 3.2-2.2 4.4" />
+                    <path d="M6.6 6.6C4.5 7.9 3.1 9.9 2 12c.7 4 4.5 8 10 8 1.4 0 2.7-.3 3.9-.8" />
+                </svg>
+            ) : (
+                <svg
+                    width="19"
+                    height="19"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                >
+                    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            )}
+        </button>
+    </div>
+</Field>
 
                     {/* Submit */}
                     <button

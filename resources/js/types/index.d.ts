@@ -21,8 +21,8 @@ export interface Vendor {
   slot_interval_minutes: number;
   recurring_closed_days: string[]; // example: ['sunday', 'monday']
   closed_dates: string[]; // example: ['2025-06-01', '2025-06-05']
-    facebook_url: string;
-    youtube_url: string;
+  facebook_url: string;
+  youtube_url: string;
   instagram_url: string;
   tiktok_url: string;
 }

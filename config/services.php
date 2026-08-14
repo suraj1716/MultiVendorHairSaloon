@@ -54,6 +54,7 @@ return [
     'api_key' => env('BREVO_API_KEY'),
 ],
 
-    'vendor_owner_email' => env('VENDOR_OWNER_EMAIL'),
+   'vendor_owner_email'    => env('VENDOR_OWNER_EMAIL'),
+'vendor_owner_password' => env('VENDOR_OWNER_PASSWORD'),
 
 ];

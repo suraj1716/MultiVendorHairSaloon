@@ -1,4 +1,4 @@
-import "../css/app.css"
+import "../css/app.css";
 import "./bootstrap";
 import { createInertiaApp, router } from "@inertiajs/react";
 import { resolvePageComponent } from "laravel-vite-plugin/inertia-helpers";
@@ -42,7 +42,7 @@ createInertiaApp({
   resolve: (name) =>
     resolvePageComponent(
       `./Pages/${name}.tsx`,
-      import.meta.glob("./Pages/**/*.tsx")
+      import.meta.glob("./Pages/**/*.tsx"),
     ),
 
   // Previously missing entirely, which is why the default Inertia bar
@@ -58,53 +58,31 @@ createInertiaApp({
     if (import.meta.env.SSR) {
       // TEMP DEBUG: ErrorBoundary removed so SSR render errors surface
       // instead of being caught and replaced with a fallback UI.
-      hydrateRoot(el,
-        <AppWrapper App={App} props={props} />
-      );
+      hydrateRoot(el, <AppWrapper App={App} props={props} />);
     } else {
       if (!root) {
         root = createRoot(el);
       }
-      root.render(
-         <AuthModalProvider>
-
-          <AppWrapper App={App} props={props} />
-          <Toaster
+     root.render(
+    <AuthModalProvider>
+        <AppWrapper App={App} props={props} />
+        <Toaster
             position="top-right"
             toastOptions={{
-              duration: 4000,
-              style: {
-                fontFamily: "var(--font-body)",
-                fontSize: "13px",
-                borderRadius: "var(--radius-sm)",
-                background: "var(--color-surface)",
-                color: "var(--color-text)",
-                border: "1px solid var(--color-border)",
-                padding: "10px 16px",
-              },
-              success: {
-                iconTheme: {
-                  primary: "var(--color-success)",
-                  secondary: "var(--color-surface)",
-                },
+                duration: 4000,
                 style: {
-                  borderColor: "rgba(58,125,68,0.2)",
+                    fontFamily: "var(--font-body)",
+                    fontSize: "13px",
+                    borderRadius: "var(--radius-sm)",
+                    background: "var(--color-surface)",
+                    color: "var(--color-text)",
+                    border: "1px solid var(--color-border)",
+                    padding: "10px 16px",
                 },
-              },
-              error: {
-                iconTheme: {
-                  primary: "var(--color-error)",
-                  secondary: "var(--color-surface)",
-                },
-                style: {
-                  borderColor: "rgba(192,57,43,0.2)",
-                },
-              },
             }}
-          />
-
-        </AuthModalProvider>
-      );
+        />
+    </AuthModalProvider>
+);
     }
   },
 });

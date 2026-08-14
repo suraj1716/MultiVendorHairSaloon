@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Department;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -22,7 +23,14 @@ class DepartmentCategorySeeder extends Seeder
             ]
         );
 
-        // Flat structure: Department -> Category -> Products (no subcategory nesting)
+       $vendorOwnerId = User::where('email', config('services.vendor_owner_email'))->value('id');
+
+if (! $vendorOwnerId) {
+    $this->command->warn(
+        'DepartmentCategorySeeder: vendor owner user (' . config('services.vendor_owner_email') . ') not found — skipping created_by assignment. Run the user seeder first.'
+    );
+}
+
         $categories = [
             'Hair Straightening',
             'Hair Treatment',
@@ -35,47 +43,42 @@ class DepartmentCategorySeeder extends Seeder
             'Waxing',
         ];
 
-       foreach ($categories as $name) {
-    Category::updateOrCreate(
-        [
-            'name'          => $name,
-            'department_id' => $dept->id,
-            'parent_id'     => null,
-        ],
-        [
-            'active' => true,
-            'image'  => $this->findLocalImage($name, true),
-        ]
-    );
-}
-    }
-
-    /**
-     * Looks for a source image in database/seeders/images/categories/
-     * (where the Pexels fetch script saves files) matching the category
-     * name slug. Copies it into storage/app/public/categories/ and
-     * returns the relative path for the `image` column.
-     */
-   private function findLocalImage(string $name, bool $forceRefresh = false): ?string
-{
-    $slug = Str::slug($name);
-    $sourceDir = base_path('database/seeders/images/categories');
-    $extensions = ['jpg', 'jpeg', 'png', 'webp'];
-
-    foreach ($extensions as $ext) {
-        $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
-
-        if (file_exists($sourcePath)) {
-            $destPath = "categories/{$slug}.{$ext}";
-
-            if ($forceRefresh || ! Storage::disk('public')->exists($destPath)) {
-                Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
-            }
-
-            return $destPath;
+        foreach ($categories as $name) {
+            Category::updateOrCreate(
+                [
+                    'name'          => $name,
+                    'department_id' => $dept->id,
+                    'parent_id'     => null,
+                ],
+                [
+                    'active'     => true,
+                    'image'      => $this->findLocalImage($name, true),
+                    'created_by' => $vendorOwnerId,
+                ]
+            );
         }
     }
 
-    return null;
-}
+    private function findLocalImage(string $name, bool $forceRefresh = false): ?string
+    {
+        $slug = Str::slug($name);
+        $sourceDir = base_path('database/seeders/images/categories');
+        $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+        foreach ($extensions as $ext) {
+            $sourcePath = "{$sourceDir}/{$slug}.{$ext}";
+
+            if (file_exists($sourcePath)) {
+                $destPath = "categories/{$slug}.{$ext}";
+
+                if ($forceRefresh || ! Storage::disk('public')->exists($destPath)) {
+                    Storage::disk('public')->put($destPath, file_get_contents($sourcePath));
+                }
+
+                return $destPath;
+            }
+        }
+
+        return null;
+    }
 }

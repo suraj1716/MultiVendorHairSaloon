@@ -11,13 +11,19 @@ class Category extends Model
     protected $appends = ['image_url'];
     protected $fillable = [
         'name',
-         'description',
+        'description',
         'parent_id',
         'department_id',
         'active',
-        'image', // make sure this is included
-        'slug'
+        'image',
+        'slug',
+        'created_by', // add this
     ];
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
     public function parent(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'parent_id');

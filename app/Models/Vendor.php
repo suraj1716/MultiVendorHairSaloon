@@ -16,6 +16,7 @@ class Vendor extends Model
     'user_id',
     'status',
     'store_name',
+    'phone',
     'store_address',
     'vendor_type',
     'booking_fee',

@@ -3,6 +3,7 @@ import { label, input, err } from '@/Components/App/formStyles';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function ConfirmPassword() {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -18,7 +19,7 @@ export default function ConfirmPassword() {
     };
 
     return (
-        <GuestLayout>
+        <AuthenticatedLayout>
             <Head title="Confirm Password" />
 
             <div style={{ marginBottom: 16, fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)' }}>
@@ -47,6 +48,6 @@ export default function ConfirmPassword() {
                     </Button>
                 </div>
             </form>
-        </GuestLayout>
+        </AuthenticatedLayout>
     );
 }

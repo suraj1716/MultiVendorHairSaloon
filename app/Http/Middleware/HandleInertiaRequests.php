@@ -39,7 +39,15 @@ class HandleInertiaRequests extends Middleware
         $cartItems = $cartService->getCartItems();
 
         return array_merge(parent::share($request), [
-             'vendorOwnerEmail' => config('services.vendor_owner_email'),
+            'auth' => [
+                'user' => $request->user()
+                    ? array_merge(
+                        $request->user()->load('vendor')->toArray(),
+                        ['roles' => $request->user()->getRoleNames()]
+                    )
+                    : null,
+            ],
+            'vendorOwnerEmail' => config('services.vendor_owner_email'),
             'appName' => config('app.name'),
             'csrf_token' => csrf_token(),
             'ziggy' => fn() => [
@@ -77,18 +85,18 @@ class HandleInertiaRequests extends Middleware
             'vendor' => fn() => new \App\Http\Resources\VendorUserResource(
                 app(\App\Services\VendorDetailService::class)->getVendorDetails()
             ),
-      'adminCounts' => function () use ($request) {
-    $user = $request->user();
-    if (!$user) {
-        return null;
-    }
-    try {
-        if (!$user->can('access-admin')) {
-            return null;
-        }
-    } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
-        return null;
-    }
+            'adminCounts' => function () use ($request) {
+                $user = $request->user();
+                if (!$user) {
+                    return null;
+                }
+                try {
+                    if (!$user->can('access-admin')) {
+                        return null;
+                    }
+                } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist $e) {
+                    return null;
+                }
                 return [
                     'contacts' => \App\Models\Contact::where('is_read', false)->count(),
                     'orders'   => \App\Models\Order::where('is_read', false)->count(),

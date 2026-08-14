@@ -4,6 +4,7 @@ import Modal from "@/Components/App/ui/Modal";
 import Button from "@/Components/App/ui/Button";
 import Badge from "@/Components/App/ui/Badge";
 import { label, input, err, fieldWrap } from "@/Components/App/formStyles";
+import { Phone } from "lucide-react";
 
 const indexToWeekday: Record<string, string> = {
   "0": "sunday",
@@ -22,38 +23,33 @@ type VendorDetailsProps = { className?: string };
 
 export default function VendorDetails({ className }: VendorDetailsProps) {
   const [successMessage, setSuccessMessage] = useState("");
-  const user = usePage().props.auth.user;
-  const token = usePage().props.csrf_token;
+  const props = usePage().props as any;
+
+const user = props.auth.user;
+const token = props.csrf_token;
+const vendor = user?.vendor; // was: props.vendor
 
   const { data, setData, errors, post, processing, recentlySuccessful } =
     useForm({
       store_name: "",
       store_address: "",
+      phone: "",
       booking_fee: "",
       vendor_type: "",
       start_time: "",
       end_time: "",
       slot_interval: 15,
+      total_seats: 5,
       recurring_closed_days: [] as string[],
       closed_dates: [] as string[],
+      facebook_url: "",
+      youtube_url: "",
+      tiktok_url: "",
+      instagram_url: "",
     });
-
-  const vendor = user.vendor;
 
   useEffect(() => {
     if (vendor && vendor.status === "approved") {
-      console.log("RAW VENDOR PROP:", vendor);
-      console.log(
-        "booking_fee:",
-        vendor.booking_fee,
-        typeof vendor.booking_fee,
-      );
-      console.log(
-        "vendor_type:",
-        vendor.vendor_type,
-        typeof vendor.vendor_type,
-      );
-
       const cleanedRecurringDays = (vendor.recurring_closed_days ?? [])
         .flat()
         .map(String)
@@ -67,11 +63,17 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
       setData({
         store_name: vendor.store_name ?? "",
         store_address: vendor.store_address ?? "",
+        phone: vendor.phone ?? "",
         booking_fee: vendor.booking_fee ?? "",
         vendor_type: vendor.vendor_type ?? "",
+        facebook_url: vendor.facebook_url ?? "",
+        tiktok_url: vendor.tiktok_url ?? "",
+        youtube_url: vendor.youtube_url ?? "",
+        instagram_url: vendor.instagram_url ?? "",
         start_time: vendor.business_start_time ?? "",
         end_time: vendor.business_end_time ?? "",
         slot_interval: vendor.slot_interval_minutes ?? 15,
+        total_seats: vendor.total_seats ?? 5,
         recurring_closed_days: cleanedRecurringDays,
         closed_dates:
           vendor.closed_dates
@@ -124,24 +126,24 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
         </div>
       )}
 
-      {user.vendor &&
-        (user.vendor.status === "pending" ||
-          user.vendor.status === "rejected") && (
-          <p
-            style={{
-              fontFamily: "var(--font-body)",
-              fontSize: "13px",
-              color: "var(--color-text-muted)",
-            }}
-          >
-            {user.vendor.status === "pending" &&
-              "Your vendor request is under review. Please wait for approval."}
-            {user.vendor.status === "rejected" &&
-              "Your vendor request was rejected. Please contact support."}
-          </p>
-        )}
+    {vendor &&
+  (vendor.status === "pending" || vendor.status === "rejected") && (
+    <p
+      style={{
+        fontFamily: "var(--font-body)",
+        fontSize: "13px",
+        color: "var(--color-text-muted)",
+      }}
+    >
+      {vendor.status === "pending" &&
+        "Your vendor request is under review. Please wait for approval."}
 
-      {user.vendor && user.vendor.status === "approved" && (
+      {vendor.status === "rejected" &&
+        "Your vendor request was rejected. Please contact support."}
+    </p>
+  )}
+
+      {vendor && vendor.status === "approved" && (
         <>
           <form
             onSubmit={updateVendor}
@@ -161,6 +163,23 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                 autoComplete="store_name"
               />
               {errors.store_name && <p style={err}>{errors.store_name}</p>}
+            </div>
+
+            <div style={fieldWrap}>
+              <label style={label} htmlFor="phone">
+                Phone
+              </label>
+              <input
+                id="phone"
+                style={input}
+                value={data.phone}
+                onChange={(e) => setData("phone", e.target.value)}
+                required
+                autoFocus
+                autoComplete="phone"
+                placeholder="+61xxxxxxxx"
+              />
+              {errors.phone && <p style={err}>{errors.phone}</p>}
             </div>
 
             <div style={fieldWrap}>
@@ -211,6 +230,64 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
               )}
             </div>
 
+            <div style={fieldWrap}>
+              <label style={label} htmlFor="facebook_url">
+                Facebook url
+              </label>
+              <input
+                id="facebook_url"
+                style={input}
+                value={data.facebook_url}
+                onChange={(e) => setData("facebook_url", e.target.value)}
+                placeholder="https://---------"
+              />
+              {errors.facebook_url && <p style={err}>{errors.facebook_url}</p>}
+            </div>
+
+            <div style={fieldWrap}>
+              <label style={label} htmlFor="youtube_url">
+                Youtube url
+              </label>
+              <input
+                id="youtube_url"
+                style={input}
+                value={data.youtube_url}
+                onChange={(e) => setData("youtube_url", e.target.value)}
+                placeholder="https://---------"
+              />
+              {errors.youtube_url && <p style={err}>{errors.youtube_url}</p>}
+            </div>
+
+            <div style={fieldWrap}>
+              <label style={label} htmlFor="instagram_url">
+                instagram_url
+              </label>
+              <input
+                id="instagram_url"
+                style={input}
+                value={data.instagram_url}
+                onChange={(e) => setData("instagram_url", e.target.value)}
+                placeholder="https://---------"
+              />
+              {errors.instagram_url && (
+                <p style={err}>{errors.instagram_url}</p>
+              )}
+            </div>
+
+            <div style={fieldWrap}>
+              <label style={label} htmlFor="tiktok_url">
+                tiktok url
+              </label>
+              <input
+                id="tiktok_url"
+                style={input}
+                value={data.tiktok_url}
+                onChange={(e) => setData("tiktok_url", e.target.value)}
+                placeholder="https://---------"
+              />
+              {errors.tiktok_url && <p style={err}>{errors.tiktok_url}</p>}
+            </div>
+
             <div
               style={{
                 display: "grid",
@@ -244,6 +321,19 @@ export default function VendorDetails({ className }: VendorDetailsProps) {
                   onChange={(e) => setData("end_time", e.target.value)}
                 />
                 {errors.end_time && <p style={err}>{errors.end_time}</p>}
+              </div>
+
+              <div style={fieldWrap}>
+                <label style={label} htmlFor="total_seats">
+                  Total seats
+                </label>
+                <input
+                  id="total_seats"
+                  style={input}
+                  value={data.total_seats}
+                  onChange={(e) => setData("total_seats", e.target.value)}
+                />
+                {errors.total_seats && <p style={err}>{errors.total_seats}</p>}
               </div>
             </div>
 

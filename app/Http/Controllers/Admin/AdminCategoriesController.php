@@ -8,16 +8,27 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use App\Enums\RolesEnum;
 
 class AdminCategoriesController extends Controller
 {
     /* ──────────────────────────────────────────
        INDEX
     ────────────────────────────────────────── */
-   public function index(Request $request)
+public function index(Request $request)
 {
+    $user = $request->user();
+
     $query = Category::with(['parent', 'department'])
         ->withCount('products');
+
+    // Full site admins see everything; vendors see only their own (+ legacy/global)
+    if (!$user->hasRole(RolesEnum::Admin)) {
+        $query->where(function ($q) use ($user) {
+            $q->where('created_by', $user->id)
+              ->orWhereNull('created_by');
+        });
+    }
 
     if ($search = $request->input('search')) {
         $query->where('name', 'like', "%{$search}%");
@@ -79,14 +90,15 @@ class AdminCategoriesController extends Controller
             $imagePath = $request->file('image')->store('categories', 'public');
         }
 
-        Category::create([
-            'name'          => $validated['name'],
-            'description'   => $validated['description'] ?? null,
-            'parent_id'     => $validated['parent_id'] ?? null,
-            'department_id' => $validated['department_id'] ?? null,
-            'active'        => filter_var($request->input('active', true), FILTER_VALIDATE_BOOLEAN),
-            'image'         => $imagePath,
-        ]);
+     Category::create([
+    'name'          => $validated['name'],
+    'description'   => $validated['description'] ?? null,
+    'parent_id'     => $validated['parent_id'] ?? null,
+    'department_id' => $validated['department_id'] ?? null,
+    'active'        => filter_var($request->input('active', true), FILTER_VALIDATE_BOOLEAN),
+    'image'         => $imagePath,
+    'created_by'    => $request->user()->id, // add this
+]);
 
         return redirect()
             ->route('admin.categories.index')

@@ -43,6 +43,7 @@ export default function LoginModal({
   const [serverError, setServerError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
+const [showPassword, setShowPassword] = useState(false);
 
   const validate = () => {
     const next: LoginClientErrors = {};
@@ -109,7 +110,6 @@ const submit: FormEventHandler = async (e) => {
       onClose();
     }
   };
-
   const emailError = clientErrors.email;
   const passwordError = clientErrors.password;
 
@@ -245,23 +245,86 @@ const submit: FormEventHandler = async (e) => {
             />
           </Field>
 
-          {/* Password */}
-          <Field label="Password" error={passwordError}>
-            <input
-              autoComplete="current-password"
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (clientErrors.password) {
-                  setClientErrors((p) => ({ ...p, password: undefined }));
-                  setServerError(null);
-                }
-              }}
-              placeholder="••••••••"
-              style={inputStyle(!!passwordError)}
-            />
-          </Field>
+       {/* Password */}
+<Field label="Password" error={passwordError}>
+  <div style={{ position: "relative" }}>
+    <input
+      autoComplete="current-password"
+      type={showPassword ? "text" : "password"}
+      value={password}
+      onChange={(e) => {
+        setPassword(e.target.value);
+
+        if (clientErrors.password) {
+          setClientErrors((p) => ({
+            ...p,
+            password: undefined,
+          }));
+          setServerError(null);
+        }
+      }}
+      placeholder="••••••••"
+      style={{
+        ...inputStyle(!!passwordError),
+        paddingRight: "44px",
+      }}
+    />
+
+    <button
+      type="button"
+      onClick={() => setShowPassword((prev) => !prev)}
+      aria-label={showPassword ? "Hide password" : "Show password"}
+      style={{
+        position: "absolute",
+        right: "12px",
+        top: "50%",
+        transform: "translateY(-50%)",
+        border: "none",
+        background: "transparent",
+        padding: "4px",
+        cursor: "pointer",
+        color: "var(--color-surface)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {showPassword ? (
+        // Eye off
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M3 3l18 18" />
+          <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+          <path d="M9.9 4.2A10.7 10.7 0 0 1 12 4c5.5 0 9.3 4 10 8-.3 1.7-1.1 3.2-2.2 4.4" />
+          <path d="M6.6 6.6C4.5 7.9 3.1 9.9 2 12c.7 4 4.5 8 10 8 1.4 0 2.7-.3 3.9-.8" />
+        </svg>
+      ) : (
+        // Eye
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      )}
+    </button>
+  </div>
+</Field>
 
           {/* Remember + Forgot */}
           <div
@@ -292,28 +355,26 @@ const submit: FormEventHandler = async (e) => {
               Remember me
             </label>
 
-            {canResetPassword && (
-              <Link
-                href={route("password.request")}
-                style={{
-                  fontSize: "0.75rem",
-                  letterSpacing: "0.04em",
-                  color: "var(--color-accent)",
-                  textDecoration: "none",
-                  transition: "color 0.2s",
-                }}
-                onMouseEnter={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.color =
-                   "var(--color-accent-dark)")
-                }
-                onMouseLeave={(e) =>
-                  ((e.currentTarget as HTMLAnchorElement).style.color =
-                    "var(--color-accent)")
-                }
-              >
-                Forgot password?
-              </Link>
-            )}
+         {canResetPassword && (
+    <button
+        type="button"
+        onClick={() => {
+            onClose();
+            router.visit(route("password.request"));
+        }}
+        style={{
+            border: "none",
+            background: "none",
+            padding: 0,
+            cursor: "pointer",
+            fontSize: "0.75rem",
+            letterSpacing: "0.04em",
+            color: "var(--color-accent)",
+        }}
+    >
+        Forgot password?
+    </button>
+)}
           </div>
 
           {/* Server error banner */}

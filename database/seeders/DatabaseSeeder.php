@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
             RoleSeeder::class,
+             UserSeeder::class,
+
             DepartmentSeeder::class,
             DepartmentCategorySeeder::class,
             AdminAndVendorSeeder::class,   // ← creates owner@hairsalon.com (vendor)
