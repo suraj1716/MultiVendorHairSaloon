@@ -26,12 +26,12 @@ class CheckoutCompleted extends Mailable implements ShouldQueue
         );
     }
 
-    public function content(): Content
-    {
-        return new Content(
-            view: 'mail.checkout_completed',
-        );
-    }
+  public function content(): Content
+{
+    return new Content(
+        markdown: 'mail.checkout_completed',
+    );
+}
 
     public function attachments(): array
     {

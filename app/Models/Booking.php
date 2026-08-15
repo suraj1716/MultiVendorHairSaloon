@@ -17,6 +17,8 @@ class Booking extends Model
         'order_id',
         'staff_id',
         'edited_at',
+        'booking_fee_refunded',
+        'booking_fee_refund_amount'
     ];
 
     protected $casts = [

@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\Order;
+use App\Models\Refund as RefundRecord;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -14,43 +15,29 @@ class RefundProcessedForVendor extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-   public function __construct(public Order $order) {}
+    public function __construct(
+        public Order $order,
+        public RefundRecord $refund,
+    ) {}
 
-public function build()
-{
-    return $this->subject('A Refund Has Been Issued for an Order')
-        ->view('mail.refund.vendor');
-}
-
-
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Refund Processed For Vendor',
+            subject: 'A Refund Has Been Issued for an Order',
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
             view: 'mail.refund.vendor',
+            with: [
+                'order' => $this->order,
+                'refund' => $this->refund,
+            ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];
