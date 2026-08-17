@@ -45,7 +45,7 @@ Booking: {{ \Carbon\Carbon::parse($order->booking->booking_date)->format('l, F j
         @if ($orderItem->product)
             {{ $orderItem->product->title }}
         @elseif ($orderItem->giftCardTemplate)
-            🎁 Gift card — {{ $orderItem->giftCardTemplate->name }}
+            🎁 Gift card — {{ $orderItem->giftCardTemplate->title}}
         @else
             Item unavailable
         @endif
