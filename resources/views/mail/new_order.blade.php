@@ -20,7 +20,20 @@ No shipping address on file for this order.
 ## Ordered Items
 
 @foreach ($order->orderItems as $orderItem)
-- {{ $orderItem->product?->title ?? 'Item' }} — Qty {{ $orderItem->quantity }} — ${{ number_format((float) $orderItem->price, 2) }}
+<tr>
+    <td style="padding: 8px;">
+        @if ($orderItem->product)
+            <img src="{{ $orderItem->product->getImageForOptions($orderItem->variation_type_option_ids) }}" alt="{{ $orderItem->product->title }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
+            {{ $orderItem->product->title }}
+        @elseif ($orderItem->giftCardTemplate)
+            🎁 Gift card — {{ $orderItem->giftCardTemplate->name }}
+        @else
+            Item unavailable
+        @endif
+    </td>
+    <td align="center" style="padding: 8px;">{{ $orderItem->quantity }}</td>
+    <td align="right" style="padding: 8px;">${{ number_format($orderItem->price, 2) }}</td>
+</tr>
 @endforeach
 
 **Total Price: ${{ number_format((float) $order->total_price, 2) }}**
