@@ -26,7 +26,7 @@ No shipping address on file for this order.
             <img src="{{ $orderItem->product->getImageForOptions($orderItem->variation_type_option_ids) }}" alt="{{ $orderItem->product->title }}" style="width: 50px; height: 50px; object-fit: cover; margin-right: 10px;">
             {{ $orderItem->product->title }}
         @elseif ($orderItem->giftCardTemplate)
-            🎁 Gift card — {{ $orderItem->giftCardTemplate->name }}
+            🎁 Gift card — {{ $orderItem->giftCardTemplate->title}}
         @else
             Item unavailable
         @endif
