@@ -43,3 +43,7 @@ public function booking()
 }
 
 }
+public function giftCardTemplate(): BelongsTo
+{
+    return $this->belongsTo(GiftCardTemplate::class);
+}
