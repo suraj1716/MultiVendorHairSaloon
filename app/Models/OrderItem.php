@@ -42,8 +42,12 @@ public function booking()
     return $this->belongsTo(Booking::class); // or correct FK name here
 }
 
-}
+
 public function giftCardTemplate(): BelongsTo
 {
     return $this->belongsTo(GiftCardTemplate::class);
+}
+
+
+    
 }
