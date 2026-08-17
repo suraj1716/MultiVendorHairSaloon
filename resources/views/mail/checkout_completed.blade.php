@@ -40,7 +40,18 @@ Booking: {{ \Carbon\Carbon::parse($order->booking->booking_date)->format('l, F j
 **Items**
 
 @foreach ($order->orderItems as $orderItem)
-- {{ $orderItem->product?->title ?? 'Item' }} — ${{ number_format((float) $orderItem->price, 2) }}
+<tr>
+    <td>
+        @if ($orderItem->product)
+            {{ $orderItem->product->title }}
+        @elseif ($orderItem->giftCardTemplate)
+            🎁 Gift card — {{ $orderItem->giftCardTemplate->name }}
+        @else
+            Item unavailable
+        @endif
+    </td>
+    <td align="right">${{ number_format($orderItem->price, 2) }}</td>
+</tr>
 @endforeach
 
 Items Subtotal: ${{ number_format($grossTotal, 2) }}
