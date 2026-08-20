@@ -16,6 +16,7 @@ class Order extends Model
         'manual_paid_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+         'vendor_notified_at' => 'datetime',
 
     ];
 

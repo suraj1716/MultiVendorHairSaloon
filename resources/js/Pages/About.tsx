@@ -99,6 +99,11 @@ const About: React.FC = () => {
   }, []);
 
   return (
+
+       <div
+      className=" isolate"
+      style={{ fontFamily: "var(--font-body)", background: "var(--color-bg)" }}
+    >
     <AuthenticatedLayout>
       <div
         style={{
@@ -169,13 +174,10 @@ const About: React.FC = () => {
             />
           ))}
 
-          <div
+          <div className="container-site"
             style={{
               position: "relative",
               zIndex: 2,
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 7vw",
               width: "100%",
             }}
           >
@@ -274,172 +276,166 @@ const About: React.FC = () => {
         {/* ══════════════════════════════════════════
             INTRO / STORY
         ══════════════════════════════════════════ */}
-     <section
+      <section
   style={{ background: "var(--color-surface)", padding: "6rem 0" }}
   className="!py-16 md:!py-24"
 >
-  <div
-    style={{
-      maxWidth: "var(--container-max)",
-      margin: "0 auto",
-    }}
-    className="px-[6vw] lg:px-[7vw] grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center"
-  >
-    {/* text */}
-    <div data-aos="fade-right">
-      <Eyebrow>About Us</Eyebrow>
-      <Ornament />
+  <div className="container-site grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            {/* text */}
+            <div  data-aos="fade-right ">
+              <Eyebrow>About Us</Eyebrow>
+              <Ornament />
 
-      <Title tone="light">
-        Welcome to{" "}
-        <em
-          style={{
-            fontStyle: "italic",
-            color: "var(--color-primary)",
-            marginTop: -20,
-          }}
-        >
-          RB Hair & Beauty Lounge
-        </em>
-      </Title>
+              <Title tone="light">
+                Welcome to{" "}
+                <em
+                  style={{
+                    fontStyle: "italic",
+                    color: "var(--color-primary)",
+                    marginTop: -20,
+                  }}
+                >
+                  RB Hair & Beauty Lounge
+                </em>
+              </Title>
 
-      <div className="flex items-center gap-3 mb-2 flex-wrap">
-        <img
-          src="/images/tafe-logo.png"
-          alt="TAFE Certified"
-          className="h-12 md:h-16 w-auto object-contain"
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-body)",
-            fontSize: "0.8rem",
-            letterSpacing: "0.05em",
-            color: "var(--color-text-muted)",
-          }}
-        >
-          Australian Certified Hairdressers and Beauticians
-        </span>
-      </div>
+              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                <img
+                  src="/images/tafe-logo.png"
+                  alt="TAFE Certified"
+                  className="h-12 md:h-16 w-auto object-contain"
+                />
+                <span
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    fontSize: "0.8rem",
+                    letterSpacing: "0.05em",
+                    color: "var(--color-text-muted)",
+                  }}
+                >
+                  Australian Certified Hairdressers and Beauticians
+                </span>
+              </div>
 
-      <p
-        style={{
-          color: "var(--color-text-muted)",
-          lineHeight: 1.85,
-        }}
-        className="mb-5 mt-6 md:mt-8"
-      >
-        RB Hair & Beauty Lounge Australia is led by Mausami Rajbhandari
-        Piya and her husband Sandesh Rajbhandari, together with a team
-        of skilled and passionate stylists. Originally from Nepal, their
-        family's hairdressing experience spans across Sydney, Australia.
-        The Rajbhandari family come together at RB Hair & Beauty Lounge
-        to offer guests exceptional hairdressing delivered with polish
-        and expertise.
-      </p>
-      <p
-        style={{
-          color: "var(--color-text-muted)",
-          lineHeight: 1.85,
-        }}
-        className="mb-8"
-      >
-        When you visit RB Hair & Beauty Lounge, expect a warm welcome
-        into a relaxing space. Expect a knowledgeable stylist who
-        listens to what you want and need. Expect a service experience
-        that is full of detail but never misses the main point — simply
-        beautiful hair and beauty.
-      </p>
+              <p
+                style={{
+                  color: "var(--color-text-muted)",
+                  lineHeight: 1.85,
+                }}
+                className="mb-5 mt-6 md:mt-8"
+              >
+                RB Hair & Beauty Lounge Australia is led by Mausami Rajbhandari
+                Piya and her husband Sandesh Rajbhandari, together with a team
+                of skilled and passionate stylists. Originally from Nepal, their
+                family's hairdressing experience spans across Sydney, Australia.
+                The Rajbhandari family come together at RB Hair & Beauty Lounge
+                to offer guests exceptional hairdressing delivered with polish
+                and expertise.
+              </p>
+              <p
+                style={{
+                  color: "var(--color-text-muted)",
+                  lineHeight: 1.85,
+                }}
+                className="mb-8"
+              >
+                When you visit RB Hair & Beauty Lounge, expect a warm welcome
+                into a relaxing space. Expect a knowledgeable stylist who
+                listens to what you want and need. Expect a service experience
+                that is full of detail but never misses the main point — simply
+                beautiful hair and beauty.
+              </p>
 
-      <div className="flex gap-8 sm:gap-12 flex-wrap">
-        {[
-          ["15+", "Years"],
-          ["2,700+", "Clients"],
-          ["48", "Stylists"],
-        ].map(([num, label]) => (
-          <div key={label}>
-            <div
-              style={{
-                fontFamily: "var(--font-display)",
-                color: "var(--color-primary)",
-                lineHeight: 1,
-              }}
-              className="text-3xl md:text-[2.25rem] font-normal"
-            >
-              {num}
+              <div className="flex gap-8 sm:gap-12 flex-wrap">
+                {[
+                  ["15+", "Years"],
+                  ["2,700+", "Clients"],
+                  ["48", "Stylists"],
+                ].map(([num, label]) => (
+                  <div key={label}>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-display)",
+                        color: "var(--color-primary)",
+                        lineHeight: 1,
+                      }}
+                      className="text-3xl md:text-[2.25rem] font-normal"
+                    >
+                      {num}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-body)",
+                        letterSpacing: "0.18em",
+                        color: "var(--color-text-light)",
+                      }}
+                      className="text-[0.6rem] md:text-[0.65rem] uppercase mt-1"
+                    >
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* image */}
             <div
-              style={{
-                fontFamily: "var(--font-body)",
-                letterSpacing: "0.18em",
-                color: "var(--color-text-light)",
-              }}
-              className="text-[0.6rem] md:text-[0.65rem] uppercase mt-1"
+              data-aos="fade-left"
+              className="relative mx-auto max-w-md lg:max-w-none w-full"
             >
-              {label}
+              <img
+                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80"
+                alt="RB Hair & Beauty Lounge interior"
+                style={{
+                  aspectRatio: "4/5",
+                  objectFit: "cover",
+                  borderRadius: "var(--radius-md)",
+                }}
+                className="w-full block"
+              />
+
+              {/* gold accent frame */}
+              <div
+                style={{
+                  border: "1px solid var(--color-accent-light)",
+                  borderRadius: "var(--radius-md)",
+                }}
+                className="absolute -top-3 -right-3 md:-top-4 md:-right-4 w-1/2 h-1/2 pointer-events-none -z-10"
+              />
+
+              {/* floating badge */}
+              <div
+                style={{
+                  background: "var(--color-primary)",
+                  borderRadius: "var(--radius-md)",
+                  boxShadow: "var(--shadow-lg)",
+                }}
+                className="absolute bottom-4 left-2 sm:bottom-6 sm:-left-8 px-5 py-4 md:px-6 md:py-5"
+              >
+                <div
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    color: "var(--color-accent-light)",
+                    lineHeight: 1,
+                  }}
+                  className="text-2xl md:text-[2rem] font-normal"
+                >
+                  15
+                </div>
+                <div
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    letterSpacing: "0.18em",
+                    color: "rgba(255,255,255,0.55)",
+                  }}
+                  className="text-[0.55rem] md:text-[0.6rem] uppercase mt-1"
+                >
+                  Years of Excellence
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-
-    {/* image */}
-    <div
-      data-aos="fade-left"
-      className="relative mx-auto max-w-md lg:max-w-none w-full"
-    >
-      <img
-        src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80"
-        alt="RB Hair & Beauty Lounge interior"
-        style={{
-          aspectRatio: "4/5",
-          objectFit: "cover",
-          borderRadius: "var(--radius-md)",
-        }}
-        className="w-full block"
-      />
-
-      {/* gold accent frame */}
-      <div
-        style={{
-          border: "1px solid var(--color-accent-light)",
-          borderRadius: "var(--radius-md)",
-        }}
-        className="absolute -top-3 -right-3 md:-top-4 md:-right-4 w-1/2 h-1/2 pointer-events-none -z-10"
-      />
-
-      {/* floating badge */}
-      <div
-        style={{
-          background: "var(--color-primary)",
-          borderRadius: "var(--radius-md)",
-          boxShadow: "var(--shadow-lg)",
-        }}
-        className="absolute bottom-4 left-2 sm:bottom-6 sm:-left-8 px-5 py-4 md:px-6 md:py-5"
-      >
-        <div
-          style={{
-            fontFamily: "var(--font-display)",
-            color: "var(--color-accent-light)",
-            lineHeight: 1,
-          }}
-          className="text-2xl md:text-[2rem] font-normal"
-        >
-          15
-        </div>
-        <div
-          style={{
-            fontFamily: "var(--font-body)",
-            letterSpacing: "0.18em",
-            color: "rgba(255,255,255,0.55)",
-          }}
-          className="text-[0.55rem] md:text-[0.6rem] uppercase mt-1"
-        >
-          Years of Excellence
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+        </section>
 
         {/* ══════════════════════════════════════════
             VALUES
@@ -452,13 +448,9 @@ const About: React.FC = () => {
             padding: "6rem 0",
           }}
         >
-          <div
-            style={{
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 7vw",
-            }}
-          >
+          <div className="container-site">
+
+
             <div data-aos="fade-up">
               <div className="pillars-heading-wrap mb-24">
                 <Eyebrow center>What We Stand For</Eyebrow>
@@ -575,13 +567,7 @@ const About: React.FC = () => {
         <section
           style={{ background: "var(--color-surface)", padding: "6rem 0" }}
         >
-          <div
-            style={{
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 7vw",
-            }}
-          >
+          <div className="container-site">
             <div id="team" data-aos="fade-up" className="mb-24">
               <Eyebrow center>The Artisans</Eyebrow>
               <Title center>
@@ -727,13 +713,7 @@ const About: React.FC = () => {
             padding: "6rem 0",
           }}
         >
-          <div
-            style={{
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 7vw",
-            }}
-          >
+        <div className="container-site">
             <div data-aos="fade-up" className="mb-24">
               <Eyebrow center>Our Journey</Eyebrow>
               <Title center>
@@ -875,11 +855,8 @@ const About: React.FC = () => {
             />
           ))}
 
-          <div
+          <div className="container-site"
             style={{
-              maxWidth: "var(--container-max)",
-              margin: "0 auto",
-              padding: "0 7vw",
               textAlign: "center",
               position: "relative",
               zIndex: 1,
@@ -976,6 +953,7 @@ const About: React.FC = () => {
         </section>
       </div>
     </AuthenticatedLayout>
+    </div>
   );
 };
 

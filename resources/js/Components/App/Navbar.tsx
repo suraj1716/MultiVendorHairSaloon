@@ -329,14 +329,14 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-const isAdmin =
-  auth?.user?.roles?.includes("Admin") ||
-  (auth?.user?.roles?.includes("Vendor") &&
-    auth?.user?.vendor?.status === "approved");
+  const isAdmin =
+    auth?.user?.roles?.includes("Admin") ||
+    (auth?.user?.roles?.includes("Vendor") &&
+      auth?.user?.vendor?.status === "approved");
   const { url } = usePage();
   const onHomePage = url === "/" || url.startsWith("/#");
-const vendor = useVendorDetails();
-console.log('isAdmin', isAdmin);
+  const vendor = useVendorDetails();
+  console.log("isAdmin", isAdmin);
 
   const SOCIALS = [
     {
@@ -497,26 +497,52 @@ console.log('isAdmin', isAdmin);
         .user-menu-item:hover { background: var(--color-bg-alt); color: var(--color-primary); }
         .user-menu-item.danger:hover { background: rgba(192,57,43,0.08); color: var(--color-error); }
 
-        .footer-socials {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
-        .footer-social-btn {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 32px;
-          height: 32px;
-          border-radius: var(--radius-full);
-          border: 1px solid rgba(255,255,255,0.5);
-          color: var(--color-text-inverse);
-          background: transparent;
-          cursor: pointer;
-          text-decoration: none;
-          transition: color var(--transition-fast), border-color var(--transition-fast), background var(--transition-fast);
-          flex-shrink: 0;
-        }
+      .footer-socials {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255,255,255,0.5);
+  color: var(--color-text-inverse);
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+  flex-shrink: 0;
+}
+
+
+
+/* Phone: show Book Now, hide socials */
+@media (max-width: 767px) {
+  .footer-book-now {
+    display: inline-flex;
+  }
+  .footer-social-btn {
+    display: none;
+  }
+}
+
+/* Tablet and desktop: show socials, hide Book Now */
+@media (min-width: 768px) {
+  .footer-book-now {
+    display: none;
+  }
+  .footer-social-btn {
+    display: inline-flex;
+  }
+}
         .footer-social-btn:hover {
           color: var(--color-accent-light);
           border-color: var(--color-accent);
@@ -993,6 +1019,8 @@ console.log('isAdmin', isAdmin);
               }}
             >
               <div className="footer-socials">
+
+
                 {SOCIALS.map((s) => (
                   <a
                     key={s.label}
@@ -1048,22 +1076,27 @@ console.log('isAdmin', isAdmin);
               Call: {formatAustralianPhone(vendor?.phone)}
             </a>
 
-            {SOCIALS.length > 0 && (
-              <div className="footer-socials">
-                {SOCIALS.map((s) => (
-                  <a
-                    key={s.label}
-                    href={s.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={s.label}
-                    className="footer-social-btn"
-                  >
-                    {s.icon}
-                  </a>
-                ))}
-              </div>
-            )}
+            <div className="footer-socials">
+              <Link
+                href={route("shop.search")}
+                style={{
+                  padding: "8px 16px",
+                  background: "var(--color-accent)",
+                  color: "var(--color-text-muted)",
+                  fontFamily: "var(--font-body)",
+                  fontSize: 10,
+                  fontWeight: 800,
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  border: "1px solid var(--color-accent)",
+                  whiteSpace: "nowrap",
+                  flexShrink: 0,
+                }}
+              >
+                Book Now
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -1093,7 +1126,7 @@ console.log('isAdmin', isAdmin);
                 display: "flex",
                 alignItems: "center",
                 flexShrink: 0,
-                 marginLeft: -10,
+                marginLeft: -10,
               }}
             >
               <img
@@ -1115,7 +1148,6 @@ console.log('isAdmin', isAdmin);
                 gap: 32,
                 flexShrink: 0,
                 margin: "0 auto",
-
               }}
             >
               <NavLink
@@ -1163,7 +1195,6 @@ console.log('isAdmin', isAdmin);
                 alignItems: "center",
                 gap: 6,
                 flexShrink: 0,
-
               }}
             >
               <button
@@ -1342,15 +1373,16 @@ console.log('isAdmin', isAdmin);
                 style={{
                   marginLeft: 10,
                   padding: "10px 22px",
-                  background: "var(--color-primary)",
-                  color: "var(--color-text-inverse)",
+                  background: "var(--color-accent)",
+                  color: "var(--color-text-muted)",
                   fontFamily: "var(--font-body)",
                   fontSize: 10,
-                  fontWeight: 500,
+                  fontWeight: 800,
+
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   textDecoration: "none",
-                  border: "1px solid var(--color-primary)",
+                  border: "1px solid var(--color-accent)",
                   transition: "all var(--transition-base)",
                   whiteSpace: "nowrap",
                   alignItems: "center",
@@ -1363,7 +1395,7 @@ console.log('isAdmin', isAdmin);
               {/* Hamburger — mobile only */}
               <button
                 onClick={() => setMobileOpen(true)}
-                style={{ ...iconBtnStyle, display: undefined,  marginRight:-6 }}
+                style={{ ...iconBtnStyle, display: undefined, marginRight: -6 }}
                 aria-label="Open menu"
                 className="lg:hidden flex items-center justify-center  "
               >

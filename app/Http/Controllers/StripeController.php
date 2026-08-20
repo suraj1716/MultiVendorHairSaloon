@@ -46,366 +46,363 @@ class StripeController extends Controller
 
 
 
-  public function handle(Request $request)
-{
-    $stripe = new StripeClient(config('app.stripe_secret_key'));
-    $endpointSecret = config('app.stripe_webhook_secret');
-    $payload = $request->getContent();
-    $sigHeader = $request->header('Stripe-Signature');
-    $event = null;
+    public function handle(Request $request)
+    {
+        $stripe = new StripeClient(config('app.stripe_secret_key'));
+        $endpointSecret = config('app.stripe_webhook_secret');
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $event = null;
 
-    try {
-        $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
-    } catch (UnexpectedValueException $e) {
-        return response('Invalid payload', 400);
-    } catch (SignatureVerificationException $e) {
-        Log::warning('Stripe webhook signature mismatch: ' . $e->getMessage());
-        return response('Invalid signature', 400);
-    }
+        try {
+            $event = Webhook::constructEvent($payload, $sigHeader, $endpointSecret);
+        } catch (UnexpectedValueException $e) {
+            return response('Invalid payload', 400);
+        } catch (SignatureVerificationException $e) {
+            Log::warning('Stripe webhook signature mismatch: ' . $e->getMessage());
+            return response('Invalid signature', 400);
+        }
 
-    Log::info('Stripe webhook received: ' . $event->type);
+        Log::info('Stripe webhook received: ' . $event->type);
 
-    switch ($event->type) {
-        case 'charge.updated':
-            try {
-                $charge = $event->data->object;
+        switch ($event->type) {
+            case 'charge.updated':
+                try {
+                    $charge = $event->data->object;
 
-                $transactionId = $charge['balance_transaction'] ?? null;
-                $paymentIntent = $charge['payment_intent'] ?? null;
-                $chargeId      = $charge['id'] ?? null;
+                    $transactionId = $charge['balance_transaction'] ?? null;
+                    $paymentIntent = $charge['payment_intent'] ?? null;
+                    $chargeId      = $charge['id'] ?? null;
 
-                if (!$transactionId || !$paymentIntent) {
-                    Log::warning('Missing transactionId or paymentIntent in charge.updated event.');
+                    if (!$transactionId || !$paymentIntent) {
+                        Log::warning('Missing transactionId or paymentIntent in charge.updated event.');
+                        break;
+                    }
+
+                    $balanceTransaction = $stripe->balanceTransactions->retrieve($transactionId);
+                    $totalAmount = $balanceTransaction['amount'];
+                    $stripeFee = 0;
+
+                    foreach ($balanceTransaction['fee_details'] as $feeDetail) {
+                        if ($feeDetail['type'] === 'stripe_fee') {
+                            $stripeFee = $feeDetail['amount'];
+                        }
+                    }
+
+                    $platformFeePercent = config('app.platform_fee_pct');
+
+                    $orders = Order::query()
+                        ->where('payment_intent', $paymentIntent)
+                        ->with(['user', 'vendorUser.Vendor', 'orderItems.product'])
+                        ->get();
+
+                    if ($orders->isEmpty()) {
+                        Log::warning("No orders found for payment_intent: $paymentIntent");
+                        break;
+                    }
+
+                    foreach ($orders as $order) {
+                        $vendorShare = $order->total_price * 100 / $totalAmount;
+                        $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
+                        $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
+                        $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
+
+                        $order->online_payment_comission = $orderOnlinePaymentCommission;
+                        $order->website_payment_comission = $orderWebsitePaymentCommission;
+                        $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
+                        $order->stripe_charge_id = $chargeId;
+
+                        if (!$order->vendor_notified_at && $order->vendorUser) {
+                            Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
+                            $order->vendor_notified_at = now();
+                        }
+
+                        $order->save();
+                        // Vendor "new order" email now that fees are known
+                    }
+                } catch (\Exception $e) {
+                    Log::error('charge.updated handler failed: ' . $e->getMessage());
+                }
+                break;
+
+            case 'checkout.session.completed':
+                if (\App\Models\ProcessedStripeEvent::where('stripe_event_id', $event->id)->exists()) {
+                    Log::info("Stripe event {$event->id} already processed — skipping");
                     break;
                 }
+                \App\Models\ProcessedStripeEvent::create(['stripe_event_id' => $event->id]);
 
-                $balanceTransaction = $stripe->balanceTransactions->retrieve($transactionId);
-                $totalAmount = $balanceTransaction['amount'];
-                $stripeFee = 0;
-
-                foreach ($balanceTransaction['fee_details'] as $feeDetail) {
-                    if ($feeDetail['type'] === 'stripe_fee') {
-                        $stripeFee = $feeDetail['amount'];
-                    }
-                }
-
-                $platformFeePercent = config('app.platform_fee_pct');
-
-                $orders = Order::query()
-                    ->where('payment_intent', $paymentIntent)
-                    ->with(['user', 'vendorUser.Vendor', 'orderItems.product'])
-                    ->get();
-
-                if ($orders->isEmpty()) {
-                    Log::warning("No orders found for payment_intent: $paymentIntent");
-                    break;
-                }
-
-                foreach ($orders as $order) {
-                    $vendorShare = $order->total_price * 100 / $totalAmount;
-                    $orderOnlinePaymentCommissionCents = $vendorShare * $stripeFee;
-                    $orderOnlinePaymentCommission = $orderOnlinePaymentCommissionCents / 100;
-                    $orderWebsitePaymentCommission = (($order->total_price - $orderOnlinePaymentCommission) / 100) * $platformFeePercent;
-
-                    $order->online_payment_comission = $orderOnlinePaymentCommission;
-                    $order->website_payment_comission = $orderWebsitePaymentCommission;
-                    $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
-                    $order->stripe_charge_id = $chargeId;
-                    $order->save();
-                }
-            } catch (\Exception $e) {
-                Log::error('charge.updated handler failed: ' . $e->getMessage());
-            }
-            break;
-
-        case 'checkout.session.completed':
-            $session = $event->data->object;
-            $paymentIntent = $session['payment_intent'];
-            $paymentMethodType = null;
-            $chargeId = null;
-
-            try {
-                $paymentIntentObj = $stripe->paymentIntents->retrieve($paymentIntent, [
-                    'expand' => ['payment_method', 'latest_charge'],
-                ]);
-                $paymentMethodType = $paymentIntentObj->payment_method->type ?? null;
-                $chargeId          = $paymentIntentObj->latest_charge->id ?? null;
-            } catch (\Exception $e) {
-                Log::warning('Could not retrieve payment method type: ' . $e->getMessage());
-            }
-
-            // ── Gift-card-shop purchases: no Order row exists yet, create it now ──
-            $metadata = $session->metadata ? $session->metadata->toArray() : [];
-
-            Log::info('checkout.session.completed metadata', ['metadata' => $metadata]);
-
-            if (!empty($metadata['voucher_ids']) && !empty($metadata['gift_card_template_id'])) {
-                $this->fulfillGiftCardOrder($session);
-            } else {
-                Log::warning('Gift card fulfillment skipped — metadata missing', ['metadata' => $metadata]);
-            }
-
-            $orders = Order::with('orderItems')
-                ->where('stripe_session_id', $session['id'])
-                ->get();
-
-            $productsToDeleteFromCart = [];
-            $userId = null;
-
-            foreach ($orders as $order) {
-                $order->payment_intent   = $paymentIntent;
-                $order->payment_method   = $paymentMethodType;
-                $order->stripe_amount    = $session['amount_total'] / 100;
-                $order->stripe_charge_id = $chargeId;
-                $order->status           = OrderStatusEnum::Paid->value;
-                $order->is_paid          = true;
-                $order->save();
-
-                // Redeem voucher only now that payment is confirmed
-                if ($order->voucher_id && $order->voucher_discount > 0) {
-                    $orderVoucher = Voucher::lockForUpdate()->find($order->voucher_id);
-                    if ($orderVoucher) {
-                        $alreadyRedeemed = VoucherUsage::where('order_id', $order->id)
-                            ->where('voucher_id', $orderVoucher->id)
-                            ->exists();
-
-                        if (!$alreadyRedeemed) {
-                            VoucherUsage::create([
-                                'voucher_id'  => $orderVoucher->id,
-                                'user_id'     => $order->user_id,
-                                'order_id'    => $order->id,
-                                'amount_used' => $order->voucher_discount,
-                            ]);
-
-                            if ($orderVoucher->type === 'gift') {
-                                $orderVoucher->remaining_amount = max(0, ($orderVoucher->remaining_amount ?? 0) - $order->voucher_discount);
-                                if ($orderVoucher->remaining_amount <= 0) {
-                                    $orderVoucher->remaining_amount = 0;
-                                    $orderVoucher->active = false;
-                                }
-                            } elseif ($orderVoucher->type === 'promo') {
-                                $orderVoucher->used_count += 1;
-                                if ($orderVoucher->max_uses && $orderVoucher->used_count >= $orderVoucher->max_uses) {
-                                    $orderVoucher->active = false;
-                                }
-                            }
-
-                            $orderVoucher->save();
-                        }
-                    }
-                }
-
-                $userId = $order->user_id;
-
-                $productsToDeleteFromCart = array_merge(
-                    $productsToDeleteFromCart,
-                    $order->orderItems->pluck('product_id')->toArray()
-                );
-
-                foreach ($order->orderItems as $orderItem) {
-                    $options = $orderItem->variation_type_option_ids;
-                    $product = $orderItem->product;
-
-                    if (! $product) {
-                        continue; // gift-card / non-product line items have no stock to decrement
-                    }
-
-                    if ($options) {
-                        sort($options);
-                        $variation = $product->variations()
-                            ->where('variation_type_option_ids', $options)
-                            ->first();
-
-                        if ($variation && $variation->quantity !== null) {
-                            $variation->quantity -= $orderItem->quantity;
-                            $variation->save();
-                        }
-                    } elseif ($product->quantity !== null) {
-                        $product->quantity -= $orderItem->quantity;
-                        $product->save();
-                    }
-                }
-            }
-
-            foreach ($orders as $order) {
-                if ($order->vendorUser) {
-                    Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
-                }
-            }
-
-            if ($orders->isNotEmpty()) {
-                Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
-            }
-
-            // Gift card vouchers purchased via gift card shop — activate them now that payment is confirmed
-            if (!empty($metadata['voucher_ids'])) {
-                $ids = explode(',', $metadata['voucher_ids']);
-                $vouchers = Voucher::whereIn('id', $ids)
-                    ->where('stripe_session_id', $session->id)
-                    ->where('active', false)
-                    ->get();
-
-                Voucher::whereIn('id', $vouchers->pluck('id'))->update(['active' => true]);
-
-                Log::info('Gift card vouchers activated', ['ids' => $ids]);
-
-                // ── Email any voucher with a gift recipient ──
-                $buyer = User::find($session->metadata->purchased_by ?? null);
-
-                foreach ($vouchers as $voucher) {
-                    if (!empty($voucher->gifted_to_email) && !$voucher->sent_at) {
-                        try {
-                            Mail::to($voucher->gifted_to_email)
-                                ->send(new GiftVoucherRecipientMail($voucher->fresh(), $buyer?->name));
-
-                            $voucher->update(['sent_at' => now()]);
-                        } catch (\Exception $e) {
-                            Log::error("Failed to send gift voucher email for voucher #{$voucher->id}: " . $e->getMessage());
-                        }
-                    }
-                }
-            }
-
-            if ($userId && !empty($productsToDeleteFromCart)) {
-                CartItem::query()
-                    ->where('user_id', $userId)
-                    ->whereIn('product_id', $productsToDeleteFromCart)
-                    ->where('saved_for_later', false)
-                    ->delete();
-            }
-
-            $isFullyVoucherCovered =
-                ((int) ($session['amount_total'] ?? 0)) === 0
-                && ($session['payment_status'] ?? null) === 'no_payment_required';
-
-            if ($isFullyVoucherCovered && $orders->isNotEmpty()) {
-                Log::info('Fully voucher-covered order — sending order emails', [
-                    'session_id' => $session->id,
-                    'orders' => $orders->pluck('id')->toArray(),
-                ]);
-
-                foreach ($orders as $order) {
-                    if ($order->vendorUser) {
-                        try {
-                            Mail::to($order->vendorUser)
-                                ->send(new NewOrderMail($order));
-                        } catch (\Exception $e) {
-                            Log::error(
-                                "Failed to send vendor order email for Order #{$order->id}: "
-                                    . $e->getMessage()
-                            );
-                        }
-                    }
-                }
+                $session = $event->data->object;
+                $paymentIntent = $session['payment_intent'];
+                $paymentMethodType = null;
+                $chargeId = null;
 
                 try {
-                    Mail::to($orders[0]->user)
-                        ->send(new CheckoutCompleted($orders));
+                    $paymentIntentObj = $stripe->paymentIntents->retrieve($paymentIntent, [
+                        'expand' => ['payment_method', 'latest_charge'],
+                    ]);
+                    $paymentMethodType = $paymentIntentObj->payment_method->type ?? null;
+                    $chargeId          = $paymentIntentObj->latest_charge->id ?? null;
                 } catch (\Exception $e) {
-                    Log::error(
-                        "Failed to send checkout completed email for voucher order: "
-                            . $e->getMessage()
+                    Log::warning('Could not retrieve payment method type: ' . $e->getMessage());
+                }
+
+                // ── Gift-card-shop purchases: no Order row exists yet, create it now ──
+                $metadata = $session->metadata ? $session->metadata->toArray() : [];
+
+                Log::info('checkout.session.completed metadata', ['metadata' => $metadata]);
+
+                if (!empty($metadata['voucher_ids']) && !empty($metadata['gift_card_template_id'])) {
+                    $this->fulfillGiftCardOrder($session);
+                } else {
+                    Log::warning('Gift card fulfillment skipped — metadata missing', ['metadata' => $metadata]);
+                }
+
+                $orders = Order::with('orderItems')
+                    ->where('stripe_session_id', $session['id'])
+                    ->get();
+
+                $productsToDeleteFromCart = [];
+                $userId = null;
+
+                foreach ($orders as $order) {
+                    $order->payment_intent   = $paymentIntent;
+                    $order->payment_method   = $paymentMethodType;
+                    $order->stripe_amount    = $session['amount_total'] / 100;
+                    $order->stripe_charge_id = $chargeId;
+                    $order->status           = OrderStatusEnum::Paid->value;
+                    $order->is_paid          = true;
+                    $order->save();
+
+                    // Redeem voucher only now that payment is confirmed
+                    if ($order->voucher_id && $order->voucher_discount > 0) {
+                        $orderVoucher = Voucher::lockForUpdate()->find($order->voucher_id);
+                        if ($orderVoucher) {
+                            $alreadyRedeemed = VoucherUsage::where('order_id', $order->id)
+                                ->where('voucher_id', $orderVoucher->id)
+                                ->exists();
+
+                            if (!$alreadyRedeemed) {
+                                VoucherUsage::create([
+                                    'voucher_id'  => $orderVoucher->id,
+                                    'user_id'     => $order->user_id,
+                                    'order_id'    => $order->id,
+                                    'amount_used' => $order->voucher_discount,
+                                ]);
+
+                                if ($orderVoucher->type === 'gift') {
+                                    $orderVoucher->remaining_amount = max(0, ($orderVoucher->remaining_amount ?? 0) - $order->voucher_discount);
+                                    if ($orderVoucher->remaining_amount <= 0) {
+                                        $orderVoucher->remaining_amount = 0;
+                                        $orderVoucher->active = false;
+                                    }
+                                } elseif ($orderVoucher->type === 'promo') {
+                                    $orderVoucher->used_count += 1;
+                                    if ($orderVoucher->max_uses && $orderVoucher->used_count >= $orderVoucher->max_uses) {
+                                        $orderVoucher->active = false;
+                                    }
+                                }
+
+                                $orderVoucher->save();
+                            }
+                        }
+                    }
+
+                    $userId = $order->user_id;
+
+                    $productsToDeleteFromCart = array_merge(
+                        $productsToDeleteFromCart,
+                        $order->orderItems->pluck('product_id')->toArray()
                     );
+
+                    foreach ($order->orderItems as $orderItem) {
+                        $options = $orderItem->variation_type_option_ids;
+                        $product = $orderItem->product;
+
+                        if (! $product) {
+                            continue; // gift-card / non-product line items have no stock to decrement
+                        }
+
+                        if ($options) {
+                            sort($options);
+                            $variation = $product->variations()
+                                ->where('variation_type_option_ids', $options)
+                                ->first();
+
+                            if ($variation && $variation->quantity !== null) {
+                                $variation->quantity -= $orderItem->quantity;
+                                $variation->save();
+                            }
+                        } elseif ($product->quantity !== null) {
+                            $product->quantity -= $orderItem->quantity;
+                            $product->save();
+                        }
+                    }
                 }
-            }
 
-            break;
 
-        case 'refund.created':
-            $refund = $event->data->object;
-            $paymentIntent = $refund['payment_intent'] ?? null;
 
-            if (!$paymentIntent) {
-                Log::warning('Refund event missing payment_intent');
-                break;
-            }
-
-            // If RefundService already recorded this exact Stripe refund
-            // (any of its methods — refundOrder, refundExcludingBookingFee,
-            // refundManual, refundCustomAmount, refundBookingFeeOnly), this
-            // webhook is just an echo of our own action. Skip it entirely so
-            // we don't clobber the already-correct order/refund fields or
-            // double-send the refund emails.
-            $alreadyRecorded = \App\Models\Refund::where('stripe_refund_id', $refund['id'])->exists();
-            if ($alreadyRecorded) {
-                Log::info("Refund {$refund['id']} already processed by app — webhook skipped");
-                break;
-            }
-
-            // Fallback path: a refund that happened OUTSIDE the app
-            // (e.g. manually via the Stripe Dashboard). Handle it minimally.
-            $order = Order::where('payment_intent', $paymentIntent)
-                ->with(['user', 'vendorUser'])
-                ->first();
-
-            if (!$order) {
-                Log::warning("No order found for payment_intent: $paymentIntent");
-                break;
-            }
-
-            if ($order->refunded_at) {
-                Log::info("Refund already processed for Order ID {$order->id}");
-                break;
-            }
-
-            $order->refund_id     = $refund['id'];
-            $order->refund_amount = $refund['amount'] / 100;
-            $order->refunded_at   = now();
-            $order->refund_reason = $order->refund_reason ?? 'Refund via Stripe Dashboard';
-            $order->save();
-
-            try {
-                $refundRecord = app(\App\Services\RefundService::class)->recordRefund(
-                    $order,
-                    'full',
-                    $order->refund_amount,
-                    $refund['id'],
-                    'Refund via Stripe Dashboard'
-                );
-
-                Mail::to($order->user)->send(new RefundProcessedForUser($order, $refundRecord));
-                if ($order->vendorUser) {
-                    Mail::to($order->vendorUser)->send(new RefundProcessedForVendor($order, $refundRecord));
+                if ($orders->isNotEmpty()) {
+                    Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
                 }
-            } catch (\Exception $e) {
-                Log::error("Failed to send refund emails: " . $e->getMessage());
-            }
 
-            break;
+                // Gift card vouchers purchased via gift card shop — activate them now that payment is confirmed
+                if (!empty($metadata['voucher_ids'])) {
+                    $ids = explode(',', $metadata['voucher_ids']);
+                    $vouchers = Voucher::whereIn('id', $ids)
+                        ->where('stripe_session_id', $session->id)
+                        ->where('active', false)
+                        ->get();
 
-        case 'account.updated':
-            try {
-                $account = $event->data->object;
+                    Voucher::whereIn('id', $vouchers->pluck('id'))->update(['active' => true]);
 
-                $user = User::where('stripe_account_id', $account->id)->first();
+                    Log::info('Gift card vouchers activated', ['ids' => $ids]);
 
-                if (!$user) {
-                    Log::warning('account.updated received for unknown stripe_account_id', ['account_id' => $account->id]);
+                    // ── Email any voucher with a gift recipient ──
+                    $buyer = User::find($session->metadata->purchased_by ?? null);
+
+                    foreach ($vouchers as $voucher) {
+                        if (!empty($voucher->gifted_to_email) && !$voucher->sent_at) {
+                            try {
+                                Mail::to($voucher->gifted_to_email)
+                                    ->send(new GiftVoucherRecipientMail($voucher->fresh(), $buyer?->name));
+
+                                $voucher->update(['sent_at' => now()]);
+                            } catch (\Exception $e) {
+                                Log::error("Failed to send gift voucher email for voucher #{$voucher->id}: " . $e->getMessage());
+                            }
+                        }
+                    }
+                }
+
+                if ($userId && !empty($productsToDeleteFromCart)) {
+                    CartItem::query()
+                        ->where('user_id', $userId)
+                        ->whereIn('product_id', $productsToDeleteFromCart)
+                        ->where('saved_for_later', false)
+                        ->delete();
+                }
+
+                $isFullyVoucherCovered =
+                    ((int) ($session['amount_total'] ?? 0)) === 0
+                    && ($session['payment_status'] ?? null) === 'no_payment_required';
+
+                if ($isFullyVoucherCovered && $orders->isNotEmpty()) {
+                    Log::info('Fully voucher-covered order — sending order emails', [
+                        'session_id' => $session->id,
+                        'orders' => $orders->pluck('id')->toArray(),
+                    ]);
+
+
+
+                    try {
+                        Mail::to($orders[0]->user)
+                            ->send(new CheckoutCompleted($orders));
+                    } catch (\Exception $e) {
+                        Log::error(
+                            "Failed to send checkout completed email for voucher order: "
+                                . $e->getMessage()
+                        );
+                    }
+                }
+
+                break;
+
+            case 'refund.created':
+                $refund = $event->data->object;
+                $paymentIntent = $refund['payment_intent'] ?? null;
+
+                if (!$paymentIntent) {
+                    Log::warning('Refund event missing payment_intent');
                     break;
                 }
 
-                $isActive = (bool) ($account->charges_enabled && $account->payouts_enabled);
-
-                if ($user->stripe_account_active !== $isActive) {
-                    $user->stripe_account_active = $isActive;
-                    $user->save();
-
-                    Log::info('Stripe account status synced', [
-                        'user_id' => $user->id,
-                        'stripe_account_active' => $isActive,
-                    ]);
+                // If RefundService already recorded this exact Stripe refund
+                // (any of its methods — refundOrder, refundExcludingBookingFee,
+                // refundManual, refundCustomAmount, refundBookingFeeOnly), this
+                // webhook is just an echo of our own action. Skip it entirely so
+                // we don't clobber the already-correct order/refund fields or
+                // double-send the refund emails.
+                $alreadyRecorded = \App\Models\Refund::where('stripe_refund_id', $refund['id'])->exists();
+                if ($alreadyRecorded) {
+                    Log::info("Refund {$refund['id']} already processed by app — webhook skipped");
+                    break;
                 }
-            } catch (\Exception $e) {
-                Log::error('account.updated handler failed: ' . $e->getMessage());
-            }
-            break;
 
-        default:
-            break;
+                // Fallback path: a refund that happened OUTSIDE the app
+                // (e.g. manually via the Stripe Dashboard). Handle it minimally.
+                $order = Order::where('payment_intent', $paymentIntent)
+                    ->with(['user', 'vendorUser'])
+                    ->first();
+
+                if (!$order) {
+                    Log::warning("No order found for payment_intent: $paymentIntent");
+                    break;
+                }
+
+                if ($order->refunded_at) {
+                    Log::info("Refund already processed for Order ID {$order->id}");
+                    break;
+                }
+
+                $order->refund_id     = $refund['id'];
+                $order->refund_amount = $refund['amount'] / 100;
+                $order->refunded_at   = now();
+                $order->refund_reason = $order->refund_reason ?? 'Refund via Stripe Dashboard';
+                $order->save();
+
+                try {
+                    $refundRecord = app(\App\Services\RefundService::class)->recordRefund(
+                        $order,
+                        'full',
+                        $order->refund_amount,
+                        $refund['id'],
+                        'Refund via Stripe Dashboard'
+                    );
+
+                    Mail::to($order->user)->send(new RefundProcessedForUser($order, $refundRecord));
+                    if ($order->vendorUser) {
+                        Mail::to($order->vendorUser)->send(new RefundProcessedForVendor($order, $refundRecord));
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to send refund emails: " . $e->getMessage());
+                }
+
+                break;
+
+            case 'account.updated':
+                try {
+                    $account = $event->data->object;
+
+                    $user = User::where('stripe_account_id', $account->id)->first();
+
+                    if (!$user) {
+                        Log::warning('account.updated received for unknown stripe_account_id', ['account_id' => $account->id]);
+                        break;
+                    }
+
+                    $isActive = (bool) ($account->charges_enabled && $account->payouts_enabled);
+
+                    if ($user->stripe_account_active !== $isActive) {
+                        $user->stripe_account_active = $isActive;
+                        $user->save();
+
+                        Log::info('Stripe account status synced', [
+                            'user_id' => $user->id,
+                            'stripe_account_active' => $isActive,
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('account.updated handler failed: ' . $e->getMessage());
+                }
+                break;
+
+            default:
+                break;
+        }
+
+        return response('', 200);
     }
-
-    return response('', 200);
-}
 
     public function success(Request $request)
     {

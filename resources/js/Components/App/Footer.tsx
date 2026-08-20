@@ -104,7 +104,7 @@ export default function Footer() {
 
   return (
     <>
-       <style>{`
+      <style>{`
         .footer-root {
           background-color: var(--color-primary);
           color: var(--color-text-inverse);
@@ -140,11 +140,13 @@ export default function Footer() {
          color: --var(--color-text-light);
           letter-spacing: 0.03em;
         }
-        .footer-socials {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-        }
+       .footer-socials-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
         .footer-social-btn {
           display: flex;
           align-items: center;
@@ -176,7 +178,16 @@ export default function Footer() {
           gap: 40px;
           align-items: start;
         }
+.footer-nl-col {
+  grid-column: 1 / -1;
+}
 
+.footer-nl-row {
+  display: grid;
+  grid-template-columns: 2fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
         /* Brand */
         .footer-brand-logo {
           font-family: var(--font-display);
@@ -225,6 +236,29 @@ export default function Footer() {
   color: inherit;
   text-decoration: none;
 }
+
+
+.footer-nl-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@media (min-width: 1025px) {
+  .footer-nl-input-row {
+     flex: 1 1 auto;
+    align-items: stretch;
+  }
+  .footer-nl-input-row .footer-email-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .footer-nl-input-row .footer-subscribe-btn {
+     flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
         .footer-contact-dot {
           color: var(--color-accent);
           flex-shrink: 0;
@@ -262,6 +296,7 @@ export default function Footer() {
 
         /* Newsletter column */
         .footer-nl-desc {
+        flex: 1 1 100%;
           font-size: 13px;
          color: --var(--color-text-light);
           line-height: 1.7;
@@ -385,13 +420,19 @@ export default function Footer() {
           }
           .footer-brand-col { grid-column: 1 / -1; max-width: 480px; }
           .footer-nl-col { grid-column: 1 / -1; }
-          .footer-nl-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-            align-items: start;
-          }
-          .footer-nl-form-wrap { display: flex; flex-direction: column; }
+
+          .footer-nl-form-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+  .footer-nl-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  align-items: start;
+}
           .footer-email-input { margin-bottom: 8px; }
           .footer-subscribe-btn { margin-bottom: 0; }
         }
@@ -463,6 +504,26 @@ export default function Footer() {
               </div>
             ))}
 
+            {SOCIALS.length > 0 && (
+              <div>
+                <p className="footer-col-heading">Follow Us</p>
+                <div className="footer-socials-row">
+                  {SOCIALS.map((s) => (
+                    <a
+                      key={s.label}
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={s.label}
+                      className="footer-social-btn"
+                    >
+                      {s.icon}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="footer-nl-col">
               <p className="footer-col-heading">Newsletter</p>
               <div className="footer-nl-row">
@@ -482,9 +543,7 @@ export default function Footer() {
                   <span className="footer-hours-label">Studio Hours</span>
                   {(() => {
                     const raw = vendorData?.recurring_closed_days ?? [];
-                    const closedDays: number[] = raw.map((d: any) =>
-                      Number(d)
-                    );
+                    const closedDays: number[] = raw.map((d: any) => Number(d));
                     const startTime = vendorData?.business_start_time;
                     const endTime = vendorData?.business_end_time;
 
@@ -496,7 +555,7 @@ export default function Footer() {
                     };
 
                     const hoursRange = `${formatTime(startTime)} – ${formatTime(
-                      endTime
+                      endTime,
                     )}`;
 
                     const dayLabels = [
