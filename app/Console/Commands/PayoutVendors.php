@@ -40,51 +40,141 @@ class PayoutVendors extends Command
         return Command::SUCCESS;
     }
 
-    public function processPayout(Vendor $vendor, bool $includeToday = false)
-    {
-        $this->info('processing payout for vendors [Id=' . $vendor->user->id . '] - "' . $vendor->store_name . '"');
-        Log::info('Processing payout for vendor', ['vendor_id' => $vendor->user->id, 'store_name' => $vendor->store_name]);
+public function processPayout(Vendor $vendor, bool $includeToday = false)
+{
+    $this->info(
+        'Processing payout for vendor [Id=' .
+        $vendor->user->id .
+        '] - "' .
+        $vendor->store_name .
+        '"'
+    );
 
-        try {
-            DB::beginTransaction();
-            $startingFrom = Payout::where('vendor_id', $vendor->user_id)
-                ->orderBy('until', 'desc')
-                ->value('until');
+    Log::info('Processing payout for vendor', [
+        'vendor_id' => $vendor->user->id,
+        'store_name' => $vendor->store_name,
+    ]);
 
-            $startingFrom = $startingFrom ?: Carbon::make('1970-1-1');
+    try {
+        DB::beginTransaction();
 
-            $until = $includeToday
-                ? Carbon::now()->endOfDay()
-                : Carbon::now()->subMonthNoOverflow()->startOfMonth();
+        $startingFrom = Payout::where('vendor_id', $vendor->user_id)
+            ->orderBy('until', 'desc')
+            ->value('until');
 
-            $vendorSubtotal = Order::query()
-                ->where('vendor_user_id', $vendor->user_id)
-                ->where('status', OrderStatusEnum::Paid->value)
-                ->whereBetween('created_at', [$startingFrom, $until])
-                ->sum('vendor_subtotal');
+        $startingFrom = $startingFrom
+            ? Carbon::parse($startingFrom)
+            : Carbon::create(1970, 1, 1);
 
-            if ($vendorSubtotal) {
-                $this->info('Payout made with the amount: ' . $vendorSubtotal);
-                Payout::create([
-                    'vendor_id' => $vendor->user_id,
-                    'amount' => $vendorSubtotal,
-                    'starting_from' => $startingFrom,
-                    'until' => $until
-                ]);
+        $until = $includeToday
+            ? Carbon::now()->endOfDay()
+            : Carbon::now()->subMonthNoOverflow()->startOfMonth();
 
-                if ($vendor->user->isStripeAccountActive() && $vendor->user->getStripeAccountId()) {
-                    $vendor->user->transfer((int)($vendorSubtotal * 100), config('app.currency'));
-                    Log::info('Stripe transfer successful', ['vendor_id' => $vendor->user->id]);
-                }
-            } else {
-                Log::info('Payout skipped: no eligible order subtotal for period', ['vendor_id' => $vendor->user->id]);
-                $this->info('Nothing to process');
-            }
+        /*
+         * Find the exact orders that belong to this payout.
+         */
+        $orders = Order::query()
+            ->where('vendor_user_id', $vendor->user_id)
+            ->where('is_paid', true)
+            ->whereNull('payout_id')
+            ->whereBetween('created_at', [$startingFrom, $until])
+            ->get(['id', 'vendor_subtotal', 'refund_amount']);
+
+        $vendorSubtotal = $orders->sum(function ($order) {
+            $refunded = $order->refund_amount ?? 0;
+
+            return max(
+                0,
+                $order->vendor_subtotal - $refunded
+            );
+        });
+
+        if ($vendorSubtotal <= 0 || $orders->isEmpty()) {
+            Log::info('Payout skipped: no eligible orders', [
+                'vendor_id' => $vendor->user_id,
+                'starting_from' => $startingFrom,
+                'until' => $until,
+            ]);
+
+            $this->info('Nothing to process');
 
             DB::commit();
-        } catch (Exception $e) {
-            DB::rollBack();
-            $this->error($e->getMessage());
+
+            return;
         }
+
+        /*
+         * Create payout record.
+         */
+        $payout = Payout::create([
+            'vendor_id' => $vendor->user_id,
+            'amount' => $vendorSubtotal,
+            'starting_from' => $startingFrom,
+            'until' => $until,
+        ]);
+
+        /*
+         * Attach every order to this payout.
+         */
+        Order::whereIn('id', $orders->pluck('id'))
+            ->update([
+                'payout_id' => $payout->id,
+                'paid_out_at' => now(),
+            ]);
+
+        $this->info(
+            'Payout created: #' .
+            $payout->id .
+            ' — A$' .
+            number_format($vendorSubtotal, 2)
+        );
+
+        $this->info(
+            'Orders attached: ' .
+            $orders->count()
+        );
+
+        Log::info('Payout created and orders attached', [
+            'payout_id' => $payout->id,
+            'vendor_id' => $vendor->user_id,
+            'amount' => $vendorSubtotal,
+            'orders_count' => $orders->count(),
+            'order_ids' => $orders->pluck('id')->values()->all(),
+        ]);
+
+        /*
+         * Stripe transfer.
+         */
+        if (
+            $vendor->user->isStripeAccountActive() &&
+            $vendor->user->getStripeAccountId()
+        ) {
+            $vendor->user->transfer(
+                (int) round($vendorSubtotal * 100),
+                config('app.currency')
+            );
+
+            Log::info('Stripe transfer successful', [
+                'vendor_id' => $vendor->user->id,
+                'payout_id' => $payout->id,
+                'amount' => $vendorSubtotal,
+            ]);
+        }
+
+        DB::commit();
+
+    } catch (Exception $e) {
+
+        DB::rollBack();
+
+        Log::error('Vendor payout failed', [
+            'vendor_id' => $vendor->user->id,
+            'error' => $e->getMessage(),
+        ]);
+
+        $this->error(
+            'Payout failed: ' . $e->getMessage()
+        );
     }
+}
 }

@@ -111,7 +111,7 @@ class StripeController extends Controller
                         $order->website_payment_comission = $orderWebsitePaymentCommission;
                         $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
                         $order->stripe_charge_id = $chargeId;
-
+                        $order->fees_calculated_at = now();
                         if (!$order->vendor_notified_at && $order->vendorUser) {
                             Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
                             $order->vendor_notified_at = now();
@@ -172,6 +172,7 @@ class StripeController extends Controller
                     $order->stripe_charge_id = $chargeId;
                     $order->status           = OrderStatusEnum::Paid->value;
                     $order->is_paid          = true;
+                    $order->paid_at = now();
                     $order->save();
 
                     // Redeem voucher only now that payment is confirmed

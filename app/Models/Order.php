@@ -17,6 +17,9 @@ class Order extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
          'vendor_notified_at' => 'datetime',
+          'paid_at'             => 'datetime',
+    'fees_calculated_at'  => 'datetime',
+    'paid_out_at'         => 'datetime',
 
     ];
 

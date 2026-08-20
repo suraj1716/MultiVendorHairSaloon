@@ -90,6 +90,9 @@ class RefundService
 
                 $stripeRefund = Refund::create($stripeParams);
 
+                // This is always a FULL refund (order->total_price fully covered),
+                // so refunded_at is correctly stamped here — the order should be
+                // excluded from payout calculations entirely.
                 $order->update([
                     'refund_amount' => $alreadyRefunded + $remaining,
                     'refunded_at' => now(),
@@ -112,6 +115,12 @@ class RefundService
 
     /**
      * Refund booking fee (total - booking_fee)
+     *
+     * NOTE: despite the name/comment, this refunds total_price - booking_fee,
+     * i.e. everything EXCEPT the booking fee — meaning the vendor still keeps
+     * the booking fee portion. This still marks the order as fully closed
+     * out (refunded_at set), which is correct only if your business rule is
+     * "vendor keeps nothing further from this order once this runs."
      */
     public function refundExcludingBookingFee(Order $order): float
     {
@@ -248,6 +257,13 @@ class RefundService
      * Custom partial refund — repeatable by design (staged refunds), so no
      * hasRefundType guard here. Locking still prevents two simultaneous
      * clicks from double-spending the same remaining balance.
+     *
+     * FIX: refunded_at is now only stamped once the order is FULLY refunded.
+     * Previously it was stamped on every partial refund, which caused
+     * PayoutController::calculateAmount() to exclude the order's entire
+     * vendor_subtotal from payout even when only a small partial amount
+     * had been refunded — underpaying the vendor. refund_amount is still
+     * updated on every call so the payout calc can net the actual amount.
      */
     public function refundCustomAmount(Order $order, float $amount): float
     {
@@ -293,7 +309,10 @@ class RefundService
 
                 $order->update([
                     'refund_amount' => $newRefundTotal,
-                    'refunded_at' => now(),
+                    // Only stamp refunded_at when the order is fully refunded.
+                    // A partial refund should NOT flip this, or the payout
+                    // calc will drop the whole order instead of netting it.
+                    'refunded_at' => $isFullyRefunded ? now() : $order->refunded_at,
                     'status' => $isFullyRefunded ? OrderStatusEnum::Refunded->value : $order->status,
                     'is_paid' => $isFullyRefunded ? false : $order->is_paid,
                 ]);
@@ -311,6 +330,13 @@ class RefundService
 
     /**
      * Refund ONLY the booking fee (customer visited & completed service).
+     *
+     * FIX: both branches below now consistently update order->refund_amount.
+     * The no-Stripe-charge branch previously never touched the order at
+     * all, so a booking-fee-only refund was completely invisible to
+     * PayoutController::calculateAmount() — the vendor would still be paid
+     * the full vendor_subtotal for an order that had actually been
+     * partially refunded.
      */
     public function refundBookingFeeOnly(Order $order): float
     {
@@ -339,6 +365,13 @@ class RefundService
                 ]);
 
                 $restored = $this->restoreVoucherAmountForOrder($order, $bookingFee);
+
+                // FIX: this order-level update was missing entirely before,
+                // so refund_amount never reflected this refund and the order
+                // stayed eligible for its full vendor_subtotal in payouts.
+                $order->update([
+                    'refund_amount' => ($order->refund_amount ?? 0) + $bookingFee,
+                ]);
 
                 $refundRecord = $this->recordRefund($order, 'booking_fee', $bookingFee, null, 'Booking fee refunded via voucher restore (no Stripe charge)', false, $restored);
                 $this->sendRefundEmails($order, $refundRecord);

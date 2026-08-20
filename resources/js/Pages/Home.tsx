@@ -1125,7 +1125,7 @@ export default function Home({
                     }
                     className="btn btn-primary"
                   >
-                    Book Appointment
+                    Book Now
                   </button>
 
                   <button

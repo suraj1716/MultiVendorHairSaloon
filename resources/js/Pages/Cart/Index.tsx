@@ -561,7 +561,7 @@ function Index({
                                   setDialogOpen(true);
                                 }}
                               >
-                                Book Appointment
+                                Book Now
                               </Button>
                             </div>
                           )}

@@ -30,7 +30,7 @@ export default function Footer() {
     {
       heading: "Support",
       links: [
-        { label: "Book Appointment", href: route("shop.search") },
+        { label: "Book Now", href: route("shop.search") },
         { label: "Cancellation Policy", href: route("cancellation-policy") },
         { label: "FAQs", href: "/faqs" },
       ],
