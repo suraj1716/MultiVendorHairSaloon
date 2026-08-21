@@ -63,7 +63,6 @@ class StripeController extends Controller
             return response('Invalid signature', 400);
         }
 
-        Log::info('Stripe webhook received: ' . $event->type);
 
         switch ($event->type) {
             case 'charge.updated':
@@ -112,6 +111,15 @@ class StripeController extends Controller
                         $order->vendor_subtotal = $order->total_price - $orderOnlinePaymentCommission - $orderWebsitePaymentCommission;
                         $order->stripe_charge_id = $chargeId;
                         $order->fees_calculated_at = now();
+
+                        Log::info('SENDING NewOrderMail', [
+    'order_id' => $order->id,
+    'to_email' => $order->vendorUser->email,
+    'to_user_id' => $order->vendorUser->id,
+    'buyer_email' => $order->user?->email,
+    'buyer_id' => $order->user_id,
+]);
+
                         if (!$order->vendor_notified_at && $order->vendorUser) {
                             Mail::to($order->vendorUser)->queue(new NewOrderMail($order));
                             $order->vendor_notified_at = now();
@@ -242,7 +250,11 @@ class StripeController extends Controller
                 }
 
 
-
+Log::info('SENDING CheckoutCompleted', [
+    'to_email' => $orders[0]->user?->email,
+    'to_user_id' => $orders[0]->user_id,
+    'order_ids' => $orders->pluck('id'),
+]);
                 if ($orders->isNotEmpty()) {
                     Mail::to($orders[0]->user)->queue(new CheckoutCompleted($orders));
                 }
