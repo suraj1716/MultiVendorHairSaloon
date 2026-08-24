@@ -18,7 +18,8 @@ class Booking extends Model
         'staff_id',
         'edited_at',
         'booking_fee_refunded',
-        'booking_fee_refund_amount'
+        'booking_fee_refund_amount',
+    'assigned_staff_id'
     ];
 
     protected $casts = [
